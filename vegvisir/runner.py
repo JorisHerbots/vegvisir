@@ -81,7 +81,7 @@ class Runner:
 
 	def run(self) -> int:
 		self._start_time = datetime.now()
-		self._log_dir = "logs_{:%Y-%m-%dT%H:%M:%S}".format(self._start_time)
+		self._log_dir = "logs/{:%Y-%m-%dT%H:%M:%S}".format(self._start_time)
 		nr_failed = 0
 
 		for shaper in self._shapers:
@@ -129,15 +129,13 @@ class Runner:
 
 			"CLIENT=" + client.image + " "
 			"TESTCASE_CLIENT=transfer" + " "
-			"CLIENT_PARAMS=\"--ca-certs tests/pycacert.pem -q /logs/qlog\"" + " "
 			"REQUESTS=\"https://193.167.100.100:443/\"" + " "
 
-			"DOWNLOADS=" + "./downloads" + " "
+			"DOWNLOADS=" + testcase.download_dir() + " "
 			"SERVER=" + server.image + " "
 			"TESTCASE_SERVER=" + " "
-			"SERVER_PARAMS=\"--certificate tests/ssl_cert.pem --private-key tests/ssl_key.pem -q /logs/qlog\"" + " "
-			"WWW=" + "./www" + " "
-			"CERTS=" + "./certs" + " "
+			"WWW=" + testcase.www_dir() + " "
+			"CERTS=" + testcase.certs_dir() + " "
 
 			"SHAPER=" + shaper.image + " "
 			"SCENARIO=\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\"" + " "
