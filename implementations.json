@@ -1,6 +1,6 @@
 {
 	"aioquic": {
-		"image": "aiortc/aioquic-qns:latest",
+		"image": "aioquic",
 		"url": "https://github.com/aiortc/aioquic",
 		"role": [
 			"client",
