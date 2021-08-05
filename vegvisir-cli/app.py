@@ -4,7 +4,7 @@ from vegvisir.runner import Runner
 
 
 def main():
-    runner = Runner(debug=True)
+    runner = Runner(implementations_file="implementations.json", debug=True)
 
     return runner.run()
 

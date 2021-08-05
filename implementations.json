@@ -1,0 +1,17 @@
+{
+	"aioquic": {
+		"image": "aiortc/aioquic-qns:latest",
+		"url": "https://github.com/aiortc/aioquic",
+		"role": [
+			"client",
+			"server"
+		]
+	},
+	"qns": {
+		"image": "martenseemann/quic-network-simulator",
+		"url": "https://github.com/marten-seemann/quic-network-simulator",
+		"role": [
+			"shaper"
+		]
+	}
+}

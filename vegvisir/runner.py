@@ -2,8 +2,9 @@ from datetime import datetime
 import logging
 import sys
 from typing import List
+import json
 
-from .implementation import Implementation
+from .implementation import Implementation, Role
 
 class Runner:
 	_start_time: datetime = 0
@@ -18,6 +19,7 @@ class Runner:
 
 	def __init__(
 		self,
+		implementations_file: str,
 		debug: bool = False
 	):
 		self._logger = logging.getLogger()
@@ -29,6 +31,40 @@ class Runner:
 			console.setLevel(logging.INFO)
 		self._logger.addHandler(console)
 
+		self._read_implementations_file(implementations_file)
+
+	def _read_implementations_file(self, file: str):
+		self._clients = []
+		self._servers = []
+		self._shapers = []
+
+		with open(file) as f:
+			implementations = json.load(f)
+
+		logging.debug("Loading implementations:")
+		
+		for name in implementations:
+			attrs = implementations[name]
+
+			roles = []
+			to_add = []
+			for role in attrs["role"]:
+				if role == "client":
+					roles.append(Role.CLIENT)
+					to_add.append(self._clients)
+				elif role == "server":
+					roles.append(Role.SERVER)
+					to_add.append(self._servers)
+				elif role == "shaper":
+					roles.append(Role.SHAPER)
+					to_add.append(self._shapers)
+
+			impl = Implementation(name, attrs["image"], attrs["url"], roles)
+
+			for lst in to_add:
+				lst.append(impl)
+
+			logging.debug("\tloaded %s as %s", name, attrs["role"])
 
 	def run(self) -> int:
 		self._start_time = datetime.now()
