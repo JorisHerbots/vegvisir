@@ -10,7 +10,7 @@ class Implementation:
 	name: str = ""
 	image: str = ""
 	url: str = ""
-	roles: List[Role] = []
+	role: List[Role] = []
 
 	def __init__(
 		self,
@@ -22,4 +22,4 @@ class Implementation:
 		self.name = name
 		self.image = image
 		self.url = url
-		self.roles = roles
+		self.role = roles
