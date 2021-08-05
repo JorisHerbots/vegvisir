@@ -1,10 +1,12 @@
 from datetime import datetime
 import logging
 import sys
+import subprocess
 from typing import List
 import json
 
 from .implementation import Implementation, Role
+from .testcase import TestResult
 
 class Runner:
 	_start_time: datetime = 0
@@ -79,6 +81,52 @@ class Runner:
 					client.name, client.image
 					)
 
+					result = self._run_test(shaper, server, client)
+					logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+
 		self._end_time = datetime.now()
 		logging.info("elapsed time since start of run: %s", str(self._end_time - self._start_time))
 		return nr_failed
+
+	def _run_test(
+		self,
+		shaper: Implementation,
+		server: Implementation, 
+		client: Implementation
+		) -> TestResult:
+		result = TestResult()
+		result.start_time = datetime.now()
+
+		params = (
+			"CLIENT=" + client.image + " "
+			"CLIENT_PARAMS=\"--ca-certs tests/pycacert.pem https://193.167.100.100:4433/\"" + " "
+			"DOWNLOADS=" + "/" + " "
+			"SERVER=" + server.image + " "
+			"SERVER_PARAMS=\"--certificate tests/ssl_cert.pem --private-key tests/ssl_key.pem\"" + " "
+			"SHAPER=" + shaper.image + " "
+			"SCENARIO=\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\"" + " "
+		)
+		containers = "sim client server"
+
+		cmd = (
+			params
+			+ " docker-compose up --abort-on-container-exit --timeout 1 "
+			+ containers
+		)
+
+		try:
+			proc = subprocess.run(
+				cmd,
+				shell=True,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT,
+				timeout=30
+			)
+			logging.debug("proc: %s", proc.stdout.decode("utf-8"))
+		except subprocess.TimeoutExpired as e:
+			logging.debug("subprocess timeout: %s", e.stdout.decode("utf-8"))
+		except Exception as e:
+			logging.debug("subprocess error: %s", str(e))
+
+		result.end_time = datetime.now()
+		return result
