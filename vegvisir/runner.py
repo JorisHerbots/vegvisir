@@ -100,6 +100,7 @@ class Runner:
 
 					testcase = TestCase()
 					testcase.name = "test"
+					testcase.timeout = 120
 
 					result = self._run_test(shaper, server, client, testcase)
 					logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
@@ -166,8 +167,9 @@ class Runner:
 				stderr=subprocess.STDOUT
 			)
 			try:
-				time.sleep(1) #TODO get from testcase
-				raise subprocess.TimeoutExpired(cmd, 30, proc.stdout, proc.stderr)
+				#TODO use threading instead? wait for events? how to do infinite sleep?
+				time.sleep(testcase.timeout) #TODO get from testcase
+				raise subprocess.TimeoutExpired(cmd, testcase.timeout, proc.stdout, proc.stderr)
 			except KeyboardInterrupt as e:
 				logging.debug("manual interrupt")
 			logging.debug("proc: %s", proc.stdout.decode("utf-8"))

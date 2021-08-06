@@ -19,9 +19,12 @@ class TestResult:
 
 class TestCase:
 	name: str= ""
+
 	_www_dir = None
 	_download_dir = None
 	_cert_dir = None
+	
+	timeout: int = 60
 
 	def www_dir(self):
 		if not self._www_dir:
