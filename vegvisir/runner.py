@@ -7,6 +7,7 @@ import json
 import tempfile
 import re
 import shutil
+import time
 
 from .implementation import Implementation, Role
 from .testcase import Status, TestCase, TestResult
@@ -33,12 +34,16 @@ class Runner:
 	def __init__(
 		self,
 		implementations_file: str,
-		debug: bool = False
+		debug: bool = False,
+		save_files: bool = False
 	):
+		self._debug = debug
+		self._save_files = save_files
+
 		self._logger = logging.getLogger()
 		self._logger.setLevel(logging.DEBUG)
 		console = logging.StreamHandler(stream=sys.stderr)
-		if debug:
+		if self._debug:
 			console.setLevel(logging.DEBUG)
 		else:
 			console.setLevel(logging.INFO)
@@ -133,7 +138,7 @@ class Runner:
 
 			"DOWNLOADS=" + testcase.download_dir() + " "
 			"SERVER=" + server.image + " "
-			"TESTCASE_SERVER=" + " "
+			"TESTCASE_SERVER=transfer" + " "
 			"WWW=" + testcase.www_dir() + " "
 			"CERTS=" + testcase.certs_dir() + " "
 
@@ -147,7 +152,7 @@ class Runner:
 
 		cmd = (
 			params
-			+ " docker-compose up --abort-on-container-exit --timeout 1 "
+			+ " docker-compose up -d "
 			+ containers
 		)
 
@@ -158,10 +163,21 @@ class Runner:
 				cmd,
 				shell=True,
 				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT,
-				timeout=30
+				stderr=subprocess.STDOUT
 			)
+			try:
+				time.sleep(1) #TODO get from testcase
+				raise subprocess.TimeoutExpired(cmd, 30, proc.stdout, proc.stderr)
+			except KeyboardInterrupt as e:
+				logging.debug("manual interrupt")
 			logging.debug("proc: %s", proc.stdout.decode("utf-8"))
+			proc = subprocess.run(
+				"docker-compose logs -t",
+				shell=True,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+			logging.debug("%s", proc.stdout.decode("utf-8"))
 			result.status = Status.SUCCES
 		except subprocess.TimeoutExpired as e:
 			logging.debug("subprocess timeout: %s", e.stdout.decode("utf-8"))
@@ -191,6 +207,18 @@ class Runner:
 		server_log_dir.cleanup()
 		client_log_dir.cleanup()
 		sim_log_dir.cleanup()
+
+		try:
+			logging.debug("shutting down containers")
+			proc = subprocess.run(
+				"docker-compose down",
+				shell=True,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+			logging.debug("shut down successful: %s", proc.stdout.decode("utf-8"))
+		except Exception as e:
+			logging.debug("subprocess error while shutting down: %s", str(e))
 
 		result.end_time = datetime.now()
 		return result
