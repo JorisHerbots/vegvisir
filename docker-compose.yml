@@ -86,6 +86,51 @@ services:
       - "server46:193.167.100.100"
       - "server46:fd00:cafe:cafe:100::100"
 
+  iperf_server:
+    image: martenseemann/quic-interop-iperf-endpoint
+    container_name: iperf_server
+    stdin_open: true
+    tty: true
+    environment:
+      - ROLE=server
+      - CLIENT=client4
+      - IPERF_CONGESTION=$IPERF_CONGESTION
+    depends_on:
+      - sim
+    cap_add: 
+      - NET_ADMIN
+    networks:
+      rightnet:
+        ipv4_address: 193.167.100.110
+        ipv6_address: fd00:cafe:cafe:100::110
+    extra_hosts:
+      - "client4:193.167.0.90"
+      - "client6:fd00:cafe:cafe:0::100"
+      - "client46:193.167.0.90"
+      - "client46:fd00:cafe:cafe:0::100"
+
+  iperf_client:
+    image: martenseemann/quic-interop-iperf-endpoint
+    container_name: iperf_client
+    stdin_open: true
+    tty: true
+    environment:
+      - ROLE=client
+      - IPERF_CONGESTION=$IPERF_CONGESTION
+    depends_on:
+      - sim
+    cap_add: 
+      - NET_ADMIN
+    networks:
+      leftnet:
+        ipv4_address: 193.167.0.90
+        ipv6_address: fd00:cafe:cafe:0::90
+    extra_hosts:
+      - "server4:193.167.100.110"
+      - "server6:fd00:cafe:cafe:100::110"
+      - "server46:193.167.100.110"
+      - "server46:fd00:cafe:cafe:100::110"
+
 networks:
   leftnet:
     driver: bridge
