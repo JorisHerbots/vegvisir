@@ -26,6 +26,8 @@ class Runner:
 	_servers: List[Implementation] = []
 	_shapers: List[Implementation] = []
 
+	_sudo_password: str = ""
+
 	_logger: logging.Logger = None
 	_debug: bool = False
 	_save_files: bool = False
@@ -34,9 +36,11 @@ class Runner:
 	def __init__(
 		self,
 		implementations_file: str,
+		sudo_password: str = "",
 		debug: bool = False,
 		save_files: bool = False
 	):
+		self._sudo_password = sudo_password
 		self._debug = debug
 		self._save_files = save_files
 
@@ -148,8 +152,11 @@ class Runner:
 
 			"SERVER_LOGS=" + "/logs" + " "
 			"CLIENT_LOGS=" + "/logs" + " "
+
+			"IPERF_CONGESTION=cubic" + " "
 		)
-		containers = "sim client server"
+		#client
+		containers = "sim server" #+ " iperf_server iperf_client"
 
 		cmd = (
 			params
@@ -159,6 +166,7 @@ class Runner:
 
 		result.status = Status.FAILED
 		try:
+			# Setup server and network
 			logging.debug("running command: %s", cmd)
 			proc = subprocess.run(
 				cmd,
@@ -166,6 +174,44 @@ class Runner:
 				stdout=subprocess.PIPE,
 				stderr=subprocess.STDOUT
 			)
+			
+			net_proc = subprocess.Popen(
+				["sudo", "-S", "ip", "route", "del", "193.167.100.0/24"],
+				shell=False,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+			out, err = net_proc.communicate(self._sudo_password.encode())
+			logging.debug("network setup: %s", out.decode("utf-8"))
+			if not err is None:
+				logging.debug("network error: %s", err.decode("utf-8"))
+			net_proc = subprocess.Popen(
+				["sudo", "-S", "ip", "route", "add", "193.167.100.0/24", "via", "193.167.0.2"],
+				shell=False,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+			out, err = net_proc.communicate(self._sudo_password.encode())
+			logging.debug("network setup: %s", out.decode("utf-8"))
+			if not err is None:
+				logging.debug("network error: %s", err.decode("utf-8"))
+			net_proc = subprocess.Popen(
+				["sudo", "-S", "./veth-checksum.sh"],
+				shell=False,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+			out, err = net_proc.communicate(self._sudo_password.encode())
+			logging.debug("network setup: %s", out.decode("utf-8"))
+			if not err is None:
+				logging.debug("network error: %s", err.decode("utf-8"))
+
+			# Setup client
+			#TODO
+			# Wait for tests
 			try:
 				#TODO use threading instead? wait for events? how to do infinite sleep?
 				time.sleep(testcase.timeout) #TODO get from testcase
