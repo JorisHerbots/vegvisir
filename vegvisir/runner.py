@@ -10,7 +10,7 @@ import shutil
 import time
 
 from .implementation import Implementation, Role
-from .testcase import Status, TestCase, TestResult
+from .testcase import Perspective, ServeTest, Status, TestCase, TestResult
 
 class LogFileFormatter(logging.Formatter):
 	def format(self, record):
@@ -102,9 +102,7 @@ class Runner:
 					client.name, client.image
 					)
 
-					testcase = TestCase()
-					testcase.name = "test"
-					testcase.timeout = 120
+					testcase = ServeTest()
 
 					result = self._run_test(shaper, server, client, testcase)
 					logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
@@ -138,12 +136,12 @@ class Runner:
 			"WAITFORSERVER=server:443 "
 
 			"CLIENT=" + client.image + " "
-			"TESTCASE_CLIENT=transfer" + " "
+			"TESTCASE_CLIENT=" + testcase.testname(Perspective.CLIENT) + " "
 			"REQUESTS=\"https://193.167.100.100:443/\"" + " "
 
 			"DOWNLOADS=" + testcase.download_dir() + " "
 			"SERVER=" + server.image + " "
-			"TESTCASE_SERVER=transfer" + " "
+			"TESTCASE_SERVER=" + testcase.testname(Perspective.SERVER) + " "
 			"WWW=" + testcase.www_dir() + " "
 			"CERTS=" + testcase.certs_dir() + " "
 
@@ -152,11 +150,9 @@ class Runner:
 
 			"SERVER_LOGS=" + "/logs" + " "
 			"CLIENT_LOGS=" + "/logs" + " "
-
-			"IPERF_CONGESTION=cubic" + " "
 		)
-		#client
-		containers = "sim server" #+ " iperf_server iperf_client"
+		params += " ".join(testcase.additional_envs())
+		containers = "sim client server " + " ".join(testcase.additional_containers())
 
 		cmd = (
 			params
