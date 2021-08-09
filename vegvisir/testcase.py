@@ -45,11 +45,16 @@ class TestCase:
 		return self._cert_dir.name + "/"
 
 def generate_cert_chain(directory: str, length: int = 1):
-    cmd = "./certs.sh " + directory + " " + str(length)
-    r = subprocess.run(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
-    logging.debug("%s", r.stdout.decode("utf-8"))
-    if r.returncode != 0:
-        logging.info("Unable to create certificates")
-        sys.exit(1)
+	cmd = "./certs.sh " + directory + " " + str(length)
+	r = subprocess.run(
+		cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+	)
+	logging.debug("%s", r.stdout.decode("utf-8"))
+	if r.returncode != 0:
+		logging.info("Unable to create certificates")
+		sys.exit(1)
+	cmd = "./certs-fingerprint.sh " + directory
+	r = subprocess.run(
+		cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+	)
+	logging.debug("certificate fingerprint: %s", r.stdout.decode("utf-8"))
