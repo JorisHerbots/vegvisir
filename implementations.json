@@ -16,6 +16,7 @@
 		"role": [
 			"shaper"
 		],
+		"active": true,
 		"scenarios": [
 			"\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\""
 		]

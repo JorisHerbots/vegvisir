@@ -14,6 +14,7 @@ class Implementation:
 	name: str = ""
 	url: str = ""
 	type: Type = ""
+	active: bool = False
 
 	def __init__(
 		self,

@@ -67,6 +67,10 @@ class Runner:
 		for name in implementations:
 			attrs = implementations[name]
 
+			active = False
+			if "active" in attrs:
+				active = attrs["active"]
+
 			roles = []
 			for role in attrs["role"]:
 				if role == "client":
@@ -77,17 +81,20 @@ class Runner:
 						impl = Docker(name, attrs["image"], attrs["url"])
 					elif client_settings["type"] == Type.APPLICATION.value:
 						impl = Application(name, client_settings["command"], attrs["url"])
+					impl.active = active
 					self._clients.append(impl)
 
 				elif role == "server":
 					roles.append(Role.SERVER)
 					impl = Docker(name, attrs["image"], attrs["url"])
+					impl.active = active
 					self._servers.append(impl)
 
 				elif role == "shaper":
 					roles.append(Role.SHAPER)
 					impl = Shaper(name, attrs["image"], attrs["url"])
 					impl.scenarios = attrs["scenarios"]
+					impl.active = active
 					self._shapers.append(impl)				
 
 			logging.debug("\tloaded %s as %s", name, attrs["role"])
@@ -120,10 +127,10 @@ class Runner:
 		if (out != b'' and not out.startswith(b'[sudo] password for ')) or not err is None:
 			logging.debug("enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
-		for shaper in self._shapers:
+		for shaper in (x for x in self._shapers if x.active):
 			for scenario in shaper.scenarios:
-				for server in self._servers:
-					for client in self._clients:
+				for server in (x for x in self._servers if x.active):
+					for client in (x for x in self._clients if x.active):
 						if client.type == Type.DOCKER.value:
 							logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
 							shaper.name, shaper.image, scenario,
