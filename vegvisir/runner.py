@@ -9,7 +9,7 @@ import re
 import shutil
 import time
 
-from .implementation import Application, Docker, Scenario, Shaper, Implementation, Role, Type
+from .implementation import Application, Docker, Scenario, Shaper, Implementation, Role, Type, RunStatus
 from .testcase import Perspective, ServeTest, Status, TestCase, TestResult
 
 class LogFileFormatter(logging.Formatter):
@@ -25,6 +25,10 @@ class Runner:
 	_clients: List[Implementation] = []
 	_servers: List[Implementation] = []
 	_shapers: List[Shaper] = []
+
+	_clients_active: List[Implementation] = []
+	_servers_active: List[Implementation] = []
+	_shapers_active: List[Shaper] = []
 
 	_sudo_password: str = ""
 
@@ -133,10 +137,25 @@ class Runner:
 		if (out != b'' and not out.startswith(b'[sudo] password for ')) or not err is None:
 			logging.debug("enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
-		for shaper in (x for x in self._shapers if x.active):
+		self._clients_active = list((x for x in self._clients if x.active))
+		self._servers_active = list((x for x in self._servers if x.active))
+		self._shapers_active = list((x for x in self._shapers if x.active))
+
+		for x in self._shapers_active + self._servers_active + self._shapers_active:
+			print(x)
+			x.status = RunStatus.WAITING
+			if hasattr(x, 'scenarios'):
+				for y in x.scenarios:
+					y.status = RunStatus.WAITING
+
+		for shaper in self._shapers_active:
+			shaper.status = RunStatus.RUNNING
 			for scenario in shaper.scenarios:
-				for server in (x for x in self._servers if x.active):
-					for client in (x for x in self._clients if x.active):
+				scenario.status = RunStatus.RUNNING
+				for server in self._servers_active:
+					server.status = RunStatus.RUNNING
+					for client in self._clients_active:
+						client.status = RunStatus.RUNNING
 						if client.type == Type.DOCKER.value:
 							logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
 							shaper.name, shaper.image, scenario.arguments,
@@ -155,6 +174,11 @@ class Runner:
 
 						result = self._run_test(shaper, server, client, testcase)
 						logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+
+						client.status = RunStatus.DONE
+					server.status = RunStatus.DONE
+				scenario.status = RunStatus.DONE
+			shaper.status = RunStatus.DONE
 
 		self._end_time = datetime.now()
 		logging.info("elapsed time since start of run: %s", str(self._end_time - self._start_time))

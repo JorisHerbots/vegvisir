@@ -10,11 +10,17 @@ class Type(Enum):
 	DOCKER = "docker"
 	APPLICATION = "application"
 
+class RunStatus(Enum):
+	WAITING = "waiting"
+	RUNNING = "running"
+	DONE = "done"
+
 class Implementation:
 	name: str = ""
 	url: str = ""
 	type: Type = ""
 	active: bool = False
+	status: RunStatus = RunStatus.WAITING
 
 	def __init__(
 		self,
@@ -44,6 +50,7 @@ class Scenario():
 	name: str = ""
 	arguments: str = ""
 	active: bool = False
+	status: RunStatus = RunStatus.WAITING
 
 	def __init__(self, name: str, arguments: str):
 		self.name = name
