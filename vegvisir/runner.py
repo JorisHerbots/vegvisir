@@ -9,7 +9,7 @@ import re
 import shutil
 import time
 
-from .implementation import Application, Docker, Shaper, Implementation, Role, Type
+from .implementation import Application, Docker, Scenario, Shaper, Implementation, Role, Type
 from .testcase import Perspective, ServeTest, Status, TestCase, TestResult
 
 class LogFileFormatter(logging.Formatter):
@@ -93,7 +93,13 @@ class Runner:
 				elif role == "shaper":
 					roles.append(Role.SHAPER)
 					impl = Shaper(name, attrs["image"], attrs["url"])
-					impl.scenarios = attrs["scenarios"]
+					impl.scenarios = []
+					for scenario in  attrs["scenarios"]:
+						scen_attrs = attrs["scenarios"][scenario]
+						scen = Scenario(scenario, scen_attrs["arguments"])
+						if "active" in scen_attrs:
+							scen.active = scen_attrs["active"]
+						impl.scenarios.append(scen)
 					impl.active = active
 					self._shapers.append(impl)				
 
@@ -133,7 +139,7 @@ class Runner:
 					for client in (x for x in self._clients if x.active):
 						if client.type == Type.DOCKER.value:
 							logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
-							shaper.name, shaper.image, scenario,
+							shaper.name, shaper.image, scenario.arguments,
 							server.name, server.image,
 							client.name, client.image
 							)
@@ -145,7 +151,7 @@ class Runner:
 							)
 
 						testcase = ServeTest()
-						testcase.scenario = scenario
+						testcase.scenario = scenario.arguments
 
 						result = self._run_test(shaper, server, client, testcase)
 						logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))

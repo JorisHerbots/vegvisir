@@ -43,10 +43,13 @@
 				<ul>
 					{% for scenario in shaper.scenarios %}
 					<li>
-						<!-- TODO better scenario name -->
-						<input type="checkbox" value="shaper.{{ shaper.name }}" id="shaper.{{ shaper.name }}"
-							name="shaper.{{ shaper.name }}">
-						<label for="shaper.{{ shaper.name }}">{{ scenario }}</label>
+						<input type="checkbox" value="shaper.{{ shaper.name }}.senario.{{ scenario.name }}"
+							id="shaper.{{ shaper.name }}.senario.{{ scenario.name }}"
+							name="shaper.{{ shaper.name }}.senario.{{ scenario.name }}" {% if scenario.active
+							%}{{ "checked" }}{% endif %}>
+						<label for="shaper.{{ shaper.name }}.senario.{{ scenario.name }}">
+							{{ scenario.arguments }}
+						</label>
 					</li>
 					{% endfor %}
 				</ul>

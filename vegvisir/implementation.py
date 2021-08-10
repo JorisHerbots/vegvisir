@@ -40,8 +40,17 @@ class Application(Implementation):
 		self.type = Type.APPLICATION
 		self.command = command
 
+class Scenario():
+	name: str = ""
+	arguments: str = ""
+	active: bool = False
+
+	def __init__(self, name: str, arguments: str):
+		self.name = name
+		self.arguments = arguments
+
 class Shaper(Docker):
-	scenarios: List[str] = []
+	scenarios: List[Scenario] = []
 
 	def __init__(self, name: str, image: str, url: str):
 		super().__init__(name, image, url)

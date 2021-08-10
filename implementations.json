@@ -17,9 +17,12 @@
 			"shaper"
 		],
 		"active": true,
-		"scenarios": [
-			"\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\""
-		]
+		"scenarios": {
+			"simple-p2p": {
+				"arguments": "\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\"",
+				"active": true
+			}
+		}
 	},
 	"chrome": {
 		"url": "https://www.google.com/chrome/",
