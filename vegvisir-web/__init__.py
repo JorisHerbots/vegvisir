@@ -16,12 +16,6 @@ def create_app(test_config=None):
 		# load the test config if passed in
 		myapp.config.from_mapping(test_config)
 
-	# ensure the instance folder exists
-	try:
-		os.makedirs(myapp.instance_path)
-	except OSError:
-		pass
-
 	from . import app
 	myapp.register_blueprint(app.bp)
 
