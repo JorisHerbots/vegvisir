@@ -1,9 +1,11 @@
-from os import name
+import threading
 from typing import List
-from vegvisir.implementation import Implementation, Scenario, Shaper
+from vegvisir.implementation import Implementation, RunStatus, Scenario, Shaper
+import time
+from datetime import datetime
 
 from flask import (
-    Blueprint, render_template, request
+    Blueprint, render_template, request, flash, redirect, url_for
 )
 
 from vegvisir.runner import (
@@ -20,13 +22,19 @@ clients: List[Implementation] = runner._clients
 servers: List[Implementation] = runner._servers
 shapers: List[Shaper] = runner._shapers
 
+thread = None
+
 @bp.route('/', methods=['GET'])
 def root():
 	return render_template('root.html', clients=clients, servers=servers, shapers=shapers)
 
 @bp.route('/run', methods=['POST'])
 def run():
-	if request.method == 'POST':
+	global thread
+
+	if not thread is None:
+		flash("Tests already running, did not start new tests")
+	elif request.method == 'POST':
 		for server in servers:
 			if 'server.' + server.name in request.form:
 				server.active = True
@@ -61,6 +69,64 @@ def run():
 			# TODO this might not work correctly?
 			runner.set_sudo_password(request.form["sudo_pass"])
 
-		runner.run()
+		def thread_func():
+			runner.run()
+			thread = None
 
-	return "running..."
+		thread = threading.Thread(target=thread_func)
+		thread.start()
+		time.sleep(3)
+
+	return redirect(url_for('app.progress'))
+
+@bp.route('/progress', methods=['GET'])
+def progress():
+	progress = {
+		"nr_total": 0,
+		"nr_waiting": 0,
+		"nr_running": 0,
+		"nr_done": 0,
+		"client": None,
+		"server": None,
+		"shaper": None,
+		"running": runner._running,
+		"elapsed": ""
+	}
+
+	if runner._running:
+		progress["elapsed"] = str(datetime.now() - runner._start_time)
+	else:
+		progress["elapsed"] = str(runner._end_time - runner._start_time)
+
+	for x in runner._clients_active:
+		progress["nr_total"] += 1
+		if x.status == RunStatus.WAITING:
+			progress["nr_waiting"] += 1
+		elif x.status == RunStatus.RUNNING:
+			progress["client"] = x
+			progress["nr_running"] += 1
+		elif x.status == RunStatus.DONE:
+			progress["nr_done"] += 1
+	
+	for x in runner._servers_active:
+		progress["nr_total"] += 1
+		if x.status == RunStatus.WAITING:
+			progress["nr_waiting"] += 1
+		elif x.status == RunStatus.RUNNING:
+			progress["server"] = x
+			progress["nr_running"] += 1
+		elif x.status == RunStatus.DONE:
+			progress["nr_done"] += 1
+
+	for x in runner._shapers_active:
+		progress["nr_total"] += 1
+		if x.status == RunStatus.WAITING:
+			progress["nr_waiting"] += 1
+		elif x.status == RunStatus.RUNNING:
+			progress["shaper"] = x
+			progress["nr_running"] += 1
+		elif x.status == RunStatus.DONE:
+			progress["nr_done"] += 1
+
+
+	return render_template('progress.html', progress=progress)

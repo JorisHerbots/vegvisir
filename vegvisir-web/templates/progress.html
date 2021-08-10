@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}current tests{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div>
+	<div>
+		{% if progress['running'] %}
+		Currently running:
+		<ul>
+			<li>
+				Client: {{ progress['client'].name }}
+			</li>
+			<li>
+				Server: {{ progress['server'].name }}
+			</li>
+			<li>
+				Shaper: {{ progress['shaper'].name }}
+			</li>
+		</ul>
+		{% else %}
+		<b>Tests are done!</b>
+		{% endif %}
+	</div>
+	<label>Tests completed:</label>
+	<progress value={{ progress["nr_done"] }} max={{ progress["nr_total"] }}>
+		{{ progress["nr_done"] }} / progress["nr_total"]
+	</progress>
+	<br />
+	<label>Elapsed time:</label>
+	{{ progress["elapsed"] }}
+	<!--{{ progress }}-->
+</div>
+{% endblock %}

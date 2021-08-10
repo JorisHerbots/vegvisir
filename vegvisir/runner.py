@@ -7,7 +7,6 @@ import json
 import tempfile
 import re
 import shutil
-import time
 
 from .implementation import Application, Docker, Scenario, Shaper, Implementation, Role, Type, RunStatus
 from .testcase import Perspective, ServeTest, Status, TestCase, TestResult
@@ -21,6 +20,7 @@ class LogFileFormatter(logging.Formatter):
 class Runner:
 	_start_time: datetime = 0
 	_end_time: datetime = 0
+	_running: bool = False
 
 	_clients: List[Implementation] = []
 	_servers: List[Implementation] = []
@@ -120,6 +120,7 @@ class Runner:
 		self.set_implementations(implementations)
 
 	def run(self) -> int:
+		self._running = True
 		self._start_time = datetime.now()
 		self._log_dir = "logs/{:%Y-%m-%dT%H:%M:%S}".format(self._start_time)
 		nr_failed = 0
@@ -182,6 +183,7 @@ class Runner:
 
 		self._end_time = datetime.now()
 		logging.info("elapsed time since start of run: %s", str(self._end_time - self._start_time))
+		self._running = False
 		return nr_failed
 
 	def _run_test(
