@@ -27,9 +27,6 @@ def root():
 @bp.route('/run', methods=['POST'])
 def run():
 	if request.method == 'POST':
-		for x in request.form:
-			print(x, request.form[x])
-
 		for server in servers:
 			if 'server.' + server.name in request.form:
 				server.active = True
@@ -59,6 +56,10 @@ def run():
 		runner._servers = servers
 		runner._clients = clients
 		runner._shapers = shapers
+
+		if "sudo_pass" in request.form:
+			# TODO this might not work correctly?
+			runner.set_sudo_password(request.form["sudo_pass"])
 
 		runner.run()
 
