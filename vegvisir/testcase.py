@@ -29,6 +29,8 @@ class TestCase:
 	_www_dir = None
 	_download_dir = None
 	_cert_dir = None
+
+	cert_fingerprint: str = ""
 	
 	scenario: str = ""
 	timeout: int = 60
@@ -51,7 +53,7 @@ class TestCase:
 	def certs_dir(self):
 		if not self._cert_dir:
 			self._cert_dir = tempfile.TemporaryDirectory(dir="/tmp", prefix="certs_")
-			generate_cert_chain(self._cert_dir.name)
+			self.cert_fingerprint = generate_cert_chain(self._cert_dir.name)
 		return self._cert_dir.name + "/"
 
 	def testname(self, perspective: Perspective):
@@ -94,4 +96,6 @@ def generate_cert_chain(directory: str, length: int = 1):
 	r = subprocess.run(
 		cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
 	)
-	logging.debug("certificate fingerprint: %s", r.stdout.decode("utf-8"))
+	fingerprint = r.stdout.decode("utf-8").strip()
+	logging.debug("certificate fingerprint: %s", fingerprint)
+	return fingerprint

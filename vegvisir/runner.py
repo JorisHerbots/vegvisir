@@ -9,7 +9,7 @@ import re
 import shutil
 import time
 
-from .implementation import Shaper, Implementation, Role
+from .implementation import Application, Docker, Shaper, Implementation, Role, Type
 from .testcase import Perspective, ServeTest, Status, TestCase, TestResult
 
 class LogFileFormatter(logging.Formatter):
@@ -68,27 +68,27 @@ class Runner:
 			attrs = implementations[name]
 
 			roles = []
-			to_add = []
 			for role in attrs["role"]:
 				if role == "client":
 					roles.append(Role.CLIENT)
-					to_add.append(self._clients)
+					client_settings = attrs["client"]
+					impl = None
+					if client_settings["type"] == Type.DOCKER.value:
+						impl = Docker(name, attrs["image"], attrs["url"])
+					elif client_settings["type"] == Type.APPLICATION.value:
+						impl = Application(name, client_settings["command"], attrs["url"])
+					self._clients.append(impl)
+
 				elif role == "server":
 					roles.append(Role.SERVER)
-					to_add.append(self._servers)
+					impl = Docker(name, attrs["image"], attrs["url"])
+					self._servers.append(impl)
+
 				elif role == "shaper":
 					roles.append(Role.SHAPER)
-					to_add.append(self._shapers)
-
-			impl = None
-			if Role.SHAPER in roles:
-				impl = Shaper(name, attrs["image"], attrs["url"], roles)
-				impl.scenarios = attrs["scenarios"]
-			else:
-				impl = Implementation(name, attrs["image"], attrs["url"], roles)
-
-			for lst in to_add:
-				lst.append(impl)
+					impl = Shaper(name, attrs["image"], attrs["url"])
+					impl.scenarios = attrs["scenarios"]
+					self._shapers.append(impl)				
 
 			logging.debug("\tloaded %s as %s", name, attrs["role"])
 
@@ -117,18 +117,25 @@ class Runner:
 				stderr=subprocess.STDOUT
 			)
 		out, err = ipv6_proc.communicate(self._sudo_password.encode())
-		if out != b'' or not err is None:
+		if (out != b'' and not out.startswith(b'[sudo] password for ')) or not err is None:
 			logging.debug("enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
 		for shaper in self._shapers:
 			for scenario in shaper.scenarios:
 				for server in self._servers:
 					for client in self._clients:
-						logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
-						shaper.name, shaper.image, scenario,
-						server.name, server.image,
-						client.name, client.image
-						)
+						if client.type == Type.DOCKER.value:
+							logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
+							shaper.name, shaper.image, scenario,
+							server.name, server.image,
+							client.name, client.image
+							)
+						else:
+							logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
+							shaper.name, shaper.image, scenario,
+							server.name, server.image,
+							client.name
+							)
 
 						testcase = ServeTest()
 						testcase.scenario = scenario
@@ -164,7 +171,7 @@ class Runner:
 		params = (
 			"WAITFORSERVER=server:443 "
 
-			"CLIENT=" + client.image + " "
+			#"CLIENT=" + client.image + " "
 			"TESTCASE_CLIENT=" + testcase.testname(Perspective.CLIENT) + " "
 			"REQUESTS=\"https://193.167.100.100:443/\"" + " "
 
@@ -181,7 +188,7 @@ class Runner:
 			"CLIENT_LOGS=" + "/logs" + " "
 		)
 		params += " ".join(testcase.additional_envs())
-		containers = "sim client server " + " ".join(testcase.additional_containers())
+		containers = "sim server " + " ".join(testcase.additional_containers())
 
 		cmd = (
 			params
@@ -235,14 +242,36 @@ class Runner:
 				logging.debug("network error: %s", err.decode("utf-8"))
 
 			# Setup client
-			#TODO
-			# Wait for tests
+			client_cmd = ""
+			if client.type == Type.DOCKER:
+				params += "CLIENT=" + client.image + " "
+				client_cmd = (
+					params
+					+ " docker-compose up --abort-on-container-exit --timeout 1 "
+					+ "client"
+				)
+			elif client.type == Type.APPLICATION:
+				client_cmd = client.command.format(request_url="193.167.100.100:443", cert_fingerprint=testcase.cert_fingerprint)
+
+			logging.debug("running client: %s", client_cmd)
 			try:
-				#TODO use threading instead? wait for events? how to do infinite sleep?
-				time.sleep(testcase.timeout) #TODO get from testcase
-				raise subprocess.TimeoutExpired(cmd, testcase.timeout, proc.stdout, proc.stderr)
+				client_proc = subprocess.run(
+					client_cmd,
+					shell=True,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.STDOUT,
+					timeout=testcase.timeout
+				)
+				logging.debug("%s", client_proc.stdout.decode("utf-8"))
 			except KeyboardInterrupt as e:
 				logging.debug("manual interrupt")
+			# Wait for tests
+			# try:
+			# 	#TODO use threading instead? wait for events? how to do infinite sleep?
+			# 	time.sleep(testcase.timeout) #TODO get from testcase
+			# 	raise subprocess.TimeoutExpired(cmd, testcase.timeout, proc.stdout, proc.stderr)
+			# except KeyboardInterrupt as e:
+			# 	logging.debug("manual interrupt")
 			logging.debug("proc: %s", proc.stdout.decode("utf-8"))
 			proc = subprocess.run(
 				"docker-compose logs -t",

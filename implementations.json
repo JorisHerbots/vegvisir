@@ -5,7 +5,10 @@
 		"role": [
 			"client",
 			"server"
-		]
+		],
+		"client": {
+			"type": "docker"
+		}
 	},
 	"qns": {
 		"image": "martenseemann/quic-network-simulator",
@@ -16,5 +19,15 @@
 		"scenarios": [
 			"\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\""
 		]
+	},
+	"chrome": {
+		"url": "https://www.google.com/chrome/",
+		"role": [
+			"client"
+		],
+		"client": {
+			"type": "application",
+			"command": "google-chrome-unstable --origin-to-force-quic-on={request_url} --enable-experimental-web-platform-features --ignore-certificate-errors-spki-list={cert_fingerprint} https://{request_url}"
+		}
 	}
 }
