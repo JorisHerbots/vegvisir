@@ -145,7 +145,7 @@ class Runner:
 							)
 						else:
 							logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
-							shaper.name, shaper.image, scenario,
+							shaper.name, shaper.image, scenario.arguments,
 							server.name, server.image,
 							client.name
 							)
@@ -300,7 +300,8 @@ class Runner:
 			logging.debug("subprocess error: %s", str(e))
 
 		self._copy_logs("sim", sim_log_dir)
-		self._copy_logs("client", client_log_dir)
+		if client.type == Type.DOCKER:
+			self._copy_logs("client", client_log_dir)
 		self._copy_logs("server", server_log_dir)
 
 		# save logs
