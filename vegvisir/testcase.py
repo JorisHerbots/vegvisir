@@ -30,6 +30,7 @@ class TestCase:
 	_download_dir = None
 	_cert_dir = None
 	
+	scenario: str = ""
 	timeout: int = 60
 
 	def __init__(self):

@@ -9,7 +9,7 @@ import re
 import shutil
 import time
 
-from .implementation import Implementation, Role
+from .implementation import Shaper, Implementation, Role
 from .testcase import Perspective, ServeTest, Status, TestCase, TestResult
 
 class LogFileFormatter(logging.Formatter):
@@ -24,7 +24,7 @@ class Runner:
 
 	_clients: List[Implementation] = []
 	_servers: List[Implementation] = []
-	_shapers: List[Implementation] = []
+	_shapers: List[Shaper] = []
 
 	_sudo_password: str = ""
 
@@ -81,7 +81,12 @@ class Runner:
 					roles.append(Role.SHAPER)
 					to_add.append(self._shapers)
 
-			impl = Implementation(name, attrs["image"], attrs["url"], roles)
+			impl = None
+			if Role.SHAPER in roles:
+				impl = Shaper(name, attrs["image"], attrs["url"], roles)
+				impl.scenarios = attrs["scenarios"]
+			else:
+				impl = Implementation(name, attrs["image"], attrs["url"], roles)
 
 			for lst in to_add:
 				lst.append(impl)
@@ -93,19 +98,34 @@ class Runner:
 		self._log_dir = "logs/{:%Y-%m-%dT%H:%M:%S}".format(self._start_time)
 		nr_failed = 0
 
+		#enable ipv6 support
+		#sudo modprobe ip6table_filter
+		ipv6_proc = subprocess.Popen(
+				["sudo", "-S", "modprobe", "ip6table_filter"],
+				shell=False,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+		out, err = ipv6_proc.communicate(self._sudo_password.encode())
+		if out != b'' or not err is None:
+			logging.debug("enabling ipv6 resulted in non empty output: %s\n%s", out, err)
+
 		for shaper in self._shapers:
-			for server in self._servers:
-				for client in self._clients:
-					logging.debug("running with shaper %s (%s), server %s (%s), and client %s (%s)",
-					shaper.name, shaper.image,
-					server.name, server.image,
-					client.name, client.image
-					)
+			for scenario in shaper.scenarios:
+				for server in self._servers:
+					for client in self._clients:
+						logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
+						shaper.name, shaper.image, scenario,
+						server.name, server.image,
+						client.name, client.image
+						)
 
-					testcase = ServeTest()
+						testcase = ServeTest()
+						testcase.scenario = scenario
 
-					result = self._run_test(shaper, server, client, testcase)
-					logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+						result = self._run_test(shaper, server, client, testcase)
+						logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
 
 		self._end_time = datetime.now()
 		logging.info("elapsed time since start of run: %s", str(self._end_time - self._start_time))
@@ -146,7 +166,7 @@ class Runner:
 			"CERTS=" + testcase.certs_dir() + " "
 
 			"SHAPER=" + shaper.image + " "
-			"SCENARIO=\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\"" + " "
+			"SCENARIO=" + testcase.scenario + " "
 
 			"SERVER_LOGS=" + "/logs" + " "
 			"CLIENT_LOGS=" + "/logs" + " "

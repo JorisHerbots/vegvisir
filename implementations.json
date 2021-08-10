@@ -12,6 +12,9 @@
 		"url": "https://github.com/marten-seemann/quic-network-simulator",
 		"role": [
 			"shaper"
+		],
+		"scenarios": [
+			"\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\""
 		]
 	}
 }

@@ -23,3 +23,10 @@ class Implementation:
 		self.image = image
 		self.url = url
 		self.role = roles
+
+class Shaper(Implementation):
+	scenarios: List[str] = []
+
+	def __init__(self, name: str, image: str, url: str, roles: List[Role]):
+		super().__init__(name, image, url, roles)
+		self.scenarios = []
