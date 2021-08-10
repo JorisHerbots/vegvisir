@@ -16,6 +16,12 @@
   - Mininet
   - realistic
     - server ip
+- fully automate
+- chrome binaries to run client
+  - directory with all clients
+  - use AUR to find way to check for versions
+- ns3 log if working?
+- escalate root privileges correctly? 
 
 ### Based upon
 
