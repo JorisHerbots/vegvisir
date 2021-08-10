@@ -6,6 +6,9 @@ PIP = $(VENV)/bin/pip
 run: $(VENV)/bin/activate
 	$(PYTHON) vegvisir-cli/app.py
 
+web: $(VENV)/bin/activate
+	FLASK_APP=vegvisir-web FLASK_ENV=development flask run
+
 $(VENV)/bin/activate: requirements.txt
 	python3 -m venv $(VENV)
 	$(PIP) install -r requirements.txt

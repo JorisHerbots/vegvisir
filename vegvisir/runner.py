@@ -35,7 +35,6 @@ class Runner:
 
 	def __init__(
 		self,
-		implementations_file: str,
 		sudo_password: str = "",
 		debug: bool = False,
 		save_files: bool = False
@@ -53,16 +52,16 @@ class Runner:
 			console.setLevel(logging.INFO)
 		self._logger.addHandler(console)
 
-		self._read_implementations_file(implementations_file)
+	def logger(self):
+		return self._logger
 
-	def _read_implementations_file(self, file: str):
-		self._clients = []
-		self._servers = []
-		self._shapers = []
+	def set_sudo_password(self, sudo_password: str):
+		self._sudo_password = sudo_password
 
-		with open(file) as f:
-			implementations = json.load(f)
+	def set_implementations_from_file(self, file: str):
+		self._read_implementations_file(file)
 
+	def set_implementations(self, implementations):
 		logging.debug("Loading implementations:")
 		
 		for name in implementations:
@@ -92,6 +91,16 @@ class Runner:
 				lst.append(impl)
 
 			logging.debug("\tloaded %s as %s", name, attrs["role"])
+
+	def _read_implementations_file(self, file: str):
+		self._clients = []
+		self._servers = []
+		self._shapers = []
+
+		with open(file) as f:
+			implementations = json.load(f)
+
+		self.set_implementations(implementations)
 
 	def run(self) -> int:
 		self._start_time = datetime.now()

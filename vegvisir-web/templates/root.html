@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}web gui{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div>
+	<div class="implementations">
+		<h2>Clients</h2>
+		<ul>
+			{% for client in clients %}
+			<li>
+				<input type="checkbox" value="client.{{ client.name }}" id="client.{{ client.name }}"
+					name="client.{{ client.name }}">
+				<label for="client.{{ client.name }}">{{ client.name }}</label>
+			</li>
+			{% endfor %}
+		</ul>
+	</div>
+
+	<div class="implementations">
+		<h2>Servers</h2>
+		<ul>
+			{% for server in servers %}
+			<li>
+				<input type="checkbox" value="server.{{ server.name }}" id="server.{{ server.name }}"
+					name="server.{{ server.name }}">
+				<label for="server.{{ server.name }}">{{ server.name }}</label>
+			</li>
+			{% endfor %}
+		</ul>
+	</div>
+
+	<div class="implementations">
+		<h2>Shapers</h2>
+		<ul>
+			{% for shaper in shapers %}
+			<li>
+				<input type="checkbox" value="shaper.{{ shaper.name }}" id="shaper.{{ shaper.name }}"
+					name="shaper.{{ shaper.name }}">
+				<label for="shaper.{{ shaper.name }}">{{ shaper.name }}</label>
+				<ul>
+					{% for scenario in shaper.scenarios %}
+					<li>
+						<!-- TODO better scenario name -->
+						<input type="checkbox" value="shaper.{{ shaper.name }}" id="shaper.{{ shaper.name }}"
+							name="shaper.{{ shaper.name }}">
+						<label for="shaper.{{ shaper.name }}">{{ scenario }}</label>
+					</li>
+					{% endfor %}
+				</ul>
+			</li>
+			{% endfor %}
+		</ul>
+	</div>
+</div>
+{% endblock %}

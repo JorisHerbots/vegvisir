@@ -6,7 +6,8 @@ from vegvisir.runner import Runner
 
 def main():
     sudo_pass = getpass("Enter password to run sudo commands: ")
-    runner = Runner(implementations_file="implementations.json", sudo_password=sudo_pass, debug=True)
+    runner = Runner(sudo_password=sudo_pass, debug=True)
+    runner.set_implementations_from_file("implementations.json")
 
     return runner.run()
 
