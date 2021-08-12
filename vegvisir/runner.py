@@ -138,12 +138,24 @@ class Runner:
 		if (out != b'' and not out.startswith(b'[sudo] password for ')) or not err is None:
 			logging.debug("enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
+		#TODO create backup using -b and reset to backup instead of removing entry later
+		hosts_proc = subprocess.Popen(
+				["sudo", "-S", "hostman", "add", "193.167.100.100", "vegvisir-server"],
+				shell=False,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+		out, err = hosts_proc.communicate(self._sudo_password.encode())
+		logging.debug("append entry to hosts: %s", out.decode('utf-8'))
+		if not err is None:
+			logging.debug("appending entry to hosts file resulted in error: %s", err)
+
 		self._clients_active = list((x for x in self._clients if x.active))
 		self._servers_active = list((x for x in self._servers if x.active))
 		self._shapers_active = list((x for x in self._shapers if x.active))
 
 		for x in self._shapers_active + self._servers_active + self._shapers_active:
-			print(x)
 			x.status = RunStatus.WAITING
 			if hasattr(x, 'scenarios'):
 				for y in x.scenarios:
@@ -180,6 +192,18 @@ class Runner:
 					server.status = RunStatus.DONE
 				scenario.status = RunStatus.DONE
 			shaper.status = RunStatus.DONE
+
+		hosts_proc = subprocess.Popen(
+				["sudo", "-S", "hostman", "remove", "--names=vegvisir-server"],
+				shell=False,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+		out, err = hosts_proc.communicate(self._sudo_password.encode())
+		logging.debug("remove entry from hosts: %s", out.decode('utf-8'))
+		if not err is None:
+			logging.debug("removing entry from hosts file resulted in error: %s", err)
 
 		self._end_time = datetime.now()
 		logging.info("elapsed time since start of run: %s", str(self._end_time - self._start_time))
