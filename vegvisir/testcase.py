@@ -80,7 +80,7 @@ class ServeTest(TestCase):
 
 	def testname(self, perspective: Perspective):
 		if perspective == Perspective.SERVER:
-			return "transfer"
+			return "http3"
 		return super().testname(perspective)
 
 	def additional_containers(self) -> List[str]:
