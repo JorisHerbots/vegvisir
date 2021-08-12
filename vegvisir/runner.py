@@ -9,7 +9,7 @@ import re
 import shutil
 
 from .implementation import Application, Docker, Scenario, Shaper, Implementation, Role, Type, RunStatus
-from .testcase import Perspective, ServeTest, Status, TestCase, TestResult
+from .testcase import Perspective, ServeTest, StaticDirectory, Status, TestCase, TestResult
 
 class LogFileFormatter(logging.Formatter):
 	def format(self, record):
@@ -212,7 +212,7 @@ class Runner:
 
 			#"CLIENT=" + client.image + " "
 			"TESTCASE_CLIENT=" + testcase.testname(Perspective.CLIENT) + " "
-			"REQUESTS=\"https://193.167.100.100:443/\"" + " "
+			"REQUESTS=\"" + testcase.request_urls + "\"" + " "
 
 			"DOWNLOADS=" + testcase.download_dir() + " "
 			"SERVER=" + server.image + " "
@@ -238,6 +238,7 @@ class Runner:
 		result.status = Status.FAILED
 		try:
 			# Setup server and network
+			#TODO exit on error
 			logging.debug("running command: %s", cmd)
 			proc = subprocess.run(
 				cmd,
@@ -290,7 +291,7 @@ class Runner:
 					+ "client"
 				)
 			elif client.type == Type.APPLICATION:
-				client_cmd = client.command.format(request_url="193.167.100.100:443", cert_fingerprint=testcase.cert_fingerprint)
+				client_cmd = client.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls)
 
 			logging.debug("running client: %s", client_cmd)
 			try:

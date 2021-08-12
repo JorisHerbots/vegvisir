@@ -24,7 +24,10 @@ class TestResult:
 		pass
 
 class TestCase:
-	name: str= ""
+	name: str = ""
+
+	origin: str = "193.167.100.100:443"
+	request_urls: str = "https://193.167.100.100:443"
 
 	_www_dir = None
 	_download_dir = None
@@ -72,6 +75,9 @@ class ServeTest(TestCase):
 		self.name = "servetest"
 		self.timeout = 300
 
+		self._www_dir = StaticDirectory("./www")
+		self.request_urls: str = "https://193.167.100.100:443 https://193.167.100.100:443/test.html"
+
 	def testname(self, perspective: Perspective):
 		if perspective == Perspective.SERVER:
 			return "transfer"
@@ -99,3 +105,9 @@ def generate_cert_chain(directory: str, length: int = 1):
 	fingerprint = r.stdout.decode("utf-8").strip()
 	logging.debug("certificate fingerprint: %s", fingerprint)
 	return fingerprint
+
+class StaticDirectory():
+	name: str = ""
+
+	def __init__(self, name):
+		self.name = name

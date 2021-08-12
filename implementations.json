@@ -41,7 +41,18 @@
 		],
 		"client": {
 			"type": "application",
-			"command": "./applications/chrome-unstable-94.0.4595.0/chrome --origin-to-force-quic-on={request_url} --enable-experimental-web-platform-features --ignore-certificate-errors-spki-list={cert_fingerprint} https://{request_url}"
+			"command": "./applications/chrome-unstable-94.0.4595.0/chrome --origin-to-force-quic-on={origin} --enable-experimental-web-platform-features --ignore-certificate-errors-spki-list={cert_fingerprint} {request_urls}"
+		}
+	},
+	"quic-go": {
+		"image": "martenseemann/quic-go-interop:latest",
+		"url": "https://github.com/lucas-clemente/quic-go",
+		"role": [
+			"client",
+			"server"
+		],
+		"client": {
+			"type": "docker"
 		}
 	}
 }
