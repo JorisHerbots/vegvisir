@@ -22,6 +22,8 @@
   - use AUR to find way to check for versions
 - ns3 log if working?
 - escalate root privileges correctly? 
+- use local domain name instead of IP address
+- version control for servers
 
 ### Based upon
 
