@@ -34,6 +34,16 @@
 			"command": "google-chrome-unstable --origin-to-force-quic-on={origin} --enable-experimental-web-platform-features --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list={cert_fingerprint} {request_urls}"
 		}
 	},
+	"firefox-nightly": {
+		"url": "https://www.mozilla.org/en-US/firefox/",
+		"role": [
+			"client"
+		],
+		"client": {
+			"type": "application",
+			"command": "firefox-nightly {request_urls}"
+		}
+	},
 	"chrome_unstable_94.0.4595.0": {
 		"url": "https://www.google.com/chrome/",
 		"role": [
