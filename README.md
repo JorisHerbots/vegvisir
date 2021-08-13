@@ -25,6 +25,7 @@
 - use local domain name instead of IP address
 - version control for servers
 - wipe client cache
+- dynamic frontend, hide entries from deselected sets
 
 ### Based upon
 
