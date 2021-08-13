@@ -38,8 +38,14 @@ class Docker(Implementation):
 		self.type = Type.DOCKER
 		self.image = image
 
+class Command():
+	sudo: bool = False
+	replace_tilda: bool = True
+	command: str = ""
+
 class Application(Implementation):
 	command: str = ""
+	setup: List[Command] = []
 
 	def __init__(self, name: str, command: str, url: str):
 		super().__init__(name, url)

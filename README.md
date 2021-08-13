@@ -24,6 +24,7 @@
 - escalate root privileges correctly? 
 - use local domain name instead of IP address
 - version control for servers
+- wipe client cache
 
 ### Based upon
 

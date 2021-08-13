@@ -7,8 +7,9 @@ import json
 import tempfile
 import re
 import shutil
+from pathlib import Path
 
-from .implementation import Application, Docker, Scenario, Shaper, Implementation, Role, Type, RunStatus
+from .implementation import Application, Command, Docker, Scenario, Shaper, Implementation, Role, Type, RunStatus
 from .testcase import Perspective, ServeTest, StaticDirectory, Status, TestCase, TestResult
 
 class LogFileFormatter(logging.Formatter):
@@ -85,6 +86,13 @@ class Runner:
 						impl = Docker(name, attrs["image"], attrs["url"])
 					elif client_settings["type"] == Type.APPLICATION.value:
 						impl = Application(name, client_settings["command"], attrs["url"])
+						if "setup" in client_settings:
+							for cmd in client_settings["setup"]:
+								scmd = Command()
+								scmd.sudo = cmd["sudo"]
+								scmd.replace_tilda = cmd["replace_tilda"]
+								scmd.command = cmd["command"]
+								impl.setup.append(scmd)
 					impl.active = active
 					self._clients.append(impl)
 
@@ -261,6 +269,32 @@ class Runner:
 
 		result.status = Status.FAILED
 		try:
+			# Setup client
+			if client.type == Type.APPLICATION:
+				for setup_cmd in client.setup:
+					out = ""
+					if setup_cmd.replace_tilda:
+						setup_cmd.command = setup_cmd.command.replace("~", str(Path.home()))
+					if setup_cmd.sudo:
+						net_proc = subprocess.Popen(
+						["sudo", "-S"] + setup_cmd.command.split(" "),
+						shell=False,
+						stdin=subprocess.PIPE,
+						stdout=subprocess.PIPE,
+						stderr=subprocess.STDOUT
+					)
+						o, e = net_proc.communicate(self._sudo_password.encode())
+						out += str(o) + "\n" + str(e)
+					else:
+						proc = subprocess.run(
+							setup_cmd.command,
+							shell=True,
+							stdout=subprocess.PIPE,
+							stderr=subprocess.STDOUT
+						)
+						out += proc.stdout.decode("utf-8")
+					logging.debug("client setup: %s", out)
+
 			# Setup server and network
 			#TODO exit on error
 			logging.debug("running command: %s", cmd)
