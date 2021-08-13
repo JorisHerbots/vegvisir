@@ -491,3 +491,70 @@ class Runner:
 			logging.info(
 				"Copying logs from %s failed: %s", container, r.stdout.decode("utf-8")
 			)
+
+	## Docker
+	def docker_update_images(self):
+		r = subprocess.run(
+			"docker images | grep -v ^REPO | sed 's/ \+/:/g' | cut -d: -f1,2 | xargs -L1 docker pull",
+			shell=True,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+		)
+		if r.returncode != 0:
+			logging.info(
+				"Updating docker images failed: %s", r.stdout.decode("utf-8")
+			)
+
+	def docker_save_imageset(self, imageset):
+		r = subprocess.run(
+			"docker save -o {} {}".format(imageset.replace('/', '_') + ".tar", imageset),
+			shell=True,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+		)
+		if r.returncode != 0:
+			logging.info(
+				"Saving docker images failed: %s", r.stdout.decode("utf-8")
+			)
+
+	def docker_load_imageset(self, imageset_tar):
+		r = subprocess.run(
+			"docker load -i {}".format(imageset_tar),
+			shell=True,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+		)
+		if r.returncode != 0:
+			logging.info(
+				"Loading docker images failed: %s", r.stdout.decode("utf-8")
+			)
+
+	def docker_create_imageset(self, repo, setname):
+		for x in self._clients + self._servers + self._shapers:
+			if hasattr(x, "images"):
+				img = x.images[0]
+				r = subprocess.run(
+					"docker tag {} {}".format(img.url, repo + "/" + setname + ":" + img.name),
+					shell=True,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.STDOUT,
+				)
+				if r.returncode != 0:
+					logging.info(
+						"Tagging docker image %s failed: %s", img.url, r.stdout.decode("utf-8")
+					)
+	
+	def docker_pull_source_images(self):
+		for x in self._clients + self._servers + self._shapers:
+			if hasattr(x, "images"):
+				img = x.images[0]
+				r = subprocess.run(
+					"docker pull {}".format(img.url),
+					shell=True,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.STDOUT,
+				)
+				if r.returncode != 0:
+					logging.info(
+						"Pulling docker image %s failed: %s", img.url, r.stdout.decode("utf-8")
+					)
