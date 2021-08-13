@@ -9,7 +9,7 @@ import re
 import shutil
 from pathlib import Path
 
-from .implementation import Application, Command, Docker, Scenario, Shaper, Implementation, Role, Type, RunStatus
+from .implementation import Application, Command, Docker, Image, Scenario, Shaper, Implementation, Role, Type, RunStatus, get_name_from_image, get_repo_from_image, get_tag_from_image
 from .testcase import Perspective, ServeTest, StaticDirectory, Status, TestCase, TestResult
 
 class LogFileFormatter(logging.Formatter):
@@ -22,6 +22,10 @@ class Runner:
 	_start_time: datetime = 0
 	_end_time: datetime = 0
 	_running: bool = False
+	_test_label: str = ""
+
+	_image_repos: List[str] = ["vegvisir"]
+	_image_sets: List[str] = []
 
 	_clients: List[Implementation] = []
 	_servers: List[Implementation] = []
@@ -116,6 +120,7 @@ class Runner:
 					self._shapers.append(impl)				
 
 			logging.debug("\tloaded %s as %s", name, attrs["role"])
+		self._scan_image_repos()
 
 	def _read_implementations_file(self, file: str):
 		self._clients = []
@@ -127,10 +132,29 @@ class Runner:
 
 		self.set_implementations(implementations)
 
+	def _scan_image_repos(self):
+		proc = subprocess.run(
+			"docker images | awk '{print $1, $2}'",
+			shell=True,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT
+		)
+		local_images = proc.stdout.decode('utf-8').replace(' ', ':').split('\n')[1:]
+		for img in local_images:
+			repo = get_repo_from_image(img)
+			if repo in self._image_repos:
+				tag = get_tag_from_image(img)
+				set_name = get_name_from_image(img)
+				if not repo + '/' + set_name in self._image_sets:
+					self._image_sets.append(repo + '/' + set_name)
+				for x in self._clients + self._servers + self._shapers:
+					if hasattr(x, 'image_name') and x.image_name == tag:
+						x.images.append(Image(img))
+
 	def run(self) -> int:
 		self._running = True
 		self._start_time = datetime.now()
-		self._log_dir = "logs/{:%Y-%m-%dT%H:%M:%S}".format(self._start_time)
+		self._log_dir = "logs/{}/{:%Y-%m-%dT%H:%M:%S}".format(self._test_label,self._start_time)
 		nr_failed = 0
 
 		#enable ipv6 support
@@ -173,31 +197,45 @@ class Runner:
 			shaper.status = RunStatus.RUNNING
 			for scenario in shaper.scenarios:
 				scenario.status = RunStatus.RUNNING
-				for server in self._servers_active:
-					server.status = RunStatus.RUNNING
-					for client in self._clients_active:
-						client.status = RunStatus.RUNNING
-						if client.type == Type.DOCKER.value:
-							logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
-							shaper.name, shaper.image, scenario.arguments,
-							server.name, server.image,
-							client.name, client.image
-							)
-						else:
-							logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
-							shaper.name, shaper.image, scenario.arguments,
-							server.name, server.image,
-							client.name
-							)
+				shaper_images = list((x for x in shaper.images if x.active))
+				for shaper_image in shaper_images:
+					shaper.curr_image = shaper_image
+					for server in self._servers_active:
+						server.status = RunStatus.RUNNING
+						server_images = list((x for x in server.images if x.active))
+						for server_image in server_images:
+							server.curr_image = server_image
+							for client in self._clients_active:
+								client.status = RunStatus.RUNNING
 
-						testcase = ServeTest()
-						testcase.scenario = scenario.arguments
+								testcase = ServeTest()
+								testcase.scenario = scenario.arguments
 
-						result = self._run_test(shaper, server, client, testcase)
-						logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+								if client.type == Type.DOCKER.value:
+									client_images = list((x for x in client.images if x.active))
+									for client_image in client_images:
+										client.curr_image = client_image
+										logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
+										shaper.name, shaper_image.url, scenario.arguments,
+										server.name, server_image.url,
+										client.name, client_image.url
+										)
 
-						client.status = RunStatus.DONE
-					server.status = RunStatus.DONE
+										result = self._run_test(shaper, server, client, testcase)
+										logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+									
+								else:
+									logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
+									shaper.name, shaper_image.url, scenario.arguments,
+									server.name, server_image.url,
+									client.name
+									)
+
+									result = self._run_test(shaper, server, client, testcase)
+									logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+
+								client.status = RunStatus.DONE
+						server.status = RunStatus.DONE
 				scenario.status = RunStatus.DONE
 			shaper.status = RunStatus.DONE
 
@@ -247,12 +285,12 @@ class Runner:
 			"REQUESTS=\"" + testcase.request_urls + "\"" + " "
 
 			"DOWNLOADS=" + testcase.download_dir() + " "
-			"SERVER=" + server.image + " "
+			"SERVER=" + server.curr_image.url + " "
 			"TESTCASE_SERVER=" + testcase.testname(Perspective.SERVER) + " "
 			"WWW=" + testcase.www_dir() + " "
 			"CERTS=" + testcase.certs_dir() + " "
 
-			"SHAPER=" + shaper.image + " "
+			"SHAPER=" + shaper.curr_image.url + " "
 			"SCENARIO=" + testcase.scenario + " "
 
 			"SERVER_LOGS=" + "/logs" + " "
@@ -342,7 +380,7 @@ class Runner:
 			# Setup client
 			client_cmd = ""
 			if client.type == Type.DOCKER:
-				params += "CLIENT=" + client.image + " "
+				params += "CLIENT=" + client.curr_image.url + " "
 				client_cmd = (
 					params
 					+ " docker-compose up --abort-on-container-exit --timeout 1 "
@@ -393,7 +431,11 @@ class Runner:
 		logging.getLogger().removeHandler(log_handler)
 		log_handler.close()
 		if result.status == Status.FAILED or result.status == Status.SUCCES:
-			log_dir = self._log_dir + "/" + server.name + "_" + client.name + "/" + testcase.name
+			log_dir = self._log_dir + "/"
+			if client.type == Type.DOCKER:
+				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" +  client.curr_image.repo + "_" + client.curr_image.name + "_" + client.curr_image.tag + "/" + testcase.name
+			else:
+				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" + client.name + "/" + testcase.name
 			shutil.copytree(server_log_dir.name, log_dir + "/server")
 			shutil.copytree(client_log_dir.name, log_dir + "/client")
 			shutil.copytree(sim_log_dir.name, log_dir + "/sim")

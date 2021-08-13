@@ -1,6 +1,6 @@
 import threading
 from typing import List
-from vegvisir.implementation import Implementation, RunStatus, Scenario, Shaper
+from vegvisir.implementation import Implementation, RunStatus, Scenario, Shaper, Type
 import time
 from datetime import datetime
 
@@ -26,7 +26,7 @@ thread = None
 
 @bp.route('/', methods=['GET'])
 def root():
-	return render_template('root.html', clients=clients, servers=servers, shapers=shapers)
+	return render_template('root.html', clients=clients, servers=servers, shapers=shapers, repos=runner._image_sets)
 
 @bp.route('/run', methods=['POST'])
 def run():
@@ -35,21 +35,43 @@ def run():
 	if not thread is None:
 		flash("Tests already running, did not start new tests")
 	elif request.method == 'POST':
+		runner._test_label = request.form['test_label']
+
+		form = {}
+		for x in request.form:
+			y = x.split('@')
+			if len(y) > 1 and not y[1].startswith('scenario.'):
+				if not y[0] in form:
+					form[y[0]] = []
+				form[y[0]].append(request.form[x].split('@')[1])
+			else:
+				form[x] = request.form[x]
+
 		for server in servers:
-			if 'server.' + server.name in request.form:
+			if 'server.' + server.name in form:
 				server.active = True
+				for image in server.images:
+					if image.url in form['server.' + server.name]:
+						image.active = True
 			else:
 				server.active = False
 
 		for client in clients:
-			if 'client.' + client.name in request.form:
+			if 'client.' + client.name in form:
 				client.active = True
+				if client.type == Type.DOCKER:
+					for image in client.images:
+						if image.url in form['client.' + client.name]:
+							image.active = True
 			else:
 				client.active = False
 
 		for shaper in shapers:
-			if 'shaper.' + shaper.name in request.form:
+			if 'shaper.' + shaper.name in form:
 				shaper.active = True
+				for image in shaper.images:
+					if image.url in form['shaper.' + shaper.name]:
+						image.active = True
 			else:
 				shaper.active = False
 

@@ -6,16 +6,48 @@
 
 {% block content %}
 <div>
+	<div>
+		<h2>Image sets:</h2>
+		<ul>
+			<li>
+				<input type="checkbox" value="repo._local" id="repo._local" name="repo._local" checked>
+				<label for="repo._local">local</label>
+			</li>
+			{% for repo in repos %}
+			<li>
+				<input type="checkbox" value="repo.{{ repo }}" id="repo.{{ repo }}" name="repo.{{ repo }}" checked>
+				<label for="repo.{{ repo }}">{{ repo }}</label>
+			</li>
+			{% endfor %}
+		</ul>
+	</div>
 	<form action="/run" method="POST">
 		<div class="implementations">
 			<h2>Clients</h2>
 			<ul>
 				{% for client in clients %}
+				{% if client.type.value == "docker" %}
+				<li>
+					<label for="client.{{ client.name }}">{{ client.name }}</label>
+					<ul>
+						{% for image in client.images %}
+						<li>
+							<input type="checkbox" value="{{ client.name }}@{{ image.url }}"
+								id="client.{{ client.name }}@{{ image.url }}"
+								name="client.{{ client.name }}@{{ image.url }}" {% if image.active %}{{ "checked" }}{%
+								endif %}>
+							{{ image.url }}
+						</li>
+						{% endfor %}
+					</ul>
+				</li>
+				{% else %}
 				<li>
 					<input type="checkbox" value="{{ client.name }}" id="client.{{ client.name }}"
 						name="client.{{ client.name }}" {% if client.active %}{{ "checked" }}{% endif %}>
 					<label for="client.{{ client.name }}">{{ client.name }}</label>
 				</li>
+				{% endif %}
 				{% endfor %}
 			</ul>
 		</div>
@@ -24,11 +56,28 @@
 			<h2>Servers</h2>
 			<ul>
 				{% for server in servers %}
+				{% if server.type.value == "docker" %}
+				<li>
+					<label for="server.{{ server.name }}">{{ server.name }}</label>
+					<ul>
+						{% for image in server.images %}
+						<li>
+							<input type="checkbox" value="{{ server.name }}@{{ image.url }}"
+								id="server.{{ server.name }}@{{ image.url }}"
+								name="server.{{ server.name }}@{{ image.url }}" {% if image.active %}{{ "checked" }}{%
+								endif %}>
+							{{ image.url }}
+						</li>
+						{% endfor %}
+					</ul>
+				</li>
+				{% else %}
 				<li>
 					<input type="checkbox" value="{{ server.name }}" id="server.{{ server.name }}"
 						name="server.{{ server.name }}" {% if server.active %}{{ "checked" }}{% endif %}>
 					<label for="server.{{ server.name }}">{{ server.name }}</label>
 				</li>
+				{% endif %}
 				{% endfor %}
 			</ul>
 		</div>
@@ -37,27 +86,51 @@
 			<h2>Shapers</h2>
 			<ul>
 				{% for shaper in shapers %}
+				{% if shaper.type.value == "docker" %}
+				<li>
+					<label for="shaper.{{ shaper.name }}">{{ shaper.name }}</label>
+					<ul>
+						<li>images:
+							<ul>
+								{% for image in shaper.images %}
+								<li>
+									<input type="checkbox" value="{{ shaper.name }}@{{ image.url }}"
+										id="shaper.{{ shaper.name }}@{{ image.url }}"
+										name="shaper.{{ shaper.name }}@{{ image.url }}" {% if image.active
+										%}{{ "checked" }}{% endif %}>
+									{{ image.url }}
+								</li>
+								{% endfor %}
+							</ul>
+						</li>
+						<li>scenarios:
+							<ul>
+								{% for scenario in shaper.scenarios %}
+								<li>
+									<input type="checkbox" value="{{ scenario.name }}"
+										id="shaper.{{ shaper.name }}@scenario.{{ scenario.name }}"
+										name="shaper.{{ shaper.name }}@scenario.{{ scenario.name }}" {% if
+										scenario.active %}{{ "checked" }}{% endif %}>
+									<label for="shaper.{{ shaper.name }}@scenario.{{ scenario.name }}">
+										{{ scenario.arguments }}
+									</label>
+								</li>
+								{% endfor %}
+							</ul>
+						</li>
+					</ul>
+				</li>
+				{% else %}
 				<li>
 					<input type="checkbox" value="{{ shaper.name }}" id="shaper.{{ shaper.name }}"
 						name="shaper.{{ shaper.name }}" {% if shaper.active %}{{ "checked" }}{% endif %}>
 					<label for="shaper.{{ shaper.name }}">{{ shaper.name }}</label>
-					<ul>
-						{% for scenario in shaper.scenarios %}
-						<li>
-							<input type="checkbox" value="{{ scenario.name }}"
-								id="shaper.{{ shaper.name }}@senario.{{ scenario.name }}"
-								name="shaper.{{ shaper.name }}@senario.{{ scenario.name }}" {% if scenario.active
-								%}{{ "checked" }}{% endif %}>
-							<label for="shaper.{{ shaper.name }}@senario.{{ scenario.name }}">
-								{{ scenario.arguments }}
-							</label>
-						</li>
-						{% endfor %}
-					</ul>
 				</li>
+				{% endif %}
 				{% endfor %}
 			</ul>
 		</div>
+		<label for="test_label">test label:</label><input type="text" id="test_label" name="test_label">
 		<label for="sudo_pass">sudo password:</label><input type="password" id="sudo_pass" name="sudo_pass">
 		<input type="submit" value="Run Tests">
 	</form>

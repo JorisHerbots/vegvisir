@@ -30,13 +30,50 @@ class Implementation:
 		self.name = name
 		self.url = url
 
+class Image():
+	url: str = ""
+	active: bool = False
+	repo: str = ""
+	name: str = ""
+	tag: str = ""
+
+	def __init__(self, url: str):
+		self.url = url
+		self.repo = get_repo_from_image(url)
+		self.name = get_name_from_image(url)
+		self.tag = get_tag_from_image(url)
+
 class Docker(Implementation):
-	image: str = ""
+	images: List[Image] = []
+	original_image: str = ""
+	image_name: str = ""
+	
+	curr_image: Image = None
 
 	def __init__(self, name: str, image: str, url: str):
 		super().__init__(name, url)
 		self.type = Type.DOCKER
-		self.image = image
+		self.original_image = image
+		self.images = [Image(image)]
+
+		self.image_name = get_name_from_image(image)
+
+def get_name_from_image(image):
+	return image.split('/')[-1].split(':')[0]
+
+def get_repo_from_image(image):
+	repo = None
+	try:
+		repo = image.split('/')[-2]
+	except:
+		repo = None
+	return repo
+
+def get_tag_from_image(image):
+	split = image.split(':')
+	if len(split) == 1:
+		return ""
+	return split[-1]
 
 class Command():
 	sudo: bool = False
