@@ -23,6 +23,8 @@ class Runner:
 	_end_time: datetime = 0
 	_running: bool = False
 	_test_label: str = ""
+	_test_repetitions: int = 1
+	_curr_repetition: int = 1
 
 	_image_repos: List[str] = ["vegvisir"]
 	_image_sets: List[str] = []
@@ -221,8 +223,11 @@ class Runner:
 										client.name, client_image.url
 										)
 
-										result = self._run_test(shaper, server, client, testcase)
-										logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+										self._curr_repetition = 1
+										for _ in range(self._test_repetitions):
+											result = self._run_test(shaper, server, client, testcase)
+											logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+											self._curr_repetition += 1
 									
 								else:
 									logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
@@ -231,8 +236,11 @@ class Runner:
 									client.name
 									)
 
-									result = self._run_test(shaper, server, client, testcase)
-									logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+									self._curr_repetition = 1
+									for _ in range(self._test_repetitions):
+										result = self._run_test(shaper, server, client, testcase)
+										logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+										self._curr_repetition += 1
 
 								client.status = RunStatus.DONE
 						server.status = RunStatus.DONE
@@ -436,6 +444,8 @@ class Runner:
 				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" +  client.curr_image.repo + "_" + client.curr_image.name + "_" + client.curr_image.tag + "/" + testcase.name
 			else:
 				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" + client.name + "/" + testcase.name
+			if self._test_repetitions > 1:
+				log_dir += '/run_' + str(self._curr_repetition)
 			shutil.copytree(server_log_dir.name, log_dir + "/server")
 			shutil.copytree(client_log_dir.name, log_dir + "/client")
 			shutil.copytree(sim_log_dir.name, log_dir + "/sim")

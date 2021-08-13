@@ -36,6 +36,7 @@ def run():
 		flash("Tests already running, did not start new tests")
 	elif request.method == 'POST':
 		runner._test_label = request.form['test_label']
+		runner._test_repetitions = int(request.form['test_repetitions'])
 
 		form = {}
 		for x in request.form:
