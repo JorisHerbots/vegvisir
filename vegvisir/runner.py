@@ -148,7 +148,7 @@ class Runner:
 
 		#TODO create backup using -b and reset to backup instead of removing entry later
 		hosts_proc = subprocess.Popen(
-				["sudo", "-S", "hostman", "add", "193.167.100.100", "vegvisir-server"],
+				["sudo", "-S", "hostman", "add", "193.167.100.100", "server4"],
 				shell=False,
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
@@ -202,7 +202,7 @@ class Runner:
 			shaper.status = RunStatus.DONE
 
 		hosts_proc = subprocess.Popen(
-				["sudo", "-S", "hostman", "remove", "--names=vegvisir-server"],
+				["sudo", "-S", "hostman", "remove", "--names=server4"],
 				shell=False,
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,

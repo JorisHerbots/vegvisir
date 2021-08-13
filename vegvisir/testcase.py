@@ -26,8 +26,8 @@ class TestResult:
 class TestCase:
 	name: str = ""
 
-	origin: str = "vegvisir-server:443"
-	request_urls: str = "https://vegvisir-server:443"
+	origin: str = "server4:443"
+	request_urls: str = "https://server4:443"
 
 	_www_dir = None
 	_download_dir = None
@@ -76,7 +76,7 @@ class ServeTest(TestCase):
 		self.timeout = 300
 
 		self._www_dir = StaticDirectory("./www")
-		self.request_urls: str = "https://vegvisir-server:443 https://vegvisir-server:443/test.html"
+		self.request_urls: str = "https://server4:443 https://server4:443/test.html"
 
 	def testname(self, perspective: Perspective):
 		if perspective == Perspective.SERVER:
