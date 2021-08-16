@@ -1,5 +1,6 @@
 import threading
 from typing import List
+from vegvisir.testcase import TestCaseWrapper
 from vegvisir.implementation import Implementation, RunStatus, Scenario, Shaper, Type
 import time
 from datetime import datetime
@@ -21,13 +22,14 @@ runner.set_implementations_from_file("implementations.json")
 clients: List[Implementation] = runner._clients
 servers: List[Implementation] = runner._servers
 shapers: List[Shaper] = runner._shapers
+tests: List[TestCaseWrapper] = runner._tests
 
 thread = None
 mutex = threading.Lock()
 
 @bp.route('/', methods=['GET'])
 def root():
-	return render_template('root.html', clients=clients, servers=servers, shapers=shapers, repos=runner._image_sets)
+	return render_template('root.html', clients=clients, servers=servers, shapers=shapers, repos=runner._image_sets, tests=tests)
 
 @bp.route('/run', methods=['POST'])
 def run():
@@ -91,10 +93,17 @@ def run():
 					scenario_name = scenario.replace('shaper.' + shaper.name + '@scenario.', '')
 					scen = Scenario(scenario_name, request.form[scenario])
 					shaper.scenarios.append(scen)
+
+		for test in tests:
+			if 'test.' + test.testcase.name in form:
+				test.active = True
+			else:
+				test.active = False
 		
 		runner._servers = servers
 		runner._clients = clients
 		runner._shapers = shapers
+		runner._tests = tests
 
 		if "sudo_pass" in request.form:
 			# TODO this might not work correctly?

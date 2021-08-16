@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 
 from .implementation import Application, Command, Docker, Image, Scenario, Shaper, Implementation, Role, Type, RunStatus, get_name_from_image, get_repo_from_image, get_tag_from_image
-from .testcase import Perspective, ServeTest, StaticDirectory, Status, TestCase, TestResult
+from .testcase import Perspective, ServeTest, StaticDirectory, Status, TESTCASES, TestCase, TestResult, TestCaseWrapper
 
 class LogFileFormatter(logging.Formatter):
 	def format(self, record):
@@ -32,10 +32,12 @@ class Runner:
 	_clients: List[Implementation] = []
 	_servers: List[Implementation] = []
 	_shapers: List[Shaper] = []
+	_tests: List[TestCaseWrapper] = []
 
 	_clients_active: List[Implementation] = []
 	_servers_active: List[Implementation] = []
 	_shapers_active: List[Shaper] = []
+	_tests_active: List[TestCase] = []
 
 	_sudo_password: str = ""
 
@@ -62,6 +64,11 @@ class Runner:
 		else:
 			console.setLevel(logging.INFO)
 		self._logger.addHandler(console)
+
+		for t in TESTCASES:
+			tw = TestCaseWrapper()
+			tw.testcase = t()
+			self._tests.append(tw)
 
 	def logger(self):
 		return self._logger
@@ -189,6 +196,7 @@ class Runner:
 		self._clients_active = list((x for x in self._clients if x.active))
 		self._servers_active = list((x for x in self._servers if x.active))
 		self._shapers_active = list((x for x in self._shapers if x.active))
+		self._tests_active = list((x for x in self._tests if x.active))
 
 		for x in self._shapers_active + self._servers_active + self._shapers_active:
 			x.status = RunStatus.WAITING
@@ -210,18 +218,33 @@ class Runner:
 							server.curr_image = server_image
 							for client in self._clients_active:
 								client.status = RunStatus.RUNNING
+								for test in self._tests_active:
+									test.status = RunStatus.RUNNING
 
-								testcase = ServeTest()
-								testcase.scenario = scenario
+									testcase = test.testcase
+									testcase.scenario = scenario
 
-								if client.type == Type.DOCKER.value:
-									client_images = list((x for x in client.images if x.active))
-									for client_image in client_images:
-										client.curr_image = client_image
-										logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
+									if client.type == Type.DOCKER.value:
+										client_images = list((x for x in client.images if x.active))
+										for client_image in client_images:
+											client.curr_image = client_image
+											logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
+											shaper.name, shaper_image.url, scenario.arguments,
+											server.name, server_image.url,
+											client.name, client_image.url
+											)
+
+											self._curr_repetition = 1
+											for _ in range(self._test_repetitions):
+												result = self._run_test(shaper, server, client, testcase)
+												logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+												self._curr_repetition += 1
+										
+									else:
+										logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
 										shaper.name, shaper_image.url, scenario.arguments,
 										server.name, server_image.url,
-										client.name, client_image.url
+										client.name
 										)
 
 										self._curr_repetition = 1
@@ -229,20 +252,7 @@ class Runner:
 											result = self._run_test(shaper, server, client, testcase)
 											logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
 											self._curr_repetition += 1
-									
-								else:
-									logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
-									shaper.name, shaper_image.url, scenario.arguments,
-									server.name, server_image.url,
-									client.name
-									)
-
-									self._curr_repetition = 1
-									for _ in range(self._test_repetitions):
-										result = self._run_test(shaper, server, client, testcase)
-										logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
-										self._curr_repetition += 1
-
+									test.status = RunStatus.DONE
 								client.status = RunStatus.DONE
 						server.status = RunStatus.DONE
 				scenario.status = RunStatus.DONE

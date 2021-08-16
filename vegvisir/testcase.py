@@ -5,7 +5,7 @@ import subprocess
 import sys
 import logging
 from typing import List
-from vegvisir.implementation import Scenario
+from vegvisir.implementation import RunStatus, Scenario
 
 class Status(Enum):
 	SUCCES = 1
@@ -112,3 +112,13 @@ class StaticDirectory():
 
 	def __init__(self, name):
 		self.name = name
+
+class TestCaseWrapper():
+	testcase = None
+	active: bool = False
+	status: RunStatus = RunStatus.WAITING
+
+## List of all supported tests
+TESTCASES = [
+	ServeTest
+]

@@ -139,6 +139,20 @@
 				{% endfor %}
 			</ul>
 		</div>
+
+		<div class="implementations">
+			<h2>Tests</h2>
+			<ul>
+				{% for test in tests %}
+				<li>
+					<input type="checkbox" value="{{ test.testcase.name }}" id="test.{{ test.testcase.name }}"
+						name="test.{{ test.testcase.name }}" {% if test.active %}{{ "checked" }}{% endif %}>
+					<label for="test.{{ test.testcase.name }}">{{ test.testcase.name }}</label>
+				</li>
+				{% endfor %}
+			</ul>
+		</div>
+
 		<label for="test_label">test label:</label><input type="text" id="test_label" name="test_label">
 		<label for="test_repetitions">amount of repetitions:</label><input type="number" id="test_repetitions"
 			name="test_repetitions" value="1">
