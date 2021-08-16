@@ -19,4 +19,8 @@ def create_app(test_config=None):
 	from . import app
 	myapp.register_blueprint(app.bp)
 
+	from . import docker
+	myapp.register_blueprint(docker.bp)
+
+
 	return myapp

@@ -23,6 +23,7 @@ servers: List[Implementation] = runner._servers
 shapers: List[Shaper] = runner._shapers
 
 thread = None
+mutex = threading.Lock()
 
 @bp.route('/', methods=['GET'])
 def root():
@@ -32,7 +33,7 @@ def root():
 def run():
 	global thread
 
-	if not thread is None:
+	if mutex.locked():
 		flash("Tests already running, did not start new tests")
 	elif request.method == 'POST':
 		runner._test_label = request.form['test_label']
@@ -93,8 +94,12 @@ def run():
 			runner.set_sudo_password(request.form["sudo_pass"])
 
 		def thread_func():
+			global thread
+			global mutex
+			mutex.acquire()
 			runner.run()
 			thread = None
+			mutex.release()
 
 		thread = threading.Thread(target=thread_func)
 		thread.start()

@@ -493,7 +493,7 @@ class Runner:
 			)
 
 	## Docker
-	def docker_update_images(self):
+	def docker_update_images(self) -> int:
 		r = subprocess.run(
 			"docker images | grep -v ^REPO | sed 's/ \+/:/g' | cut -d: -f1,2 | xargs -L1 docker pull",
 			shell=True,
@@ -504,8 +504,9 @@ class Runner:
 			logging.info(
 				"Updating docker images failed: %s", r.stdout.decode("utf-8")
 			)
+		return r.returncode
 
-	def docker_save_imageset(self, imageset):
+	def docker_save_imageset(self, imageset) -> int:
 		r = subprocess.run(
 			"docker save -o {} {}".format(imageset.replace('/', '_') + ".tar", imageset),
 			shell=True,
@@ -516,8 +517,9 @@ class Runner:
 			logging.info(
 				"Saving docker images failed: %s", r.stdout.decode("utf-8")
 			)
+		return r.returncode
 
-	def docker_load_imageset(self, imageset_tar):
+	def docker_load_imageset(self, imageset_tar) -> int:
 		r = subprocess.run(
 			"docker load -i {}".format(imageset_tar),
 			shell=True,
@@ -528,8 +530,10 @@ class Runner:
 			logging.info(
 				"Loading docker images failed: %s", r.stdout.decode("utf-8")
 			)
+		return r.returncode
 
-	def docker_create_imageset(self, repo, setname):
+	def docker_create_imageset(self, repo, setname) -> int:
+		returncode = 0
 		for x in self._clients + self._servers + self._shapers:
 			if hasattr(x, "images"):
 				img = x.images[0]
@@ -543,8 +547,11 @@ class Runner:
 					logging.info(
 						"Tagging docker image %s failed: %s", img.url, r.stdout.decode("utf-8")
 					)
+				returncode += r.returncode
+		return returncode
 	
-	def docker_pull_source_images(self):
+	def docker_pull_source_images(self) -> int:
+		returncode = 0
 		for x in self._clients + self._servers + self._shapers:
 			if hasattr(x, "images"):
 				img = x.images[0]
@@ -558,3 +565,5 @@ class Runner:
 					logging.info(
 						"Pulling docker image %s failed: %s", img.url, r.stdout.decode("utf-8")
 					)
+				returncode += r.returncode
+		return returncode
