@@ -36,6 +36,7 @@ def run():
 	if mutex.locked():
 		flash("Tests already running, did not start new tests")
 	elif request.method == 'POST':
+		mutex.acquire()
 		runner._test_label = request.form['test_label']
 		runner._test_repetitions = int(request.form['test_repetitions'])
 
@@ -81,8 +82,9 @@ def run():
 				for preset_scenario in shaper.scenarios:
 					if  scenario == 'shaper.' + shaper.name + '@scenario.' + preset_scenario.name :
 						preset_scenario.active = True
-					else:
-						scen = Scenario(scenario, request.form[scenario])
+					elif request.form[scenario] != '':
+						scenario_name = scenario.replace('shaper.' + shaper.name + '@scenario.', '')
+						scen = Scenario(scenario_name, request.form[scenario])
 						shaper.scenarios.append(scen)
 		
 		runner._servers = servers
@@ -96,7 +98,6 @@ def run():
 		def thread_func():
 			global thread
 			global mutex
-			mutex.acquire()
 			runner.run()
 			thread = None
 			mutex.release()
