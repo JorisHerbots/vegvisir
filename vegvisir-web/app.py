@@ -159,3 +159,74 @@ def progress():
 
 
 	return render_template('progress.html', progress=progress)
+
+docker_thread = None
+docker_mutex = threading.Lock()
+docker_returnvalue = None
+docker_errormsg = None
+
+@bp.route('/docker', methods=['GET', 'POST'])
+def docker_root():
+	if docker_mutex.locked():
+		flash("Already working on a job!")
+	elif request.method == 'POST':
+		global docker_returnvalue
+		global errormsg
+
+		def thread_func(func):
+			global docker_mutex
+			global docker_returnvalue
+			docker_mutex.acquire()
+			docker_returnvalue = func()
+			docker_mutex.release()
+
+		def thread_func_1_arg(func, arg1):
+			global docker_mutex
+			global docker_returnvalue
+			docker_mutex.acquire()
+			docker_returnvalue = func(arg1)
+			docker_mutex.release()
+
+		def thread_func_2_arg(func, arg1, arg2):
+			global docker_mutex
+			global docker_returnvalue
+			docker_mutex.acquire()
+			docker_returnvalue = func(arg1, arg2)
+			docker_mutex.release()
+
+		action = request.form['action']
+		if action == 'Update Images':
+			docker_thread = threading.Thread(target=thread_func, args=(runner.docker_update_images,))
+			docker_errormsg = "Failed to update images."
+
+		elif action == 'Pull/Update Source Images':
+			docker_thread = threading.Thread(target=thread_func, args=(runner.docker_pull_source_images,))
+			docker_errormsg = "Failed to pull images."
+
+		elif action == 'Save Imageset':
+			docker_thread = threading.Thread(target=thread_func_1_arg, args=(runner.docker_save_imageset,request.form['imageset']))
+			docker_errormsg = "Failed to save imageset {}.".format(request.form['imageset'])
+
+		elif action == 'Load Imageset':
+			docker_thread = threading.Thread(target=thread_func_1_arg, args=(runner.docker_load_imageset,request.form['imageset']))
+			docker_errormsg = "Failed to load imageset {}.".format(request.form['imageset'])
+
+		elif action == 'Create Imageset':
+			docker_thread = threading.Thread(target=thread_func_2_arg, args=(runner.docker_create_imageset,request.form['repo'],request.form['imageset']))
+			docker_errormsg = "Failed to create imageset {}/{}.".format(request.form['repo'],request.form['imageset'])
+
+		elif action == 'Remove Imageset':
+			docker_thread = threading.Thread(target=thread_func_1_arg, args=(runner.docker_remove_imageset,request.form['imageset']))
+			docker_errormsg = "Failed to remove imageset {}.".format(request.form['imageset'])
+			
+		if not docker_thread is None:
+			docker_thread.start()
+			docker_thread.join()
+			if not docker_errormsg is None and not docker_returnvalue is None and not docker_returnvalue == 0:
+				flash(docker_errormsg)
+			else:
+				flash("Successfully executed action: {}".format(action))
+			runner.set_implementations_from_file("implementations.json")
+			docker_returnvalue = None
+			docker_errormsg = None
+	return render_template('docker.html', loaded_sets=runner._image_sets)
