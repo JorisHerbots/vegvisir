@@ -55,22 +55,22 @@
 				{
 					"sudo": true,
 					"replace_tilda": true,
-					"command": "rm -r ~/.config/google-chrome-unstable/Default/"
-				},
-				{
-					"sudo": true,
-					"replace_tilda": true,
 					"command": "rm -r ~/.cache/google-chrome-unstable/"
 				},
 				{
 					"sudo": true,
 					"replace_tilda": true,
-					"command": "rm -r ~/.config/google-chrome/Default/"
+					"command": "rm -r ~/.cache/google-chrome/"
 				},
 				{
-					"sudo": true,
+					"sudo": false,
 					"replace_tilda": true,
-					"command": "rm -r ~/.cache/google-chrome/"
+					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences ~/test-downloads/"
+				},
+				{
+					"sudo": false,
+					"replace_tilda": true,
+					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome-unstable/Default/Preferences ~/test-downloads/"
 				}
 			]
 		}
