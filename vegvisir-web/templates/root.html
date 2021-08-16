@@ -118,11 +118,12 @@
 								</li>
 								{% endfor %}
 								<li>
-									<label for="shaper.{{ shaper.name }}@scenario_check.{{ shaper.name }}_custom">custom
+									<label
+										for="shaper.{{ shaper.name }}@scenario_check.{{ shaper.name }}_custom_{{ shaper.scenarios|length }}">custom
 										scenario:</label>
 									<input type="text" style="width: 100%;"
-										id="shaper.{{ shaper.name }}@scenario.{{ shaper.name }}_custom"
-										name="shaper.{{ shaper.name }}@scenario.{{ shaper.name }}_custom">
+										id="shaper.{{ shaper.name }}@scenario.{{ shaper.name }}_custom_{{ shaper.scenarios|length }}"
+										name="shaper.{{ shaper.name }}@scenario.{{ shaper.name }}_custom_{{ shaper.scenarios|length }}">
 								</li>
 							</ul>
 						</li>

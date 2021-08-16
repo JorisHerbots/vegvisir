@@ -78,14 +78,19 @@ def run():
 			else:
 				shaper.active = False
 
+			for preset_scenario in shaper.scenarios:
+				preset_scenario.active = False
+
 			for scenario in (x for x in request.form if x.startswith('shaper.' + shaper.name + '@scenario.')):
+				present = False
 				for preset_scenario in shaper.scenarios:
-					if  scenario == 'shaper.' + shaper.name + '@scenario.' + preset_scenario.name :
+					if  scenario == 'shaper.' + shaper.name + '@scenario.' + preset_scenario.name:
 						preset_scenario.active = True
-					elif request.form[scenario] != '':
-						scenario_name = scenario.replace('shaper.' + shaper.name + '@scenario.', '')
-						scen = Scenario(scenario_name, request.form[scenario])
-						shaper.scenarios.append(scen)
+						present = True
+				if not present and request.form[scenario] != '':
+					scenario_name = scenario.replace('shaper.' + shaper.name + '@scenario.', '')
+					scen = Scenario(scenario_name, request.form[scenario])
+					shaper.scenarios.append(scen)
 		
 		runner._servers = servers
 		runner._clients = clients

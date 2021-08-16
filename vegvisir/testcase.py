@@ -5,6 +5,7 @@ import subprocess
 import sys
 import logging
 from typing import List
+from vegvisir.implementation import Scenario
 
 class Status(Enum):
 	SUCCES = 1
@@ -35,7 +36,7 @@ class TestCase:
 
 	cert_fingerprint: str = ""
 	
-	scenario: str = ""
+	scenario: Scenario = None
 	timeout: int = 60
 
 	def __init__(self):

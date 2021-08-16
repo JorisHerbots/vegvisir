@@ -198,7 +198,7 @@ class Runner:
 
 		for shaper in self._shapers_active:
 			shaper.status = RunStatus.RUNNING
-			for scenario in shaper.scenarios:
+			for scenario in list((x for x in shaper.scenarios if x.active)):
 				scenario.status = RunStatus.RUNNING
 				shaper_images = list((x for x in shaper.images if x.active))
 				for shaper_image in shaper_images:
@@ -212,7 +212,7 @@ class Runner:
 								client.status = RunStatus.RUNNING
 
 								testcase = ServeTest()
-								testcase.scenario = scenario.arguments
+								testcase.scenario = scenario
 
 								if client.type == Type.DOCKER.value:
 									client_images = list((x for x in client.images if x.active))
@@ -300,7 +300,7 @@ class Runner:
 			"CERTS=" + testcase.certs_dir() + " "
 
 			"SHAPER=" + shaper.curr_image.url + " "
-			"SCENARIO=" + testcase.scenario + " "
+			"SCENARIO=" + testcase.scenario.arguments + " "
 
 			"SERVER_LOGS=" + "/logs" + " "
 			"CLIENT_LOGS=" + "/logs" + " "
@@ -442,9 +442,9 @@ class Runner:
 		if result.status == Status.FAILED or result.status == Status.SUCCES:
 			log_dir = self._log_dir + "/"
 			if client.type == Type.DOCKER:
-				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" +  client.curr_image.repo + "_" + client.curr_image.name + "_" + client.curr_image.tag + "/" + testcase.name
+				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" +  client.curr_image.repo + "_" + client.curr_image.name + "_" + client.curr_image.tag + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "_" + testcase.name
 			else:
-				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" + client.name + "/" + testcase.name
+				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" + client.name + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "_" + testcase.name
 			if self._test_repetitions > 1:
 				log_dir += '/run_' + str(self._curr_repetition)
 			shutil.copytree(server_log_dir.name, log_dir + "/server")
