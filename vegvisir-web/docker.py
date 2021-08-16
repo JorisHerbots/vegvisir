@@ -81,6 +81,7 @@ def docker_root():
 				flash(errormsg)
 			else:
 				flash("Successfully executed action: {}".format(action))
+			runner.set_implementations_from_file("implementations.json")
 			returnvalue = None
 			errormsg = None
 	return render_template('docker.html', loaded_sets=runner._image_sets)

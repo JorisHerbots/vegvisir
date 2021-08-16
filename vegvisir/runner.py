@@ -135,6 +135,7 @@ class Runner:
 		self.set_implementations(implementations)
 
 	def _scan_image_repos(self):
+		self._image_sets = []
 		proc = subprocess.run(
 			"docker images | awk '{print $1, $2}'",
 			shell=True,
