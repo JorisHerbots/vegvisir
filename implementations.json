@@ -3,7 +3,6 @@
 		"image": "aiortc/aioquic-qns",
 		"url": "https://github.com/aiortc/aioquic",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -80,7 +79,6 @@
 		"image": "martenseemann/quic-go-interop:latest",
 		"url": "https://github.com/lucas-clemente/quic-go",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -91,7 +89,6 @@
 		"image": "h2oserver/quicly-interop-runner:latest",
 		"url": "https://github.com/h2o/quicly",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -102,7 +99,6 @@
 		"image": "ghcr.io/ngtcp2/ngtcp2-interop:latest",
 		"url": "https://github.com/ngtcp2/ngtcp2",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -113,7 +109,6 @@
 		"image": "ntap/quant:interop",
 		"url": "https://github.com/NTAP/quant",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -124,7 +119,6 @@
 		"image": "lnicco/mvfst-qns:latest",
 		"url": "https://github.com/facebookincubator/mvfst",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -135,7 +129,6 @@
 		"image": "cloudflare/quiche-qns:latest",
 		"url": "https://github.com/cloudflare/quiche",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -146,7 +139,6 @@
 		"image": "peterdoornbosch/kwik_n_flupke-interop",
 		"url": "https://github.com/ptrd/kwik",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -157,7 +149,6 @@
 		"image": "privateoctopus/picoquic:latest",
 		"url": "https://github.com/private-octopus/picoquic",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -168,7 +159,6 @@
 		"image": "neqoquic/neqo-qns:latest",
 		"url": "https://github.com/mozilla/neqo",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -186,7 +176,6 @@
 		"image": "mcr.microsoft.com/msquic/qns:latest",
 		"url": "https://github.com/microsoft/msquic",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -197,7 +186,6 @@
 		"image": "kulsk/xquic:latest",
 		"url": "https://github.com/Kulsk/xquic",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
@@ -208,7 +196,6 @@
 		"image": "litespeedtech/lsquic-qir:latest",
 		"url": "https://github.com/litespeedtech/lsquic",
 		"role": [
-			"client",
 			"server"
 		],
 		"client": {
