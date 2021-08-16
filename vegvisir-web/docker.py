@@ -69,6 +69,10 @@ def docker_root():
 		elif action == 'Create Imageset':
 			thread = threading.Thread(target=thread_func_2_arg, args=(runner.docker_create_imageset,request.form['repo'],request.form['imageset']))
 			errormsg = "Failed to create imageset {}/{}.".format(request.form['repo'],request.form['imageset'])
+
+		elif action == 'Remove Imageset':
+			thread = threading.Thread(target=thread_func_1_arg, args=(runner.docker_remove_imageset,request.form['imageset']))
+			errormsg = "Failed to remove imageset {}.".format(request.form['imageset'])
 			
 		if not thread is None:
 			thread.start()

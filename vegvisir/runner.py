@@ -567,3 +567,16 @@ class Runner:
 					)
 				returncode += r.returncode
 		return returncode
+
+	def docker_remove_imageset(self, imageset) -> int:
+		r = subprocess.run(
+			"docker images | grep {} | grep -v ^REPO | sed 's/ \+/:/g' | cut -d: -f1,2 | xargs -L1 docker image rm".format(imageset),
+			shell=True,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+		)
+		if r.returncode != 0:
+			logging.info(
+				"Removing docker imageset {} failed: %s", imageset, r.stdout.decode("utf-8")
+			)
+		return r.returncode
