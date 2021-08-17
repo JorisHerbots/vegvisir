@@ -1,0 +1,3 @@
+[submodule "www/dashjs-qlog-abr"]
+	path = www/dashjs-qlog-abr
+	url = git@github.com:JorisHerbots/dashjs-qlog-abr.git
