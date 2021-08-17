@@ -8,6 +8,8 @@ from typing import List
 from vegvisir.implementation import RunStatus, Scenario
 import threading
 import time
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 class Status(Enum):
 	SUCCES = 1
@@ -28,37 +30,81 @@ class TestResult:
 
 class TestEnd:
 	_thread: threading.Thread = None
+	_process: subprocess.Popen = None
 
 	def __init__(self):
 		pass
+
+	def setup(self, process):
+		self._process = process
 
 	#TODO give feedback to caller
 	def wait_for_end(self):
 		self._thread.start()
 		self._thread.join()
+		self._process.terminate()
 
 class TestEndTimeout(TestEnd):
 	_timeout: int = 0
-	process: subprocess.Popen = None
 
 	def __init__(self, timeout):
 		super().__init__()
 		self._timeout = timeout
 
 	def setup(self, process):
-		self.process = process
+		super().setup(process)
 
 		def thread_func():
 			ctime = datetime.now()
 			#time.sleep(self._timeout)
 			while (datetime.now()-ctime).seconds < self._timeout:
-				if self.process.poll() != None:
+				if self._process.poll() != None:
 					logging.info('client exited successfully')
 					return
 				time.sleep(1)
-			self.process.terminate()
 			logging.info('client timed out')
 			
+		self._thread = threading.Thread(target=thread_func)
+
+class TestEndUntilDownload(TestEnd):
+	_timeout: int = 0
+
+	def __init__(self, timeout):
+		super().__init__()
+		self._timeout = timeout
+
+	def setup(self, process, path, file):
+		super().setup(process)
+		global running
+		running = True
+
+		class DownloadHandler(FileSystemEventHandler):
+			def on_created(self, event):
+				#logging.debug(f'event type: {event.event_type}  path : {event.src_path}')
+				if event.src_path == path + '/' + file:
+					global running
+					running = False
+					#print('found %s!', file)
+
+		def thread_func():
+			event_handler = DownloadHandler()
+			observer = Observer()
+			observer.schedule(event_handler, path) #TODO set path to check
+			observer.start()
+			client_exited = False
+
+			ctime = datetime.now()
+			global running
+			while running and ((datetime.now()-ctime).seconds < self._timeout):
+				if not client_exited and self._process.poll() != None:
+					logging.info('client exited before download')
+					client_exited = True
+					observer.stop()
+					return
+				time.sleep(1)
+			observer.stop()
+			logging.info('client timed out')
+		
 		self._thread = threading.Thread(target=thread_func)
 
 
@@ -112,7 +158,7 @@ class ServeTest(TestCase):
 	def __init__(self):
 		super().__init__()
 		self.name = "servetest"
-		self.testend = TestEndTimeout(10)
+		self.testend = TestEndUntilDownload(300)
 
 		self._www_dir = StaticDirectory("./www")
 		self.request_urls: str = "https://server4:443/dashjs-qlog-abr/demo/demo.html?testrun"
@@ -123,7 +169,7 @@ class ServeTest(TestCase):
 		return super().testname(perspective)
 
 	def additional_containers(self) -> List[str]:
-		return ["iperf_server", "iperf_client"]
+		return []#["iperf_server", "iperf_client"]
 
 	def additional_envs(self) -> List[str]:
 		return ["IPERF_CONGESTION=cubic"]

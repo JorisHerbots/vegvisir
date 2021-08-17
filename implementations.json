@@ -54,23 +54,23 @@
 			"setup": [
 				{
 					"sudo": true,
-					"replace_tilda": true,
+					"replace_tilde": true,
 					"command": "rm -r ~/.cache/google-chrome-unstable/"
 				},
 				{
 					"sudo": true,
-					"replace_tilda": true,
+					"replace_tilde": true,
 					"command": "rm -r ~/.cache/google-chrome/"
 				},
 				{
 					"sudo": false,
-					"replace_tilda": true,
-					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences ~/test-downloads/"
+					"replace_tilde": true,
+					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences \"{client_log_dir}\""
 				},
 				{
 					"sudo": false,
-					"replace_tilda": true,
-					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome-unstable/Default/Preferences ~/test-downloads/"
+					"replace_tilde": true,
+					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome-unstable/Default/Preferences \"{client_log_dir}\""
 				}
 			]
 		}

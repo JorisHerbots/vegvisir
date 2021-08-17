@@ -1,5 +1,7 @@
 from datetime import datetime
 import logging
+import os
+import pathlib
 import sys
 import subprocess
 from typing import List
@@ -10,7 +12,7 @@ import shutil
 from pathlib import Path
 
 from .implementation import Application, Command, Docker, Image, Scenario, Shaper, Implementation, Role, Type, RunStatus, get_name_from_image, get_repo_from_image, get_tag_from_image
-from .testcase import Perspective, ServeTest, StaticDirectory, Status, TESTCASES, TestCase, TestResult, TestCaseWrapper
+from .testcase import Perspective, ServeTest, StaticDirectory, Status, TESTCASES, TestCase, TestEndUntilDownload, TestResult, TestCaseWrapper
 
 class LogFileFormatter(logging.Formatter):
 	def format(self, record):
@@ -103,7 +105,7 @@ class Runner:
 							for cmd in client_settings["setup"]:
 								scmd = Command()
 								scmd.sudo = cmd["sudo"]
-								scmd.replace_tilda = cmd["replace_tilda"]
+								scmd.replace_tilde = cmd["replace_tilde"]
 								scmd.command = cmd["command"]
 								impl.setup.append(scmd)
 					impl.active = active
@@ -292,6 +294,23 @@ class Runner:
 		log_handler = logging.FileHandler(log_file.name)
 		log_handler.setLevel(logging.DEBUG)
 
+		log_dir = os.getcwd() + "/" + self._log_dir
+		if client.type == Type.DOCKER:
+			log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" +  client.curr_image.repo + "_" + client.curr_image.name + "_" + client.curr_image.tag + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "_" + testcase.name
+		else:
+			log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" + client.name + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "_" + testcase.name
+		if self._test_repetitions > 1:
+			log_dir += '/run_' + str(self._curr_repetition)
+
+		client_log_dir_local = log_dir + '/client'
+		server_log_dir_local = log_dir + '/server'
+		shaper_log_dir_local = log_dir + '/shaper'
+		pathlib.Path(client_log_dir_local).mkdir(parents=True, exist_ok=True)
+		pathlib.Path(server_log_dir_local).mkdir(parents=True, exist_ok=True)
+		pathlib.Path(shaper_log_dir_local).mkdir(parents=True, exist_ok=True)
+
+		print(client_log_dir_local)
+
 		formatter = LogFileFormatter("%(asctime)s %(message)s")
 		log_handler.setFormatter(formatter)
 		logging.getLogger().addHandler(log_handler)
@@ -330,7 +349,8 @@ class Runner:
 			if client.type == Type.APPLICATION:
 				for setup_cmd in client.setup:
 					out = ""
-					if setup_cmd.replace_tilda:
+					setup_cmd.command = setup_cmd.command.format(client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
+					if setup_cmd.replace_tilde:
 						setup_cmd.command = setup_cmd.command.replace("~", str(Path.home()))
 					if setup_cmd.sudo:
 						net_proc = subprocess.Popen(
@@ -350,7 +370,7 @@ class Runner:
 							stderr=subprocess.STDOUT
 						)
 						out += proc.stdout.decode("utf-8")
-					logging.debug("client setup: %s", out)
+					logging.debug("client setup: %s\n%s", setup_cmd.command, out)
 
 			# Setup server and network
 			#TODO exit on error
@@ -416,7 +436,9 @@ class Runner:
 				stderr=subprocess.STDOUT,
 			)
 			try:
-				if hasattr(testcase.testend, 'process'):
+				if isinstance(testcase.testend, TestEndUntilDownload):
+					testcase.testend.setup(client_proc, log_dir + '/client', 'create-name-todo.json')
+				else:
 					testcase.testend.setup(client_proc)
 				testcase.testend.wait_for_end()
 			except KeyboardInterrupt as e:
@@ -454,21 +476,14 @@ class Runner:
 		logging.getLogger().removeHandler(log_handler)
 		log_handler.close()
 		if result.status == Status.FAILED or result.status == Status.SUCCES:
-			log_dir = self._log_dir + "/"
-			if client.type == Type.DOCKER:
-				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" +  client.curr_image.repo + "_" + client.curr_image.name + "_" + client.curr_image.tag + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "_" + testcase.name
-			else:
-				log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" + client.name + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "_" + testcase.name
-			if self._test_repetitions > 1:
-				log_dir += '/run_' + str(self._curr_repetition)
-			shutil.copytree(server_log_dir.name, log_dir + "/server")
-			shutil.copytree(client_log_dir.name, log_dir + "/client")
-			shutil.copytree(sim_log_dir.name, log_dir + "/sim")
+			shutil.copytree(server_log_dir.name, server_log_dir_local, dirs_exist_ok=True)
+			shutil.copytree(client_log_dir.name, client_log_dir_local, dirs_exist_ok=True)
+			shutil.copytree(sim_log_dir.name, shaper_log_dir_local, dirs_exist_ok=True)
 			shutil.copyfile(log_file.name, log_dir + "/output.txt")
 			if self._save_files and result.status == Status.FAILED:
-				shutil.copytree(testcase.www_dir(), log_dir + "/www")
+				shutil.copytree(testcase.www_dir(), log_dir + "/www", dirs_exist_ok=True)
 				try:
-					shutil.copytree(testcase.download_dir(), log_dir + "/downloads")
+					shutil.copytree(testcase.download_dir(), log_dir + "/downloads", dirs_exist_ok=True)
 				except Exception as exception:
 					logging.info("Could not copy downloaded files: %s", exception)
 

@@ -77,7 +77,7 @@ def get_tag_from_image(image):
 
 class Command():
 	sudo: bool = False
-	replace_tilda: bool = True
+	replace_tilde: bool = True
 	command: str = ""
 
 class Application(Implementation):
