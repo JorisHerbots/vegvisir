@@ -26,6 +26,14 @@
 - version control for servers
 - wipe client cache
 - dynamic frontend, hide entries from deselected sets
+- no end time for client
+- testcase:
+  - timeout: start timeout thread, busy wait, join on thread
+    - on time, something that checks time until max
+    - on file existence, watcher for file
+- export gui settings
+- result view tool
+  - ![results ui](imgs/results_ui.jpg)
 
 ### Based upon
 
