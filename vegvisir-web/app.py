@@ -48,7 +48,12 @@ def run():
 			if len(y) > 1 and not y[1].startswith('scenario.'):
 				if not y[0] in form:
 					form[y[0]] = []
-				form[y[0]].append(request.form[x].split('@')[1])
+				print(form, y[0], x, request.form[x])
+				z = request.form[x].split('@')
+				if y[0].endswith('.arg'):
+					form[y[0]].append(z[0])
+				else:
+					form[y[0]].append(z[1])
 			else:
 				form[x] = request.form[x]
 
@@ -179,7 +184,7 @@ docker_mutex = threading.Lock()
 docker_returnvalue = None
 docker_errormsg = None
 
-@bp.route('/docker', methods=['GET', 'POST'])
+@bp.route('/docker/', methods=['GET', 'POST'])
 def docker_root():
 	if docker_mutex.locked():
 		flash("Already working on a job!")

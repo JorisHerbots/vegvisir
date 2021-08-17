@@ -148,6 +148,24 @@
 					<input type="checkbox" value="{{ test.testcase.name }}" id="test.{{ test.testcase.name }}"
 						name="test.{{ test.testcase.name }}" {% if test.active %}{{ "checked" }}{% endif %}>
 					<label for="test.{{ test.testcase.name }}">{{ test.testcase.name }}</label>
+					<ul>
+						<li>
+							<label for="test.{{ test.testcase.name }}.arg@request">client
+								url:</label>
+							<input type="text" style="width: 100%;" id="test.{{ test.testcase.name }}.arg@request"
+								name="test.{{ test.testcase.name }}.arg@request">
+						</li>
+						<li>
+							<label for="test.{{ test.testcase.name }}.arg@output">output file:</label>
+							<input type="text" style="width: 100%;" id="test.{{ test.testcase.name }}.arg@output"
+								name="test.{{ test.testcase.name }}.arg@output">
+						</li>
+						<li>
+							<label for="test.{{ test.testcase.name }}.arg@timeout">timeout is seconds:</label>
+							<input type="number" style="width: 100%;" id="test.{{ test.testcase.name }}.arg@timeout"
+								name="test.{{ test.testcase.name }}.arg@timeout">
+						</li>
+					</ul>
 				</li>
 				{% endfor %}
 			</ul>

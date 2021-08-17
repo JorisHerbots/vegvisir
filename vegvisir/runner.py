@@ -409,15 +409,16 @@ class Runner:
 				client_cmd = client.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls)
 
 			logging.debug("running client: %s", client_cmd)
+			client_proc = subprocess.Popen(
+				client_cmd.split(' '),
+				shell=False,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT,
+			)
 			try:
-				client_proc = subprocess.run(
-					client_cmd,
-					shell=True,
-					stdout=subprocess.PIPE,
-					stderr=subprocess.STDOUT,
-					timeout=testcase.timeout
-				)
-				logging.debug("%s", client_proc.stdout.decode("utf-8"))
+				if hasattr(testcase.testend, 'process'):
+					testcase.testend.setup(client_proc)
+				testcase.testend.wait_for_end()
 			except KeyboardInterrupt as e:
 				logging.debug("manual interrupt")
 			# Wait for tests
@@ -427,6 +428,9 @@ class Runner:
 			# 	raise subprocess.TimeoutExpired(cmd, testcase.timeout, proc.stdout, proc.stderr)
 			# except KeyboardInterrupt as e:
 			# 	logging.debug("manual interrupt")
+			client_proc_stdout, _ = client_proc.communicate()
+			if client_proc_stdout != None:
+				logging.debug("client: %s", client_proc_stdout.decode("utf-8"))
 			logging.debug("proc: %s", proc.stdout.decode("utf-8"))
 			proc = subprocess.run(
 				"docker-compose logs -t",

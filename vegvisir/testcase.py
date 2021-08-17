@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import datetime
 from enum import Enum
 import tempfile
 import subprocess
@@ -6,6 +6,8 @@ import sys
 import logging
 from typing import List
 from vegvisir.implementation import RunStatus, Scenario
+import threading
+import time
 
 class Status(Enum):
 	SUCCES = 1
@@ -24,6 +26,42 @@ class TestResult:
 	def __init__(self):
 		pass
 
+class TestEnd:
+	_thread: threading.Thread = None
+
+	def __init__(self):
+		pass
+
+	#TODO give feedback to caller
+	def wait_for_end(self):
+		self._thread.start()
+		self._thread.join()
+
+class TestEndTimeout(TestEnd):
+	_timeout: int = 0
+	process: subprocess.Popen = None
+
+	def __init__(self, timeout):
+		super().__init__()
+		self._timeout = timeout
+
+	def setup(self, process):
+		self.process = process
+
+		def thread_func():
+			ctime = datetime.now()
+			#time.sleep(self._timeout)
+			while (datetime.now()-ctime).seconds < self._timeout:
+				if self.process.poll() != None:
+					logging.info('client exited successfully')
+					return
+				time.sleep(1)
+			self.process.terminate()
+			logging.info('client timed out')
+			
+		self._thread = threading.Thread(target=thread_func)
+
+
 class TestCase:
 	name: str = ""
 
@@ -37,7 +75,7 @@ class TestCase:
 	cert_fingerprint: str = ""
 	
 	scenario: Scenario = None
-	timeout: int = 60
+	testend: TestEnd = TestEndTimeout(60)
 
 	def __init__(self):
 		pass
@@ -74,10 +112,10 @@ class ServeTest(TestCase):
 	def __init__(self):
 		super().__init__()
 		self.name = "servetest"
-		self.timeout = 300
+		self.testend = TestEndTimeout(10)
 
 		self._www_dir = StaticDirectory("./www")
-		self.request_urls: str = "https://server4:443 https://server4:443/test.html"
+		self.request_urls: str = "https://server4:443/dashjs-qlog-abr/demo/demo.html?testrun"
 
 	def testname(self, perspective: Perspective):
 		if perspective == Perspective.SERVER:
