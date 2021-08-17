@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}results{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div id='results_header'>
+	<br />
+	<input type="radio" id="result_viewer_qvis" name="result_viewer" value="https://qvis.quictools.info/"><label
+		for="result_viewer_qvis">QVIS</label><br>
+	<input type="radio" id="result_viewer_custom_url" name="result_viewer" value="https://qvis.quictools.info/"><label
+		for="result_viewer_custom_url">custom url:</label><input type="text" id="result_viewer_custom_url_text"
+		name="result_viewer_custom_url_text">
+</div>
+<div id='results_table'>
+
+</div>
+<script src="{{ url_for('static', filename='results.js') }}"></script>
+{% endblock %}

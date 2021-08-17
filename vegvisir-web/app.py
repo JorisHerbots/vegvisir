@@ -249,3 +249,7 @@ def docker_root():
 			docker_returnvalue = None
 			docker_errormsg = None
 	return render_template('docker.html', loaded_sets=runner._image_sets)
+
+@bp.route('/results', methods=['GET'])
+def results():
+	return render_template('results.html')
