@@ -294,11 +294,13 @@ class Runner:
 		log_handler = logging.FileHandler(log_file.name)
 		log_handler.setLevel(logging.DEBUG)
 
-		log_dir = os.getcwd() + "/" + self._log_dir
+		log_dir = os.getcwd() + "/" + self._log_dir + "/"
+		log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_"
 		if client.type == Type.DOCKER:
-			log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" +  client.curr_image.repo + "_" + client.curr_image.name + "_" + client.curr_image.tag + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "_" + testcase.name
+			log_dir = log_dir + client.curr_image.repo + "_" + client.curr_image.name + "_" + client.curr_image.tag
 		else:
-			log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_" + client.name + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "_" + testcase.name
+			log_dir = log_dir + client.name 
+		log_dir = log_dir + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "/" + testcase.name
 		if self._test_repetitions > 1:
 			log_dir += '/run_' + str(self._curr_repetition)
 

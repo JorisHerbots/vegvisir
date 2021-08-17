@@ -4,9 +4,10 @@ from vegvisir.testcase import TestCaseWrapper
 from vegvisir.implementation import Implementation, RunStatus, Scenario, Shaper, Type
 import time
 from datetime import datetime
+import os
 
 from flask import (
-    Blueprint, render_template, request, flash, redirect, url_for
+    Blueprint, render_template, request, flash, redirect, url_for, jsonify
 )
 
 from vegvisir.runner import (
@@ -253,3 +254,23 @@ def docker_root():
 @bp.route('/results', methods=['GET'])
 def results():
 	return render_template('results.html')
+
+@bp.route('/results.json', methods=['GET'])
+def results_data():
+	file_list = []
+	headers = ['label', 'time', 'server_client', 'shaper', 'test', 'logs']
+	for root, dirs, files in os.walk('logs'):
+		for file in files:
+			file_info = {
+				'location': root + file,
+				'filename': file
+			}
+			dir_parts = root.split('/')
+			for i in range(len(headers[:-1])):
+				if len(dir_parts) > i+1:
+					file_info[headers[i]] = dir_parts[i+1]
+			file_list.append(file_info)
+	return jsonify(
+		headers=headers,
+		entries=file_list
+		)

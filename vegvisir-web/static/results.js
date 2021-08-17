@@ -1,14 +1,14 @@
-function set_results(table_div) {
+async function set_results(table_div) {
 	// clean table
 	table_div.innerHTML = '';
 	let table = document.createElement('table');
 	table_div.appendChild(table);
 
 	// get results
-	let data = {
-		headers: ['label', 'time', 'test', 'logs'],
-		entries: []
-	};
+	let data = {};
+	await fetch('/results.json')
+		.then(response => response.json())
+		.then(raw => { console.log(raw); data = raw; });
 
 	// set headers
 	let hr = document.createElement('tr');
@@ -20,7 +20,19 @@ function set_results(table_div) {
 	table.appendChild(hr);
 
 	// set in table
-
+	data.entries.forEach(entry => {
+		let tr = document.createElement('tr');
+		data.headers.forEach(header => {
+			let td = document.createElement('td');
+			if (header == 'logs') {
+				td.innerText = entry['filename'];
+			} else {
+				td.innerText = entry[header];
+			}
+			tr.appendChild(td);
+		});
+		table.appendChild(tr);
+	});
 }
 
 let header = document.getElementById('results_header');
