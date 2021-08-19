@@ -36,6 +36,9 @@ async function set_results(table_div) {
 		th.innerText = header;
 		hr.appendChild(th);
 	});
+	let th_analyze = document.createElement('th');
+	th_analyze.innerText = "Analyze";
+	hr.appendChild(th_analyze);
 	table.appendChild(hr);
 
 	class td {
@@ -88,6 +91,7 @@ async function set_results(table_div) {
 	let tds = recursive_table('', data.entries, 'logs');
 	tds.children.forEach(entry => {
 		let set_something = true;
+		let curr_analyze_id = '';
 		while (set_something) {
 			set_something = false;
 			let todo = [entry];
@@ -100,6 +104,10 @@ async function set_results(table_div) {
 			}
 			let tr = document.createElement('tr');
 			let patharray = new Array();
+			let analyze_info = {
+				set: false,
+				rowspan: 1,
+			};
 
 			function helper(nodes) {
 				col++;
@@ -117,6 +125,11 @@ async function set_results(table_div) {
 
 							let linktext = patharray.join('/') + '/';
 							if (col < col_size - 1) {
+								if (col === 4) {
+									analyze_info.set = true;
+									analyze_info.rowspan = node.depth;
+									curr_analyze_id = node.path;
+								}
 								let link = document.createElement('a');
 								link.href = node.path;
 								linktext += node.node;
@@ -124,34 +137,18 @@ async function set_results(table_div) {
 								td.appendChild(link);
 							}
 							else if (show_any_log) {
-								let button = document.createElement('button');
-								button.innerHTML += linktext + '<b>' + node.node + '</b>';
-								button.onclick = function () {
-									let options = document.getElementsByName('result_viewer');
-									let selected_option = undefined;
-									options.forEach(opt => {
-										if (opt.checked) {
-											selected_option = opt;
-										}
-									});
-									if (selected_option === undefined) {
-										console.error('no selected viewer');
-										return;
-									}
-									let link_to_open = selected_option.value;
-									if (link_to_open === "open file") {
-										link_to_open = window.location.origin + '/' + node.path;
-									}
-									else if (link_to_open === "custom url") {
-										let url_input = document.getElementById('result_viewer_custom_url_text');
-										link_to_open = url_input.value + window.location.origin + '/' + node.path;
-									}
-									else {
-										link_to_open += window.location.origin + '/' + node.path;
-									}
-									window.open(link_to_open);
-								};
-								td.appendChild(button);
+								let link = document.createElement('a');
+								link.href = node.path;
+								linktext += node.node;
+								link.innerHTML = linktext;
+								td.appendChild(link);
+
+								let checkbox = document.createElement('input');
+								checkbox.type = 'checkbox';
+								checkbox.id = node.path;
+								checkbox.value = node.path;
+								checkbox.name = curr_analyze_id;
+								td.appendChild(checkbox);
 							}
 							td.setAttribute('rowspan', node.depth);
 							tr.appendChild(td);
@@ -171,6 +168,65 @@ async function set_results(table_div) {
 			helper(todo);
 
 			if (set_something) {
+				if (analyze_info.set) {
+					let td = document.createElement('td');
+					td.setAttribute('rowspan', analyze_info.rowspan);
+
+					let button = document.createElement('button');
+					button.innerText = 'Analyze';
+					td.appendChild(button);
+
+					let cai = curr_analyze_id;
+					button.onclick = function () {
+						let files = document.getElementsByName(cai);
+						let selected_files = [];
+						files.forEach(file => {
+							if (file.checked) {
+								selected_files.push(file);
+							}
+						});
+
+						let options = document.getElementsByName('result_viewer');
+						let selected_option = undefined;
+						options.forEach(opt => {
+							if (opt.checked) {
+								selected_option = opt;
+							}
+						});
+						if (selected_option === undefined) {
+							console.error('no selected viewer');
+							return;
+						}
+
+						let link_to_open = undefined;
+						if (selected_option.value === "download") {
+							link_to_open = window.location.origin + '/' + node.path;
+						}
+						else if (selected_option.value === "custom url") {
+							let url_input = document.getElementById('result_viewer_custom_url_text');
+							link_to_open = url_input.value;
+						}
+						else {
+							link_to_open = selected_option.value;
+						}
+
+						if (link_to_open === undefined) {
+							console.error('no link to analyze');
+							return;
+						}
+						for (let index = 0; index < selected_files.length; index++) {
+							const file = selected_files[index];
+							link_to_open += 'file' + String(index + 1) + '=' + window.location.origin + '/' + file.value;
+							if (index < selected_files.length - 1) {
+								link_to_open += '&';
+							}
+						}
+
+						window.open(link_to_open);
+					};
+
+					tr.appendChild(td);
+				}
 				table.appendChild(tr);
 			}
 		}
