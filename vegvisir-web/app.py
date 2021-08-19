@@ -257,20 +257,20 @@ def results():
 
 @bp.route('/results.json', methods=['GET'])
 def results_data():
-	file_list = []
+	file_data = {}
 	headers = ['label', 'time', 'server_client', 'shaper', 'test', 'logs']
 	for root, dirs, files in os.walk('logs'):
 		for file in files:
-			file_info = {
-				'location': root + file,
-				'filename': file
-			}
-			dir_parts = root.split('/')
-			for i in range(len(headers[:-1])):
-				if len(dir_parts) > i+1:
-					file_info[headers[i]] = dir_parts[i+1]
-			file_list.append(file_info)
+			cd = file_data
+			dir_parts = root.split('/')[1:]
+			for p in dir_parts:
+				if not p in cd:
+					cd[p] = {}
+				cd = cd[p]
+			if not '/files' in cd:
+				cd['/files'] = []
+			cd['/files'].append(file)
 	return jsonify(
 		headers=headers,
-		entries=file_list
+		entries=file_data
 		)
