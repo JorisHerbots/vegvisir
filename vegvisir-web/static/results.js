@@ -10,6 +10,25 @@ async function set_results(table_div) {
 		.then(response => response.json())
 		.then(raw => { data = raw; });
 
+	let show_json_qlog = false;
+	let show_pcap = false;
+	let show_other = false;
+	let log_filters = document.getElementsByName('log_filter');
+	log_filters.forEach(filter => {
+		if (filter.checked) {
+			if (filter.id === 'log_filter_json') {
+				show_json_qlog = true;
+			}
+			if (filter.id === 'log_filter_pcap') {
+				show_pcap = true;
+			}
+			if (filter.id === 'log_filter_other') {
+				show_other = true;
+			}
+		}
+	});
+	let show_any_log = show_json_qlog || show_pcap || show_other;
+
 	// set headers
 	let hr = document.createElement('tr');
 	data.headers.forEach(header => {
@@ -34,18 +53,36 @@ async function set_results(table_div) {
 		for (const child in children) {
 			if (child == '/files') {
 				children[child].forEach(file => {
-					tds.push(new td(file, 1, [], path + node + '/' + file));
+					let show = false;
+					let filename_parts = file.split('.');
+					let ext = filename_parts[filename_parts.length - 1];
+
+					if (['json', 'qlog'].includes(ext)) { if (show_json_qlog) { show = true; } }
+					else if (['pcap'].includes(ext)) { if (show_pcap) { show = true; } }
+					else if (show_other) { show = true; }
+
+					if (show) {
+						tds.push(new td(file, 1, [], path + node + '/' + file));
+					}
 				});
 			}
 			else {
-				tds = tds.concat([recursive_table(child, children[child], path + node + '/')]);
+				let rc = recursive_table(child, children[child], path + node + '/');
+				if (rc !== undefined) {
+					tds = tds.concat([rc]);
+				}
 			}
 		}
 		let max_depth = 0;
 		tds.forEach(td => {
 			max_depth += td.depth;
 		});
+		if (max_depth < 1) {
+			max_depth = 1;
+		}
+
 		return new td(node, max_depth, tds, path + node + '/');
+
 	};
 
 	let tds = recursive_table('', data.entries, 'logs');
@@ -86,7 +123,7 @@ async function set_results(table_div) {
 								link.innerHTML = linktext;
 								td.appendChild(link);
 							}
-							else {
+							else if (show_any_log) {
 								let button = document.createElement('button');
 								button.innerHTML += linktext + '<b>' + node.node + '</b>';
 								button.onclick = function () {
@@ -144,12 +181,13 @@ let header = document.getElementById('results_header');
 let table = document.getElementById('results_table');
 
 // setup header
-let refresh = document.createElement('button');
-refresh.onclick = function () {
+let refresh_btn = document.createElement('button');
+let refresh = function () {
 	set_results(table);
-}
-refresh.innerText = 'Refresh';
-header.prepend(refresh);
+};
+refresh_btn.onclick = refresh;
+refresh_btn.innerText = 'Refresh';
+header.prepend(refresh_btn);
 
 // Run
 set_results(table);

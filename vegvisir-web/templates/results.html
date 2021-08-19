@@ -15,6 +15,16 @@
 		for="result_viewer_custom_url">custom url:</label><input type="text" id="result_viewer_custom_url_text"
 		name="result_viewer_custom_url_text">
 </div>
+<hr />
+<div>
+	Filter:
+	<input type="checkbox" value="log_filter_json" id="log_filter_json" name="log_filter" onchange="refresh()"
+		checked><label for="">json/qlog</label>
+	<input type="checkbox" value="log_filter_pcap" id="log_filter_pcap" name="log_filter" onchange="refresh()"><label
+		for="">pcap</label>
+	<input type="checkbox" value="log_filter_other" id="log_filter_other" name="log_filter" onchange="refresh()"><label
+		for="">other</label>
+</div>
 <div id='results_table'>
 
 </div>
