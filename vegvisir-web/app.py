@@ -11,6 +11,7 @@ import os
 from flask import (
 	Blueprint, render_template, request, flash, redirect, url_for, jsonify, abort
 )
+from flask_cors import cross_origin
 
 from vegvisir.runner import (
 	Runner
@@ -278,6 +279,7 @@ def results_data():
 		)
 
 @bp.route('logs/<path:req_path>')
+@cross_origin()
 def log_listing(req_path):
 	BASE_DIR = os.getcwd() + '/logs'
 
