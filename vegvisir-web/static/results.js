@@ -76,7 +76,7 @@ async function set_results(table_div) {
 
 							let td = document.createElement('td');
 							let link = document.createElement('a');
-							link.href = 'http://localhost:8000/' + node.path;	//TODO where are logs hosted?
+							link.href = node.path;
 							let linktext = patharray.join('/') + '/';
 							if (col < col_size - 1) {
 								linktext += node.node;

@@ -1,5 +1,7 @@
 import threading
 from typing import List
+
+from werkzeug.utils import send_file
 from vegvisir.testcase import TestCaseWrapper
 from vegvisir.implementation import Implementation, RunStatus, Scenario, Shaper, Type
 import time
@@ -7,7 +9,7 @@ from datetime import datetime
 import os
 
 from flask import (
-    Blueprint, render_template, request, flash, redirect, url_for, jsonify
+	Blueprint, render_template, request, flash, redirect, url_for, jsonify, abort
 )
 
 from vegvisir.runner import (
@@ -274,3 +276,26 @@ def results_data():
 		headers=headers,
 		entries=file_data
 		)
+
+@bp.route('logs/<path:req_path>')
+def log_listing(req_path):
+	BASE_DIR = os.getcwd() + '/logs'
+
+	# Joining the base and the requested path
+	abs_path = os.path.join(BASE_DIR, req_path)
+
+	print(BASE_DIR)
+	print(req_path)
+	print(abs_path)
+
+	# Return 404 if path doesn't exist
+	if not os.path.exists(abs_path):
+		return abort(404)
+
+	# Check if path is a file and serve
+	if os.path.isfile(abs_path):
+		return send_file(abs_path, environ=request.environ)
+
+	# Show directory contents
+	files = os.listdir(abs_path)
+	return render_template('files.html', files=files)
