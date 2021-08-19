@@ -8,7 +8,7 @@ async function set_results(table_div) {
 	let data = {};
 	await fetch('/results.json')
 		.then(response => response.json())
-		.then(raw => { console.log(raw); data = raw; });
+		.then(raw => { data = raw; });
 
 	// set headers
 	let hr = document.createElement('tr');
@@ -75,18 +75,46 @@ async function set_results(table_div) {
 							set_something = true;
 
 							let td = document.createElement('td');
-							let link = document.createElement('a');
-							link.href = node.path;
+
 							let linktext = patharray.join('/') + '/';
 							if (col < col_size - 1) {
+								let link = document.createElement('a');
+								link.href = node.path;
 								linktext += node.node;
+								link.innerHTML = linktext;
+								td.appendChild(link);
 							}
 							else {
-								linktext += '<b>' + node.node + '</b>';
+								let button = document.createElement('button');
+								button.innerHTML += linktext + '<b>' + node.node + '</b>';
+								button.onclick = function () {
+									let options = document.getElementsByName('result_viewer');
+									let selected_option = undefined;
+									options.forEach(opt => {
+										if (opt.checked) {
+											selected_option = opt;
+										}
+									});
+									if (selected_option === undefined) {
+										console.error('no selected viewer');
+										return;
+									}
+									let link_to_open = selected_option.value;
+									if (link_to_open === "open file") {
+										link_to_open = window.location.origin + '/' + node.path;
+									}
+									else if (link_to_open === "custom url") {
+										let url_input = document.getElementById('result_viewer_custom_url_text');
+										link_to_open = url_input.value + window.location.origin + '/' + node.path;
+									}
+									else {
+										link_to_open += window.location.origin + '/' + node.path;
+									}
+									window.open(link_to_open);
+								};
+								td.appendChild(button);
 							}
-							link.innerHTML = linktext;
-							td.appendChild(link);
-							td.setAttribute('rowspan', node.depth)
+							td.setAttribute('rowspan', node.depth);
 							tr.appendChild(td);
 						}
 						else {

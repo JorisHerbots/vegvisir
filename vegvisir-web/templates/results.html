@@ -7,9 +7,11 @@
 {% block content %}
 <div id='results_header'>
 	<br />
-	<input type="radio" id="result_viewer_qvis" name="result_viewer" value="https://qvis.quictools.info/"><label
+	<input type="radio" id="result_viewer_open_file" name="result_viewer" value="open file" checked><label
+		for="result_viewer_open_file">Open file</label><br>
+	<input type="radio" id="result_viewer_qvis" name="result_viewer" value="https://qvis.quictools.info/?file="><label
 		for="result_viewer_qvis">QVIS</label><br>
-	<input type="radio" id="result_viewer_custom_url" name="result_viewer" value="https://qvis.quictools.info/"><label
+	<input type="radio" id="result_viewer_custom_url" name="result_viewer" value="custom url"><label
 		for="result_viewer_custom_url">custom url:</label><input type="text" id="result_viewer_custom_url_text"
 		name="result_viewer_custom_url_text">
 </div>
