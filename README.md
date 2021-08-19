@@ -34,6 +34,11 @@
 - export gui settings
 - result view tool
   - ![results ui](imgs/results_ui.jpg)
+  - filter on 'json/qlog', 'pcap', 'other'
+  - send multiple files to viewer
+  - download instead of open
+- tests paremeters
+- replace ns3 with tc-netem
 
 ### Based upon
 
