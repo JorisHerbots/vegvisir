@@ -302,7 +302,7 @@ class Runner:
 			log_dir = log_dir + client.name 
 		log_dir = log_dir + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "/" + testcase.name
 		if self._test_repetitions > 1:
-			log_dir += '/run_' + str(self._curr_repetition)
+			log_dir += '_run_' + str(self._curr_repetition)
 
 		client_log_dir_local = log_dir + '/client'
 		server_log_dir_local = log_dir + '/server'

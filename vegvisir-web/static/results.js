@@ -57,6 +57,7 @@ async function set_results(table_div) {
 			let col = -1;
 			let col_size = data.headers.length;
 			let col_set = [];
+			let depth_set = entry.depth;
 			for (let index = 0; index < col_size; index++) {
 				col_set.push(false)
 			}
@@ -67,12 +68,13 @@ async function set_results(table_div) {
 				col++;
 				nodes.forEach(node => {
 					col_is_set = (col < col_size - 1) ? col_set[col] : col_set[col_size - 1];
-					if (!node.set && !col_is_set) {
+					if (!node.set && !col_is_set && depth_set >= node.depth) {
 						if (col < col_size - 1 || node.children.length == 0) {
 							node.set = true;
 							let col_to_set = (col < col_size - 1) ? col : col_size - 1;
 							col_set[col_to_set] = true;
 							set_something = true;
+							depth_set = node.depth;
 
 							let td = document.createElement('td');
 
@@ -142,7 +144,12 @@ let header = document.getElementById('results_header');
 let table = document.getElementById('results_table');
 
 // setup header
-let refresh = document.createElement('button')
-refresh.onclick = set_results(table)
-refresh.innerText = 'Refresh'
-header.prepend(refresh)
+let refresh = document.createElement('button');
+refresh.onclick = function () {
+	set_results(table);
+}
+refresh.innerText = 'Refresh';
+header.prepend(refresh);
+
+// Run
+set_results(table);
