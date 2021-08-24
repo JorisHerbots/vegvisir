@@ -1,5 +1,7 @@
 import threading
 from typing import List
+from zipfile import ZipFile
+import tempfile
 
 from werkzeug.utils import send_file
 from vegvisir.testcase import TestCaseWrapper
@@ -286,9 +288,9 @@ def log_listing(req_path):
 	# Joining the base and the requested path
 	abs_path = os.path.join(BASE_DIR, req_path)
 
-	print(BASE_DIR)
-	print(req_path)
-	print(abs_path)
+	# print(BASE_DIR)
+	# print(req_path)
+	# print(abs_path)
 
 	# Return 404 if path doesn't exist
 	if not os.path.exists(abs_path):
@@ -301,3 +303,23 @@ def log_listing(req_path):
 	# Show directory contents
 	files = os.listdir(abs_path)
 	return render_template('files.html', files=files)
+
+@bp.route('/download-logs/', methods=['GET'])
+def download_logs():
+	file_paths = []
+	raw_keys = list(request.args.keys())
+
+	for key in raw_keys:
+		if key.startswith('file'):
+			path = 'logs'.join(request.args.get(key).split('logs')[1:])
+			file_paths.append(path)
+
+	if len(file_paths) == 1:
+		return redirect('/logs' + file_paths[0])
+
+	_, zip_path = tempfile.mkstemp()
+	with ZipFile(zip_path, "w") as zip:
+		for f in file_paths:
+			zip.write('logs' + f)
+
+	return send_file(zip_path, download_name="logs.zip", environ=request.environ)

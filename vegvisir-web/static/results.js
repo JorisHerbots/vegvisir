@@ -200,7 +200,7 @@ async function set_results(table_div) {
 
 						let link_to_open = undefined;
 						if (selected_option.value === "download") {
-							link_to_open = window.location.origin + '/' + node.path;
+							link_to_open = window.location.origin + '/download-logs?';
 						}
 						else if (selected_option.value === "custom url") {
 							let url_input = document.getElementById('result_viewer_custom_url_text');
