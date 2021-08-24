@@ -182,19 +182,6 @@ class Runner:
 		if (out != b'' and not out.startswith(b'[sudo] password for ')) or not err is None:
 			logging.debug("enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
-		#TODO create backup using -b and reset to backup instead of removing entry later
-		hosts_proc = subprocess.Popen(
-				["sudo", "-S", "hostman", "add", "193.167.100.100", "server4"],
-				shell=False,
-				stdin=subprocess.PIPE,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT
-			)
-		out, err = hosts_proc.communicate(self._sudo_password.encode())
-		logging.debug("append entry to hosts: %s", out.decode('utf-8'))
-		if not err is None:
-			logging.debug("appending entry to hosts file resulted in error: %s", err)
-
 		self._clients_active = list((x for x in self._clients if x.active))
 		self._servers_active = list((x for x in self._servers if x.active))
 		self._shapers_active = list((x for x in self._shapers if x.active))
@@ -220,13 +207,28 @@ class Runner:
 							server.curr_image = server_image
 							for client in self._clients_active:
 								client.status = RunStatus.RUNNING
+
+								if client.type == Type.APPLICATION:
+									#TODO create backup using -b and reset to backup instead of removing entry later
+									hosts_proc = subprocess.Popen(
+											["sudo", "-S", "hostman", "add", "193.167.100.100", "server4"],
+											shell=False,
+											stdin=subprocess.PIPE,
+											stdout=subprocess.PIPE,
+											stderr=subprocess.STDOUT
+										)
+									out, err = hosts_proc.communicate(self._sudo_password.encode())
+									logging.debug("append entry to hosts: %s", out.decode('utf-8'))
+									if not err is None:
+										logging.debug("appending entry to hosts file resulted in error: %s", err)
+
 								for test in self._tests_active:
 									test.status = RunStatus.RUNNING
 
 									testcase = test.testcase
 									testcase.scenario = scenario
 
-									if client.type == Type.DOCKER.value:
+									if client.type == Type.DOCKER:
 										client_images = list((x for x in client.images if x.active))
 										for client_image in client_images:
 											client.curr_image = client_image
@@ -256,21 +258,22 @@ class Runner:
 											self._curr_repetition += 1
 									test.status = RunStatus.DONE
 								client.status = RunStatus.DONE
+
+								if client.type == Type.APPLICATION:
+									hosts_proc = subprocess.Popen(
+											["sudo", "-S", "hostman", "remove", "--names=server4"],
+											shell=False,
+											stdin=subprocess.PIPE,
+											stdout=subprocess.PIPE,
+											stderr=subprocess.STDOUT
+										)
+									out, err = hosts_proc.communicate(self._sudo_password.encode())
+									logging.debug("remove entry from hosts: %s", out.decode('utf-8'))
+									if not err is None:
+										logging.debug("removing entry from hosts file resulted in error: %s", err)
 						server.status = RunStatus.DONE
 				scenario.status = RunStatus.DONE
 			shaper.status = RunStatus.DONE
-
-		hosts_proc = subprocess.Popen(
-				["sudo", "-S", "hostman", "remove", "--names=server4"],
-				shell=False,
-				stdin=subprocess.PIPE,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT
-			)
-		out, err = hosts_proc.communicate(self._sudo_password.encode())
-		logging.debug("remove entry from hosts: %s", out.decode('utf-8'))
-		if not err is None:
-			logging.debug("removing entry from hosts file resulted in error: %s", err)
 
 		self._end_time = datetime.now()
 		logging.info("elapsed time since start of run: %s", str(self._end_time - self._start_time))
@@ -384,39 +387,40 @@ class Runner:
 				stderr=subprocess.STDOUT
 			)
 			
-			net_proc = subprocess.Popen(
-				["sudo", "-S", "ip", "route", "del", "193.167.100.0/24"],
-				shell=False,
-				stdin=subprocess.PIPE,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT
-			)
-			out, err = net_proc.communicate(self._sudo_password.encode())
-			logging.debug("network setup: %s", out.decode("utf-8"))
-			if not err is None:
-				logging.debug("network error: %s", err.decode("utf-8"))
-			net_proc = subprocess.Popen(
-				["sudo", "-S", "ip", "route", "add", "193.167.100.0/24", "via", "193.167.0.2"],
-				shell=False,
-				stdin=subprocess.PIPE,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT
-			)
-			out, err = net_proc.communicate(self._sudo_password.encode())
-			logging.debug("network setup: %s", out.decode("utf-8"))
-			if not err is None:
-				logging.debug("network error: %s", err.decode("utf-8"))
-			net_proc = subprocess.Popen(
-				["sudo", "-S", "./veth-checksum.sh"],
-				shell=False,
-				stdin=subprocess.PIPE,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT
-			)
-			out, err = net_proc.communicate(self._sudo_password.encode())
-			logging.debug("network setup: %s", out.decode("utf-8"))
-			if not err is None:
-				logging.debug("network error: %s", err.decode("utf-8"))
+			if client.type == Type.APPLICATION:
+				net_proc = subprocess.Popen(
+					["sudo", "-S", "ip", "route", "del", "193.167.100.0/24"],
+					shell=False,
+					stdin=subprocess.PIPE,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.STDOUT
+				)
+				out, err = net_proc.communicate(self._sudo_password.encode())
+				logging.debug("network setup: %s", out.decode("utf-8"))
+				if not err is None:
+					logging.debug("network error: %s", err.decode("utf-8"))
+				net_proc = subprocess.Popen(
+					["sudo", "-S", "ip", "route", "add", "193.167.100.0/24", "via", "193.167.0.2"],
+					shell=False,
+					stdin=subprocess.PIPE,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.STDOUT
+				)
+				out, err = net_proc.communicate(self._sudo_password.encode())
+				logging.debug("network setup: %s", out.decode("utf-8"))
+				if not err is None:
+					logging.debug("network error: %s", err.decode("utf-8"))
+				net_proc = subprocess.Popen(
+					["sudo", "-S", "./veth-checksum.sh"],
+					shell=False,
+					stdin=subprocess.PIPE,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.STDOUT
+				)
+				out, err = net_proc.communicate(self._sudo_password.encode())
+				logging.debug("network setup: %s", out.decode("utf-8"))
+				if not err is None:
+					logging.debug("network error: %s", err.decode("utf-8"))
 
 			# Log kernel/net parameters
 			net_proc = subprocess.Popen(
@@ -445,23 +449,32 @@ class Runner:
 
 			# Setup client
 			client_cmd = ""
+			client_proc = None
 			if client.type == Type.DOCKER:
-				params += "CLIENT=" + client.curr_image.url + " "
+				params += " CLIENT=" + client.curr_image.url + " "
 				client_cmd = (
 					params
 					+ " docker-compose up --abort-on-container-exit --timeout 1 "
 					+ "client"
 				)
+				client_proc = subprocess.Popen(
+					client_cmd,
+					shell=True,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.STDOUT
+				)
+
 			elif client.type == Type.APPLICATION:
 				client_cmd = client.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls)
-
+				logging.debug("running client: %s", client_cmd)
+				client_proc = subprocess.Popen(
+					client_cmd.split(' '),
+					shell=False,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.STDOUT,
+				)
 			logging.debug("running client: %s", client_cmd)
-			client_proc = subprocess.Popen(
-				client_cmd.split(' '),
-				shell=False,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT,
-			)
+
 			try:
 				if isinstance(testcase.testend, TestEndUntilDownload):
 					testcase.testend.setup(client_proc, log_dir + '/client', testcase.file_to_find, testcase.timeout_time)

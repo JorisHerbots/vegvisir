@@ -211,6 +211,9 @@ async function set_results(table_div) {
 							else {
 								link_to_open = selected_option.value;
 							}
+							if (!link_to_open.endsWith('?')) {
+								link_to_open += '?';
+							}
 
 							if (link_to_open === undefined) {
 								console.error('no link to analyze');
