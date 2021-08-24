@@ -42,12 +42,13 @@ async function set_results(table_div) {
 	table.appendChild(hr);
 
 	class td {
-		constructor(node, depth, children, path) {
+		constructor(node, depth, children, path, is_file) {
 			this.node = node;
 			this.depth = depth;
 			this.children = children;
 			this.path = path;
 			this.set = false;
+			this.is_file = is_file;
 		}
 	};
 
@@ -65,7 +66,7 @@ async function set_results(table_div) {
 					else if (show_other) { show = true; }
 
 					if (show) {
-						tds.push(new td(file, 1, [], path + node + '/' + file));
+						tds.push(new td(file, 1, [], path + node + '/' + file, true));
 					}
 				});
 			}
@@ -80,11 +81,11 @@ async function set_results(table_div) {
 		tds.forEach(td => {
 			max_depth += td.depth;
 		});
-		if (max_depth < 1) {
-			max_depth = 1;
-		}
+		// if (max_depth < 1) {
+		// 	max_depth = 1;
+		// }
 
-		return new td(node, max_depth, tds, path + node + '/');
+		return new td(node, max_depth, tds, path + node + '/', false);
 
 	};
 
@@ -114,7 +115,7 @@ async function set_results(table_div) {
 				nodes.forEach(node => {
 					col_is_set = (col < col_size - 1) ? col_set[col] : col_set[col_size - 1];
 					if (!node.set && !col_is_set && depth_set >= node.depth) {
-						if (col < col_size - 1 || node.children.length == 0) {
+						if (col < col_size - 1 || (node.children.length == 0 && node.is_file)) {
 							node.set = true;
 							let col_to_set = (col < col_size - 1) ? col : col_size - 1;
 							col_set[col_to_set] = true;
@@ -136,7 +137,7 @@ async function set_results(table_div) {
 								link.innerHTML = linktext;
 								td.appendChild(link);
 							}
-							else if (show_any_log) {
+							else if (show_any_log && node.is_file) {
 								let link = document.createElement('a');
 								link.href = node.path;
 								linktext += node.node;
