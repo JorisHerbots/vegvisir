@@ -418,6 +418,31 @@ class Runner:
 			if not err is None:
 				logging.debug("network error: %s", err.decode("utf-8"))
 
+			# Log kernel/net parameters
+			net_proc = subprocess.Popen(
+				["sudo", "-S", "ip", "a"],
+				shell=False,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+			out, err = net_proc.communicate(self._sudo_password.encode())
+			logging.debug("net log:\n%s", out.decode("utf-8"))
+			if not err is None:
+				logging.debug("net log error: %s", err.decode("utf-8"))
+
+			kernel_proc = subprocess.Popen(
+				["sudo", "-S", "sysctl", "-a"],
+				shell=False,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT
+			)
+			out, err = kernel_proc.communicate(self._sudo_password.encode())
+			logging.debug("kernel log:\n%s", out.decode("utf-8"))
+			if not err is None:
+				logging.debug("kernel log error: %s", err.decode("utf-8"))
+
 			# Setup client
 			client_cmd = ""
 			if client.type == Type.DOCKER:
