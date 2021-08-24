@@ -47,12 +47,12 @@ class TestEnd:
 class TestEndTimeout(TestEnd):
 	_timeout: int = 0
 
-	def __init__(self, timeout):
+	def __init__(self):
 		super().__init__()
-		self._timeout = timeout
 
-	def setup(self, process):
+	def setup(self, process, timeout):
 		super().setup(process)
+		self._timeout = timeout
 
 		def thread_func():
 			ctime = datetime.now()
@@ -69,14 +69,14 @@ class TestEndTimeout(TestEnd):
 class TestEndUntilDownload(TestEnd):
 	_timeout: int = 0
 
-	def __init__(self, timeout):
+	def __init__(self):
 		super().__init__()
-		self._timeout = timeout
 
-	def setup(self, process, path, file):
+	def setup(self, process, path, file, timeout):
 		super().setup(process)
 		global running
 		running = True
+		self._timeout = timeout
 
 		class DownloadHandler(FileSystemEventHandler):
 			def on_created(self, event):
@@ -121,7 +121,7 @@ class TestCase:
 	cert_fingerprint: str = ""
 	
 	scenario: Scenario = None
-	testend: TestEnd = TestEndTimeout(60)
+	testend: TestEnd = TestEndTimeout()
 
 	def __init__(self):
 		pass
@@ -154,11 +154,13 @@ class TestCase:
 		return [""]
 
 class ServeTest(TestCase):
+	file_to_find = "create-name-todo.json"
+	timeout_time = 60
 
 	def __init__(self):
 		super().__init__()
 		self.name = "servetest"
-		self.testend = TestEndUntilDownload(300)
+		self.testend = TestEndUntilDownload()
 
 		self._www_dir = StaticDirectory("./www")
 		self.request_urls: str = "https://server4:443/dashjs-qlog-abr/demo/demo.html?testrun"

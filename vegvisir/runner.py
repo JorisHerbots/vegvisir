@@ -12,7 +12,7 @@ import shutil
 from pathlib import Path
 
 from .implementation import Application, Command, Docker, Image, Scenario, Shaper, Implementation, Role, Type, RunStatus, get_name_from_image, get_repo_from_image, get_tag_from_image
-from .testcase import Perspective, ServeTest, StaticDirectory, Status, TESTCASES, TestCase, TestEndUntilDownload, TestResult, TestCaseWrapper
+from .testcase import Perspective, ServeTest, StaticDirectory, Status, TESTCASES, TestCase, TestEndTimeout, TestEndUntilDownload, TestResult, TestCaseWrapper
 
 class LogFileFormatter(logging.Formatter):
 	def format(self, record):
@@ -464,7 +464,9 @@ class Runner:
 			)
 			try:
 				if isinstance(testcase.testend, TestEndUntilDownload):
-					testcase.testend.setup(client_proc, log_dir + '/client', 'create-name-todo.json')
+					testcase.testend.setup(client_proc, log_dir + '/client', testcase.file_to_find, testcase.timeout_time)
+				elif isinstance(testcase.testend, TestEndTimeout):
+					testcase.testend.setup(client_proc, testcase.timeout_time)
 				else:
 					testcase.testend.setup(client_proc)
 				testcase.testend.wait_for_end()

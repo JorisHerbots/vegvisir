@@ -153,17 +153,20 @@
 							<label for="test.{{ test.testcase.name }}.arg@request">client
 								url:</label>
 							<input type="text" style="width: 100%;" id="test.{{ test.testcase.name }}.arg@request"
-								name="test.{{ test.testcase.name }}.arg@request">
+								name="test.{{ test.testcase.name }}.arg@request"
+								value="{{ test.testcase.request_urls }}">
 						</li>
 						<li>
 							<label for="test.{{ test.testcase.name }}.arg@output">output file:</label>
 							<input type="text" style="width: 100%;" id="test.{{ test.testcase.name }}.arg@output"
-								name="test.{{ test.testcase.name }}.arg@output">
+								name="test.{{ test.testcase.name }}.arg@output"
+								value="{{ test.testcase.file_to_find }}">
 						</li>
 						<li>
 							<label for="test.{{ test.testcase.name }}.arg@timeout">timeout is seconds:</label>
 							<input type="number" style="width: 100%;" id="test.{{ test.testcase.name }}.arg@timeout"
-								name="test.{{ test.testcase.name }}.arg@timeout">
+								name="test.{{ test.testcase.name }}.arg@timeout"
+								value="{{ test.testcase.timeout_time }}">
 						</li>
 					</ul>
 				</li>

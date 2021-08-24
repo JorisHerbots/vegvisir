@@ -108,6 +108,13 @@ def run():
 		for test in tests:
 			if 'test.' + test.testcase.name in form:
 				test.active = True
+				for arg in (x for x in request.form if x.startswith('test.' + test.testcase.name + '.arg@')):
+					if arg.endswith('request'):
+						test.testcase.request_urls = request.form[arg]
+					elif arg.endswith('output'):
+						test.testcase.file_to_find = request.form[arg]
+					elif arg.endswith('timeout'):
+						test.testcase.timeout_time = int(request.form[arg])
 			else:
 				test.active = False
 		
