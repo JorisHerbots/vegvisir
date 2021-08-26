@@ -354,12 +354,13 @@ class Runner:
 			if client.type == Type.APPLICATION:
 				for setup_cmd in client.setup:
 					out = ""
-					setup_cmd.command = setup_cmd.command.format(client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
+					setup_cmd.command_formatted = setup_cmd.command.format(client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
+					logging.debug("chrome setup command: %s", setup_cmd.command_formatted)
 					if setup_cmd.replace_tilde:
-						setup_cmd.command = setup_cmd.command.replace("~", str(Path.home()))
+						setup_cmd.command_formatted = setup_cmd.command_formatted.replace("~", str(Path.home()))
 					if setup_cmd.sudo:
 						net_proc = subprocess.Popen(
-						["sudo", "-S"] + setup_cmd.command.split(" "),
+						["sudo", "-S"] + setup_cmd.command_formatted.split(" "),
 						shell=False,
 						stdin=subprocess.PIPE,
 						stdout=subprocess.PIPE,
@@ -369,13 +370,13 @@ class Runner:
 						out += str(o) + "\n" + str(e)
 					else:
 						proc = subprocess.run(
-							setup_cmd.command,
+							setup_cmd.command_formatted,
 							shell=True,
 							stdout=subprocess.PIPE,
 							stderr=subprocess.STDOUT
 						)
 						out += proc.stdout.decode("utf-8")
-					logging.debug("client setup: %s\n%s", setup_cmd.command, out)
+					logging.debug("client setup: %s\n%s", setup_cmd.command_formatted, out)
 
 			# Setup server and network
 			#TODO exit on error
