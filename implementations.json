@@ -47,11 +47,11 @@
 				"active": true
 			},
 			"akamai cellular loss": {
-				"arguments": "\"akamai_cellular_emulation.sh loss_based median\"",
+				"arguments": "\"akamai_cellular_emulation.sh loss_based median 37\"",
 				"active": false
 			},
 			"akamai cellular experience": {
-				"arguments": "\"akamai_cellular_emulation.sh experience_based fair\"",
+				"arguments": "\"akamai_cellular_emulation.sh experience_based fair 37\"",
 				"active": false
 			}
 		}

@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import subprocess
+from time import time, sleep
 from typing import List
 import json
 import tempfile
@@ -448,6 +449,9 @@ class Runner:
 			if not err is None:
 				logging.debug("kernel log error: %s", err.decode("utf-8"))
 
+			# Wait for server and shaper to be ready
+			sleep(2)
+			
 			# Setup client
 			client_cmd = ""
 			client_proc = None

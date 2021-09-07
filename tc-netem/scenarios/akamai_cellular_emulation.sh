@@ -99,14 +99,75 @@ reset_netem () {
 
 echo "$(reset_netem)"
 
+get_current_time () {
+	echo $(date +%s%3N) # = nanoseconds rounded to the first 3 digits, which is milliseconds.
+}
+
 count=0
 current_time=9999
 interval=0.07
 loss_loop=0
 
-get_current_time () {
-	echo $(date +%s%3N)
-}
+sleep_time=0.032
+# Robin Marx, https://speeder.edm.uhasselt.be/webist/files/cellular_emulation.sh.txt, said:
+# > This script wants to update settings every 70ms (average RTT between user and edge server).
+# > For some reason, instead of actually measuring when 70ms will be done and triggering updates then,
+# > the original akamai script assumes a loop will always take the same amount of time to execute and hardcodes the timeout instead of actually measuring
+# > (the original script doesn't actually call or use the get_current_time method)
+# > This means we also need to do these measurements (using get_current_time) for our setup and modify accordingly.
+
+# > Measurements in docker container:
+# > measure(); sleep 0.001; measure(); measures about 1ms timeout, which is good! : can measure about at ms granularity
+# > measure(); full code without ingress; sleep 0.001; measure(); measures on average 29ms timeout for the full loop 
+# > measuring individual tc and python commands gives the same measurements as the original Akamai: 4ms for tc, about 10ms for python
+# > confirmed: measurements are the same if we start script from nodejs instead of directly
+
+# > So what would we expect to see for a full loop?
+# > we do 4 tcs per loop: once for loss/latency, once for throughput, repeated for 2 interfaces ($netinterface and ifb0) : 16ms
+# > we do 2 python calls per loop: once for half latency, once for count : 20ms
+# > -> so we get about 36ms per loop of overhead
+
+# So we will calculate a sleep_time
+
+if [ -n "$3" ]; then
+	overhead_time=$3
+	sleep_time=$(python -c "print $interval-($overhead_time/1000.0)")
+	echo "Using supplied overhead time of $overhead_time ms"
+	echo "Calculated time to sleep between updates as $sleep_time s"
+else
+	echo "Calculating overhead at runtime!"
+	avg_overhead=0
+	avg_tests=30
+	start_loop=$(get_current_time)
+	for ((sleep_loop=0;sleep_loop<$avg_tests;sleep_loop++))
+	do
+		start=$(get_current_time)
+		nop=$(python -c "print $interval*0.5")
+		nop=$(python -c "print $interval+$interval")
+
+		tc qdisc change dev eth0 root handle 1:0 netem delay ${interval}ms loss 0%
+		tc qdisc change dev eth1 root handle 1:0 netem delay ${interval}ms loss 0%
+
+		tc qdisc change dev eth0 parent 1:1 handle 10: tbf rate ${interval}kbit buffer 64k limit 128k
+		tc qdisc change dev eth1 parent 1:1 handle 10: tbf rate ${interval}kbit buffer 64k limit 128k
+		end=$(get_current_time)
+		avg_overhead=$(python -c "print $avg_overhead+($end-$start)")
+	done
+	end_loop=$(get_current_time)
+	overhead_time=$(python -c "print $avg_overhead/$avg_tests")
+	sleep_time=$(python -c "print $interval-($overhead_time/1000.0)")
+
+	echo "Calculated overhead time as $overhead_time ms"
+	echo "Calculated time to sleep between updates as $sleep_time s"
+	echo "Calculation took $(python -c "print $end_loop-$start_loop") ms"
+
+	if [ "0" -gt "$sleep_time" ]; then
+		echo "Warning! there is too much overhead!"
+		sleep_time=0.00
+	fi
+fi
+
+echo "$(reset_netem)"
 
 #Run the outer loop for about 5150*200*70*ms = about 20hours
 for ((outer_loop=0;outer_loop<5150;outer_loop++))
@@ -159,7 +220,7 @@ do
 
 		echo "Setting latency on each link: $half_latency, thru: $thru, gap: $gap, loss: $loss%"
 		count=$(python -c "print $count+$interval")
-		sleep 0.032
+		sleep $sleep_time
 	done
 	echo "$(reset_netem)"
 done
