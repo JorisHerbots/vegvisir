@@ -10,6 +10,16 @@
 			"type": "docker"
 		}
 	},
+	"godash": {
+		"image": "vegvisir/godash:latest",
+		"url": "https://github.com/uccmisl/godash",
+		"role": [
+			"client"
+		],
+		"client": {
+			"type": "docker"
+		}
+	},
 	"qns": {
 		"image": "martenseemann/quic-network-simulator",
 		"url": "https://github.com/marten-seemann/quic-network-simulator",
@@ -21,6 +31,28 @@
 			"simple-p2p": {
 				"arguments": "\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\"",
 				"active": true
+			}
+		}
+	},
+	"tc-netem": {
+		"image": "vegvisir/tc-netem",
+		"url": "",
+		"role": [
+			"shaper"
+		],
+		"active": true,
+		"scenarios": {
+			"simple": {
+				"arguments": "\"simple\"",
+				"active": true
+			},
+			"akamai cellular loss": {
+				"arguments": "\"akamai_cellular_emulation.sh loss_based median\"",
+				"active": false
+			},
+			"akamai cellular experience": {
+				"arguments": "\"akamai_cellular_emulation.sh experience_based fair\"",
+				"active": false
 			}
 		}
 	},
