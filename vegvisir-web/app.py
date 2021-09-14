@@ -103,6 +103,7 @@ def run():
 				if not present and request.form[scenario] != '':
 					scenario_name = scenario.replace('shaper.' + shaper.name + '@scenario.', '')
 					scen = Scenario(scenario_name, request.form[scenario])
+					scen.active = True
 					shaper.scenarios.append(scen)
 
 		for test in tests:
