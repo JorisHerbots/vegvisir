@@ -21,6 +21,8 @@ class Implementation:
 	type: Type = ""
 	active: bool = False
 	status: RunStatus = RunStatus.WAITING
+	env_vars: List[str]
+	env: List[str]
 
 	def __init__(
 		self,
@@ -29,6 +31,9 @@ class Implementation:
 	):
 		self.name = name
 		self.url = url
+
+	def additional_envs(self) -> List[str]:
+		return self.env
 
 class Image():
 	url: str = ""

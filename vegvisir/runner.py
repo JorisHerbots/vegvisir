@@ -92,6 +92,10 @@ class Runner:
 			if "active" in attrs:
 				active = attrs["active"]
 
+			env = []
+			if "env" in attrs:
+				env = attrs["env"]
+
 			roles = []
 			for role in attrs["role"]:
 				if role == "client":
@@ -110,26 +114,30 @@ class Runner:
 								scmd.command = cmd["command"]
 								impl.setup.append(scmd)
 					impl.active = active
+					impl.env_vars = env
 					self._clients.append(impl)
 
 				elif role == "server":
 					roles.append(Role.SERVER)
 					impl = Docker(name, attrs["image"], attrs["url"])
 					impl.active = active
+					impl.env_vars = env
 					self._servers.append(impl)
 
 				elif role == "shaper":
 					roles.append(Role.SHAPER)
 					impl = Shaper(name, attrs["image"], attrs["url"])
 					impl.scenarios = []
-					for scenario in  attrs["scenarios"]:
-						scen_attrs = attrs["scenarios"][scenario]
-						scen = Scenario(scenario, scen_attrs["arguments"])
-						if "active" in scen_attrs:
-							scen.active = scen_attrs["active"]
-						impl.scenarios.append(scen)
+					if "scenarios" in attrs:
+						for scenario in  attrs["scenarios"]:
+							scen_attrs = attrs["scenarios"][scenario]
+							scen = Scenario(scenario, scen_attrs["arguments"])
+							if "active" in scen_attrs:
+								scen.active = scen_attrs["active"]
+							impl.scenarios.append(scen)
 					impl.active = active
-					self._shapers.append(impl)				
+					impl.env_vars = env
+					self._shapers.append(impl)
 
 			logging.debug("\tloaded %s as %s", name, attrs["role"])
 		self._scan_image_repos()
@@ -341,6 +349,8 @@ class Runner:
 			"CLIENT_LOGS=" + "/logs" + " "
 		)
 		params += " ".join(testcase.additional_envs())
+		params += " ".join(shaper.additional_envs())
+		params += " ".join(server.additional_envs())
 		containers = "sim server " + " ".join(testcase.additional_containers())
 
 		cmd = (
@@ -457,6 +467,7 @@ class Runner:
 			client_proc = None
 			if client.type == Type.DOCKER:
 				params += " CLIENT=" + client.curr_image.url + " "
+				params += " ".join(client.additional_envs())
 				client_cmd = (
 					params
 					+ " docker-compose up --abort-on-container-exit --timeout 1 "

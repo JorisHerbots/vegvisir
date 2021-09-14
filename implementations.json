@@ -18,7 +18,17 @@
 		],
 		"client": {
 			"type": "docker"
-		}
+		},
+		"env": [
+			"ABR",
+			"CODEC",
+			"INIT_BUFFER",
+			"MAX_BUFFER",
+			"MAX_HEIGHT",
+			"STREAM_DURATION",
+			"EXP_RATIO",
+			"STREAM_SPEED"
+		]
 	},
 	"qns": {
 		"image": "martenseemann/quic-network-simulator",

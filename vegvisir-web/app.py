@@ -54,10 +54,13 @@ def run():
 			if len(y) > 1 and not y[1].startswith('scenario.'):
 				if not y[0] in form:
 					form[y[0]] = []
-				print(form, y[0], x, request.form[x])
+				#print(form, y[0], x, request.form[x])
 				z = request.form[x].split('@')
 				if y[0].endswith('.arg'):
 					form[y[0]].append(z[0])
+				elif y[0].endswith('.env'):
+					if request.form[x] != '':
+						form[y[0]].append(y[1]+'='+request.form[x])
 				else:
 					form[y[0]].append(z[1])
 			else:
@@ -69,6 +72,9 @@ def run():
 				for image in server.images:
 					if image.url in form['server.' + server.name]:
 						image.active = True
+				server.env = []
+				if 'server.' + server.name + '.env' in form:
+					server.env = form['server.' + server.name + '.env']
 			else:
 				server.active = False
 
@@ -79,6 +85,9 @@ def run():
 					for image in client.images:
 						if image.url in form['client.' + client.name]:
 							image.active = True
+				client.env = []
+				if 'client.' + client.name + '.env' in form:
+					client.env = form['client.' + client.name + '.env']
 			else:
 				client.active = False
 
@@ -88,6 +97,9 @@ def run():
 				for image in shaper.images:
 					if image.url in form['shaper.' + shaper.name]:
 						image.active = True
+				shaper.env = []
+				if 'shaper.' + shaper.name + '.env' in form:
+					shaper.env = form['shaper.' + shaper.name + '.env']
 			else:
 				shaper.active = False
 

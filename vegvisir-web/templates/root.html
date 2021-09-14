@@ -40,6 +40,17 @@
 							{{ image.url }}
 						</li>
 						{% endfor %}
+						{% if client.env_vars|length > 0 %}
+						<label>environment</label>
+						<ul>
+							{% for var in client.env_vars %}
+							<li>
+								{{ var }}=<input type="text" id="client.{{ client.name }}.env@{{ var }}"
+									name="client.{{ client.name }}.env@{{ var }}">
+							</li>
+							{% endfor %}
+						</ul>
+						{% endif %}
 					</ul>
 				</li>
 				{% else %}
@@ -47,6 +58,19 @@
 					<input type="checkbox" value="{{ client.name }}" id="client.{{ client.name }}"
 						name="client.{{ client.name }}" {% if client.active %}{{ "checked" }}{% endif %}>
 					<label for="client.{{ client.name }}">{{ client.name }}</label>
+					<ul>
+						{% if client.env_vars|length > 0 %}
+						<label>environment</label>
+						<ul>
+							{% for var in client.env_vars %}
+							<li>
+								{{ var }}=<input type="text" id="client.{{ client.name }}.env@{{ var }}"
+									name="client.{{ client.name }}.env@{{ var }}">
+							</li>
+							{% endfor %}
+						</ul>
+						{% endif %}
+					</ul>
 				</li>
 				{% endif %}
 				{% endfor %}
@@ -70,6 +94,17 @@
 							{{ image.url }}
 						</li>
 						{% endfor %}
+						{% if server.env_vars|length > 0 %}
+						<label>environment</label>
+						<ul>
+							{% for var in server.env_vars %}
+							<li>
+								{{ var }}=<input type="text" id="server.{{ server.name }}.env@{{ var }}"
+									name="server.{{ server.name }}.env@{{ var }}">
+							</li>
+							{% endfor %}
+						</ul>
+						{% endif %}
 					</ul>
 				</li>
 				{% else %}
@@ -78,6 +113,19 @@
 						name="server.{{ server.name }}" {% if server.active %}{{ "checked" }}{% endif %}>
 					<label for="server.{{ server.name }}">{{ server.name }}</label>
 				</li>
+				<ul>
+					{% if server.env_vars|length > 0 %}
+					<label>environment</label>
+					<ul>
+						{% for var in server.env_vars %}
+						<li>
+							{{ var }}=<input type="text" id="server.{{ server.name }}.env@{{ var }}"
+								name="server.{{ server.name }}.env@{{ var }}">
+						</li>
+						{% endfor %}
+					</ul>
+					{% endif %}
+				</ul>
 				{% endif %}
 				{% endfor %}
 			</ul>
@@ -102,6 +150,17 @@
 									{{ image.url }}
 								</li>
 								{% endfor %}
+								{% if shaper.env_vars|length > 0 %}
+								<label>environment</label>
+								<ul>
+									{% for var in shaper.env_vars %}
+									<li>
+										{{ var }}=<input type="text" id="shaper.{{ shaper.name }}.env@{{ var }}"
+											name="shaper.{{ shaper.name }}.env@{{ var }}">
+									</li>
+									{% endfor %}
+								</ul>
+								{% endif %}
 							</ul>
 						</li>
 						<li>scenarios:
