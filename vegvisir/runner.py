@@ -527,8 +527,8 @@ class Runner:
 			shutil.copytree(client_log_dir.name, client_log_dir_local, dirs_exist_ok=True)
 			shutil.copytree(sim_log_dir.name, shaper_log_dir_local, dirs_exist_ok=True)
 			shutil.copyfile(log_file.name, log_dir + "/output.txt")
-			if self._save_files and result.status == Status.FAILED:
-				shutil.copytree(testcase.www_dir(), log_dir + "/www", dirs_exist_ok=True)
+			if self._save_files: #and result.status == Status.FAILED:
+				#shutil.copytree(testcase.www_dir(), log_dir + "/www", dirs_exist_ok=True)
 				try:
 					shutil.copytree(testcase.download_dir(), log_dir + "/downloads", dirs_exist_ok=True)
 				except Exception as exception:
