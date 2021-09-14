@@ -10,6 +10,8 @@ services:
     environment:
       - WAITFORSERVER=$WAITFORSERVER
       - SCENARIO=$SCENARIO
+    env_file: 
+      - shaper.env
     cap_add: 
       - NET_ADMIN
     expose:
@@ -41,6 +43,8 @@ services:
       - QLOGDIR=/logs/qlog/
       - TESTCASE=$TESTCASE_SERVER
       - VERSION=$VERSION
+    env_file: 
+      - server.env
     depends_on:
       - sim
     cap_add: 
@@ -70,6 +74,8 @@ services:
       - TESTCASE=$TESTCASE_CLIENT
       - REQUESTS=$REQUESTS
       - VERSION=$VERSION
+    env_file: 
+      client.env
     depends_on:
       - sim
     cap_add: 

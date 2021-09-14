@@ -115,6 +115,7 @@ class Runner:
 								impl.setup.append(scmd)
 					impl.active = active
 					impl.env_vars = env
+					impl.role = Role.CLIENT
 					self._clients.append(impl)
 
 				elif role == "server":
@@ -122,6 +123,7 @@ class Runner:
 					impl = Docker(name, attrs["image"], attrs["url"])
 					impl.active = active
 					impl.env_vars = env
+					impl.role = Role.SERVER
 					self._servers.append(impl)
 
 				elif role == "shaper":
@@ -137,6 +139,7 @@ class Runner:
 							impl.scenarios.append(scen)
 					impl.active = active
 					impl.env_vars = env
+					impl.role = Role.SHAPER
 					self._shapers.append(impl)
 
 			logging.debug("\tloaded %s as %s", name, attrs["role"])

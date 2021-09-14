@@ -19,6 +19,7 @@ class Implementation:
 	name: str = ""
 	url: str = ""
 	type: Type = ""
+	role: Role
 	active: bool = False
 	status: RunStatus = RunStatus.WAITING
 	env_vars: List[str]
@@ -33,6 +34,19 @@ class Implementation:
 		self.url = url
 
 	def additional_envs(self) -> List[str]:
+		env_file_path = ''
+		if self.role == Role.CLIENT:
+			env_file_path = 'client'
+		elif self.role == Role.SERVER:
+			env_file_path = 'server'
+		elif self.role == Role.SHAPER:
+			env_file_path = 'shaper'
+		env_file_path += '.env'
+
+		with open(env_file_path, 'w') as env_file:
+			for e in self.env:
+				env_file.write(e+'\n')
+
 		return self.env
 
 class Image():
