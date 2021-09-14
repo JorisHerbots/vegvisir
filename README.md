@@ -55,4 +55,4 @@
 
 - install custom containers: `./install_containers.sh`
 - update docker images: `docker images | grep -v ^REPO | sed 's/ \+/:/g' | cut -d: -f1,2 | xargs -L1 docker pull`
-- google chrome: `google-chrome-unstable --origin-to-force-quic-on=193.167.100.100:443 --enable-experimental-web-platform-features --ignore-certificate-errors-spki-list=rVO69QdPatcs3YYnqxO7ccVD8iz1rOp0dSIAt7vNiGc= --log-net-log=/vegvisir/net-log.json https://193.167.100.100:443`
+- google chrome: `google-chrome-unstable --origin-to-force-quic-on=193.167.100.100:443 --enable-experimental-web-platform-features --autoplay-policy=no-user-gesture-required --ignore-certificate-errors-spki-list=rVO69QdPatcs3YYnqxO7ccVD8iz1rOp0dSIAt7vNiGc= --log-net-log=/vegvisir/net-log.json https://193.167.100.100:443`
