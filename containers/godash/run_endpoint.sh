@@ -45,7 +45,7 @@ if [[ -z "${STREAM_SPEED}" ]]; then
   STREAM_SPEED="1"
 fi
 
-if (( $STREAM_DURATION > 0 )); then
+if [[ -n "$STREAM_DURATION" ]]; then
 	STREAM_DURATION_STRING="-streamDuration $STREAM_DURATION"
 fi
 

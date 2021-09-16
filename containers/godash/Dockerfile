@@ -1,6 +1,6 @@
 FROM golang:1.16 as godash-builder
 
-RUN git clone https://github.com/JorisHerbots/godash-qlogabr.git godash && cd /go/godash && git checkout 3ba3d01da6d05bae5c6c7b6f5825a76007f5c6fe
+RUN git clone https://github.com/JorisHerbots/godash-qlogabr.git godash && cd /go/godash && git checkout 4149918a45801851994b7db52f65087f6e6b9b2e
 RUN cd /go/godash && go mod tidy \
 	&& go build
 
