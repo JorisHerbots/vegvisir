@@ -114,7 +114,7 @@ async function set_results(table_div) {
 				function helper(nodes) {
 					col++;
 					nodes.forEach(node => {
-						col_is_set = (col < col_size - 1) ? col_set[col] : col_set[col_size - 1];
+						let col_is_set = (col < col_size - 1) ? col_set[col] : col_set[col_size - 1];
 						if (!node.set && !col_is_set && depth_set >= node.depth) {
 							if (col < col_size - 1 || (node.children.length == 0 && node.is_file)) {
 								node.set = true;
@@ -151,6 +151,8 @@ async function set_results(table_div) {
 									checkbox.value = node.path;
 									checkbox.name = curr_analyze_id;
 									td.appendChild(checkbox);
+
+									depth_set = 0;
 								}
 								td.setAttribute('rowspan', node.depth);
 								tr.appendChild(td);
