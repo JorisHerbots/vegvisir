@@ -163,7 +163,7 @@ class ServeTest(TestCase):
 		self.testend = TestEndUntilDownload()
 
 		self._www_dir = StaticDirectory("./www")
-		self.request_urls: str = "https://server4:443/dashjs-qlog-abr/demo/demo.html?testrun"
+		self.request_urls: str = "https://server4:443/video/bbb/BigBuckBunny_1s_simple_2014_05_09.mpd"
 
 	def testname(self, perspective: Perspective):
 		if perspective == Perspective.SERVER:
