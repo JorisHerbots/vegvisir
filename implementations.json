@@ -11,7 +11,7 @@
 		}
 	},
 	"godash": {
-		"image": "vegvisir/godash:latest",
+		"image": "vegvisir-containers/godash:latest",
 		"url": "https://github.com/uccmisl/godash",
 		"role": [
 			"client"
@@ -45,7 +45,7 @@
 		}
 	},
 	"tc-netem": {
-		"image": "vegvisir/tc-netem",
+		"image": "vegvisir-containers/tc-netem",
 		"url": "",
 		"role": [
 			"shaper"
