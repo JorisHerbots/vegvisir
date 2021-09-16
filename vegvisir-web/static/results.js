@@ -142,14 +142,14 @@ async function set_results(table_div) {
 									let link = document.createElement('a');
 									link.href = node.path;
 									linktext += node.node;
-									link.innerHTML = linktext;
+									link.innerHTML = linktext.replaceAll('_', '_<wbr/>');
 									td.appendChild(link);
 								}
 								else if (show_any_log && node.is_file) {
 									let link = document.createElement('a');
 									link.href = node.path;
 									linktext += node.node;
-									link.innerHTML = linktext;
+									link.innerHTML = linktext.replaceAll('_', '_<wbr/>');
 									td.appendChild(link);
 
 									let checkbox = document.createElement('input');
