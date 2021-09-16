@@ -94,6 +94,8 @@ async function set_results(table_div) {
 		tds.children.forEach(entry => {
 			let set_something = true;
 			let curr_analyze_id = '';
+			let file_counter = -1;
+			let file_counter_set = false;
 			while (set_something) {
 				set_something = false;
 				let todo = [entry];
@@ -114,6 +116,11 @@ async function set_results(table_div) {
 				function helper(nodes) {
 					col++;
 					nodes.forEach(node => {
+						if (col === 0 && !file_counter_set) {
+							file_counter = node.depth;
+							file_counter_set = true;
+						}
+
 						let col_is_set = (col < col_size - 1) ? col_set[col] : col_set[col_size - 1];
 						if (!node.set && !col_is_set && depth_set >= node.depth) {
 							if (col < col_size - 1 || (node.children.length == 0 && node.is_file)) {
@@ -153,6 +160,8 @@ async function set_results(table_div) {
 									td.appendChild(checkbox);
 
 									depth_set = 0;
+
+									file_counter--;
 								}
 								td.setAttribute('rowspan', node.depth);
 								tr.appendChild(td);
@@ -233,6 +242,9 @@ async function set_results(table_div) {
 						};
 
 						tr.appendChild(td);
+					}
+					if (file_counter == 0) {
+						tr.classList.add('tableDivider');
 					}
 					table.appendChild(tr);
 				}

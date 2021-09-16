@@ -26,4 +26,7 @@ input.danger { color: #cc2f2e; }
 input[type=submit] { align-self: start; min-width: 10em; }
 .implementations ul {list-style: none; padding-left: 1;}
 .implementations li {margin-top: 1em;}
-table, th, td {	border: 1px solid black;}
+table, th, td {border: 1px solid black;}
+tr {border: 2px solid black;}
+table {border-collapse: collapse;}
+.tableDivider {border-bottom: 3px solid black;}
