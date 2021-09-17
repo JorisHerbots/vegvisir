@@ -52,7 +52,7 @@
 		"active": true,
 		"scenarios": {
 			"simple": {
-				"arguments": "\"simple\"",
+				"arguments": "\"simple 15 10\"",
 				"active": true
 			},
 			"akamai cellular loss": {
