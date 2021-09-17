@@ -37,7 +37,7 @@
   - [x] filter on 'json/qlog', 'pcap', 'other'
   - [x] send multiple files to viewer
   - [x] download instead of open
-- [ ] tests parameters
+- [x] tests parameters
 - [x] replace ns3 with tc-netem
 - [x] improve logging.debug prefixes
 
