@@ -26,7 +26,7 @@
 - [x] version control for servers
 - [x] wipe client cache
 - [ ] dynamic frontend, hide entries from deselected sets
-- [ ] no end time for client
+- [x] no end time for client
 - [x] testcase:
   - [x] timeout: start timeout thread, busy wait, join on thread
     - [x] on time, something that checks time until max
@@ -39,7 +39,7 @@
   - [x] download instead of open
 - [ ] tests parameters
 - [x] replace ns3 with tc-netem
-- [ ] improve logging.debug prefixes
+- [x] improve logging.debug prefixes
 
 ### Based upon
 
