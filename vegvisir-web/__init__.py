@@ -1,7 +1,19 @@
 from flask import Flask
 from flask_cors import CORS
 
+import logging
+
 def create_app(test_config=None):
+	log = logging.getLogger('werkzeug')
+	if not log is None:
+		log.setLevel(logging.ERROR)
+		log.disabled = True
+	
+	log = logging.getLogger('watchdog')
+	if not log is None:
+		log.setLevel(logging.ERROR)
+		log.disabled = True
+
 	# create and configure the app
 	myapp = Flask(__name__, instance_relative_config=True)
 	cors = CORS(myapp)
