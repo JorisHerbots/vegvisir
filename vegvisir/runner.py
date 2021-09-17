@@ -83,7 +83,7 @@ class Runner:
 		self._read_implementations_file(file)
 
 	def set_implementations(self, implementations):
-		logging.debug("Loading implementations:")
+		logging.debug("Vegvisir: Loading implementations:")
 		
 		for name in implementations:
 			attrs = implementations[name]
@@ -142,7 +142,7 @@ class Runner:
 					impl.role = Role.SHAPER
 					self._shapers.append(impl)
 
-			logging.debug("\tloaded %s as %s", name, attrs["role"])
+			logging.debug("Vegvisir: \tloaded %s as %s", name, attrs["role"])
 		self._scan_image_repos()
 
 	def _read_implementations_file(self, file: str):
@@ -192,7 +192,7 @@ class Runner:
 			)
 		out, err = ipv6_proc.communicate(self._sudo_password.encode())
 		if (out != b'' and not out.startswith(b'[sudo] password for ')) or not err is None:
-			logging.debug("enabling ipv6 resulted in non empty output: %s\n%s", out, err)
+			logging.debug("Vegvisir: enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
 		self._clients_active = list((x for x in self._clients if x.active))
 		self._servers_active = list((x for x in self._servers if x.active))
@@ -230,9 +230,9 @@ class Runner:
 											stderr=subprocess.STDOUT
 										)
 									out, err = hosts_proc.communicate(self._sudo_password.encode())
-									logging.debug("append entry to hosts: %s", out.decode('utf-8'))
+									logging.debug("Vegvisir: append entry to hosts: %s", out.decode('utf-8'))
 									if not err is None:
-										logging.debug("appending entry to hosts file resulted in error: %s", err)
+										logging.debug("Vegvisir: appending entry to hosts file resulted in error: %s", err)
 
 								for test in self._tests_active:
 									test.status = RunStatus.RUNNING
@@ -244,7 +244,7 @@ class Runner:
 										client_images = list((x for x in client.images if x.active))
 										for client_image in client_images:
 											client.curr_image = client_image
-											logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
+											logging.debug("Vegvisir: running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
 											shaper.name, shaper_image.url, scenario.arguments,
 											server.name, server_image.url,
 											client.name, client_image.url
@@ -253,11 +253,11 @@ class Runner:
 											self._curr_repetition = 1
 											for _ in range(self._test_repetitions):
 												result = self._run_test(shaper, server, client, testcase)
-												logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+												logging.debug("Vegvisir: \telapsed time since start of test: %s", str(result.end_time - result.start_time))
 												self._curr_repetition += 1
 										
 									else:
-										logging.debug("running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
+										logging.debug("Vegvisir: running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
 										shaper.name, shaper_image.url, scenario.arguments,
 										server.name, server_image.url,
 										client.name
@@ -266,7 +266,7 @@ class Runner:
 										self._curr_repetition = 1
 										for _ in range(self._test_repetitions):
 											result = self._run_test(shaper, server, client, testcase)
-											logging.debug("\telapsed time since start of test: %s", str(result.end_time - result.start_time))
+											logging.debug("Vegvisir: \telapsed time since start of test: %s", str(result.end_time - result.start_time))
 											self._curr_repetition += 1
 									test.status = RunStatus.DONE
 								client.status = RunStatus.DONE
@@ -280,9 +280,9 @@ class Runner:
 											stderr=subprocess.STDOUT
 										)
 									out, err = hosts_proc.communicate(self._sudo_password.encode())
-									logging.debug("remove entry from hosts: %s", out.decode('utf-8'))
+									logging.debug("Vegvisir: remove entry from hosts: %s", out.decode('utf-8'))
 									if not err is None:
-										logging.debug("removing entry from hosts file resulted in error: %s", err)
+										logging.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
 						server.status = RunStatus.DONE
 				scenario.status = RunStatus.DONE
 			shaper.status = RunStatus.DONE
@@ -369,7 +369,7 @@ class Runner:
 				for setup_cmd in client.setup:
 					out = ""
 					setup_cmd.command_formatted = setup_cmd.command.format(client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
-					logging.debug("chrome setup command: %s", setup_cmd.command_formatted)
+					logging.debug("Vegvisir: chrome setup command: %s", setup_cmd.command_formatted)
 					if setup_cmd.replace_tilde:
 						setup_cmd.command_formatted = setup_cmd.command_formatted.replace("~", str(Path.home()))
 					if setup_cmd.sudo:
@@ -390,11 +390,11 @@ class Runner:
 							stderr=subprocess.STDOUT
 						)
 						out += proc.stdout.decode("utf-8")
-					logging.debug("client setup: %s\n%s", setup_cmd.command_formatted, out)
+					logging.debug("Vegvisir: client setup: %s\n%s", setup_cmd.command_formatted, out)
 
 			# Setup server and network
 			#TODO exit on error
-			logging.debug("running command: %s", cmd)
+			logging.debug("Vegvisir: running command: %s", cmd)
 			proc = subprocess.run(
 				cmd,
 				shell=True,
@@ -411,9 +411,9 @@ class Runner:
 					stderr=subprocess.STDOUT
 				)
 				out, err = net_proc.communicate(self._sudo_password.encode())
-				logging.debug("network setup: %s", out.decode("utf-8"))
+				logging.debug("Vegvisir: network setup: %s", out.decode("utf-8"))
 				if not err is None:
-					logging.debug("network error: %s", err.decode("utf-8"))
+					logging.debug("Vegvisir: network error: %s", err.decode("utf-8"))
 				net_proc = subprocess.Popen(
 					["sudo", "-S", "ip", "route", "add", "193.167.100.0/24", "via", "193.167.0.2"],
 					shell=False,
@@ -422,9 +422,9 @@ class Runner:
 					stderr=subprocess.STDOUT
 				)
 				out, err = net_proc.communicate(self._sudo_password.encode())
-				logging.debug("network setup: %s", out.decode("utf-8"))
+				logging.debug("Vegvisir: network setup: %s", out.decode("utf-8"))
 				if not err is None:
-					logging.debug("network error: %s", err.decode("utf-8"))
+					logging.debug("Vegvisir: network error: %s", err.decode("utf-8"))
 				net_proc = subprocess.Popen(
 					["sudo", "-S", "./veth-checksum.sh"],
 					shell=False,
@@ -433,9 +433,9 @@ class Runner:
 					stderr=subprocess.STDOUT
 				)
 				out, err = net_proc.communicate(self._sudo_password.encode())
-				logging.debug("network setup: %s", out.decode("utf-8"))
+				logging.debug("Vegvisir: network setup: %s", out.decode("utf-8"))
 				if not err is None:
-					logging.debug("network error: %s", err.decode("utf-8"))
+					logging.debug("Vegvisir: network error: %s", err.decode("utf-8"))
 
 			# Log kernel/net parameters
 			net_proc = subprocess.Popen(
@@ -446,9 +446,9 @@ class Runner:
 				stderr=subprocess.STDOUT
 			)
 			out, err = net_proc.communicate(self._sudo_password.encode())
-			logging.debug("net log:\n%s", out.decode("utf-8"))
+			logging.debug("Vegvisir: net log:\n%s", out.decode("utf-8"))
 			if not err is None:
-				logging.debug("net log error: %s", err.decode("utf-8"))
+				logging.debug("Vegvisir: net log error: %s", err.decode("utf-8"))
 
 			kernel_proc = subprocess.Popen(
 				["sudo", "-S", "sysctl", "-a"],
@@ -458,9 +458,9 @@ class Runner:
 				stderr=subprocess.STDOUT
 			)
 			out, err = kernel_proc.communicate(self._sudo_password.encode())
-			logging.debug("kernel log:\n%s", out.decode("utf-8"))
+			logging.debug("Vegvisir: kernel log:\n%s", out.decode("utf-8"))
 			if not err is None:
-				logging.debug("kernel log error: %s", err.decode("utf-8"))
+				logging.debug("Vegvisir: kernel log error: %s", err.decode("utf-8"))
 
 			# Wait for server and shaper to be ready
 			sleep(2)
@@ -485,14 +485,14 @@ class Runner:
 
 			elif client.type == Type.APPLICATION:
 				client_cmd = client.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls)
-				logging.debug("running client: %s", client_cmd)
+				logging.debug("Vegvisir: running client: %s", client_cmd)
 				client_proc = subprocess.Popen(
 					client_cmd.split(' '),
 					shell=False,
 					stdout=subprocess.PIPE,
 					stderr=subprocess.STDOUT,
 				)
-			logging.debug("running client: %s", client_cmd)
+			logging.debug("Vegvisir: running client: %s", client_cmd)
 
 			try:
 				if isinstance(testcase.testend, TestEndUntilDownload):
@@ -503,30 +503,30 @@ class Runner:
 					testcase.testend.setup(client_proc)
 				testcase.testend.wait_for_end()
 			except KeyboardInterrupt as e:
-				logging.debug("manual interrupt")
+				logging.debug("Vegvisir: manual interrupt")
 			# Wait for tests
 			# try:
 			# 	#TODO use threading instead? wait for events? how to do infinite sleep?
 			# 	time.sleep(testcase.timeout) #TODO get from testcase
 			# 	raise subprocess.TimeoutExpired(cmd, testcase.timeout, proc.stdout, proc.stderr)
 			# except KeyboardInterrupt as e:
-			# 	logging.debug("manual interrupt")
+			# 	logging.debug("Vegvisir: manual interrupt")
 			client_proc_stdout, _ = client_proc.communicate()
 			if client_proc_stdout != None:
-				logging.debug("client: %s", client_proc_stdout.decode("utf-8"))
-			logging.debug("proc: %s", proc.stdout.decode("utf-8"))
+				logging.debug("Vegvisir: client: %s", client_proc_stdout.decode("utf-8"))
+			logging.debug("Vegvisir: proc: %s", proc.stdout.decode("utf-8"))
 			proc = subprocess.run(
 				"docker-compose logs -t",
 				shell=True,
 				stdout=subprocess.PIPE,
 				stderr=subprocess.STDOUT
 			)
-			logging.debug("%s", proc.stdout.decode("utf-8"))
+			logging.debug("Vegvisir: %s", proc.stdout.decode("utf-8"))
 			result.status = Status.SUCCES
 		except subprocess.TimeoutExpired as e:
-			logging.debug("subprocess timeout: %s", e.stdout.decode("utf-8"))
+			logging.debug("Vegvisir: subprocess timeout: %s", e.stdout.decode("utf-8"))
 		except Exception as e:
-			logging.debug("subprocess error: %s", str(e))
+			logging.debug("Vegvisir: subprocess error: %s", str(e))
 
 		self._copy_logs("sim", sim_log_dir)
 		if client.type == Type.DOCKER:
@@ -553,16 +553,16 @@ class Runner:
 		sim_log_dir.cleanup()
 
 		try:
-			logging.debug("shutting down containers")
+			logging.debug("Vegvisir: shutting down containers")
 			proc = subprocess.run(
 				"docker-compose down",
 				shell=True,
 				stdout=subprocess.PIPE,
 				stderr=subprocess.STDOUT
 			)
-			logging.debug("shut down successful: %s", proc.stdout.decode("utf-8"))
+			logging.debug("Vegvisir: shut down successful: %s", proc.stdout.decode("utf-8"))
 		except Exception as e:
-			logging.debug("subprocess error while shutting down: %s", str(e))
+			logging.debug("Vegvisir: subprocess error while shutting down: %s", str(e))
 
 		result.end_time = datetime.now()
 		return result

@@ -181,7 +181,7 @@ def generate_cert_chain(directory: str, length: int = 1):
 	r = subprocess.run(
 		cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
 	)
-	logging.debug("%s", r.stdout.decode("utf-8"))
+	logging.debug("Vegvisir: %s", r.stdout.decode("utf-8"))
 	if r.returncode != 0:
 		logging.info("Unable to create certificates")
 		sys.exit(1)
@@ -190,7 +190,7 @@ def generate_cert_chain(directory: str, length: int = 1):
 		cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
 	)
 	fingerprint = r.stdout.decode("utf-8").strip()
-	logging.debug("certificate fingerprint: %s", fingerprint)
+	logging.debug("Vegvisir: certificate fingerprint: %s", fingerprint)
 	return fingerprint
 
 class StaticDirectory():
