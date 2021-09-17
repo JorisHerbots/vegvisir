@@ -3,8 +3,7 @@
 		"image": "aiortc/aioquic-qns",
 		"url": "https://github.com/aiortc/aioquic",
 		"role": [
-			"server",
-			"client"
+			"server"
 		],
 		"client": {
 			"type": "docker"
@@ -122,8 +121,7 @@
 		"image": "martenseemann/quic-go-interop:latest",
 		"url": "https://github.com/lucas-clemente/quic-go",
 		"role": [
-			"server",
-			"client"
+			"server"
 		],
 		"client": {
 			"type": "docker"
