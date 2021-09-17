@@ -369,7 +369,7 @@ class Runner:
 				for setup_cmd in client.setup:
 					out = ""
 					setup_cmd.command_formatted = setup_cmd.command.format(client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
-					logging.debug("Vegvisir: chrome setup command: %s", setup_cmd.command_formatted)
+					logging.debug("Vegvisir: setup command: %s", setup_cmd.command_formatted)
 					if setup_cmd.replace_tilde:
 						setup_cmd.command_formatted = setup_cmd.command_formatted.replace("~", str(Path.home()))
 					if setup_cmd.sudo:
@@ -484,7 +484,7 @@ class Runner:
 				)
 
 			elif client.type == Type.APPLICATION:
-				client_cmd = client.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls)
+				client_cmd = client.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls, client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
 				logging.debug("Vegvisir: running client: %s", client_cmd)
 				client_proc = subprocess.Popen(
 					client_cmd.split(' '),
