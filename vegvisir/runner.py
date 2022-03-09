@@ -332,6 +332,10 @@ class Runner:
 		log_handler.setFormatter(formatter)
 		logging.getLogger().addHandler(log_handler)
 
+		client_image = "none"
+		if hasattr(client,"curr_image"):
+			client_image = client.curr_image.url
+
 		params = (
 			"WAITFORSERVER=server:443 "
 
@@ -350,6 +354,8 @@ class Runner:
 
 			"SERVER_LOGS=" + "/logs" + " "
 			"CLIENT_LOGS=" + "/logs" + " "
+
+			"CLIENT=" + client_image + " "	# required for compose v2
 		)
 		params += " ".join(testcase.additional_envs())
 		params += " ".join(shaper.additional_envs())
@@ -469,7 +475,6 @@ class Runner:
 			client_cmd = ""
 			client_proc = None
 			if client.type == Type.DOCKER:
-				params += " CLIENT=" + client.curr_image.url + " "
 				params += " ".join(client.additional_envs())
 				client_cmd = (
 					params
@@ -516,7 +521,7 @@ class Runner:
 				logging.debug("Vegvisir: client: %s", client_proc_stdout.decode("utf-8"))
 			logging.debug("Vegvisir: proc: %s", proc.stdout.decode("utf-8"))
 			proc = subprocess.run(
-				"docker-compose logs -t",
+				params + " docker-compose logs -t",
 				shell=True,
 				stdout=subprocess.PIPE,
 				stderr=subprocess.STDOUT
@@ -528,10 +533,10 @@ class Runner:
 		except Exception as e:
 			logging.debug("Vegvisir: subprocess error: %s", str(e))
 
-		self._copy_logs("sim", sim_log_dir)
+		self._copy_logs("sim", sim_log_dir, params)
 		if client.type == Type.DOCKER:
-			self._copy_logs("client", client_log_dir)
-		self._copy_logs("server", server_log_dir)
+			self._copy_logs("client", client_log_dir, params)
+		self._copy_logs("server", server_log_dir, params)
 
 		# save logs
 		logging.getLogger().removeHandler(log_handler)
@@ -555,7 +560,7 @@ class Runner:
 		try:
 			logging.debug("Vegvisir: shutting down containers")
 			proc = subprocess.run(
-				"docker-compose down",
+				params + " docker-compose down",
 				shell=True,
 				stdout=subprocess.PIPE,
 				stderr=subprocess.STDOUT
@@ -568,9 +573,11 @@ class Runner:
 		return result
 
 
-	def _copy_logs(self, container: str, dir: tempfile.TemporaryDirectory):
+	def _copy_logs(self, container: str, dir: tempfile.TemporaryDirectory, params: str):
 		r = subprocess.run(
-			'docker cp "$(docker-compose --log-level ERROR ps -q '
+			'docker cp "$('
+			+ params + " "
+			+ 'docker-compose --log-level ERROR ps -q '
 			+ container
 			+ ')":/logs/. '
 			+ dir.name,
