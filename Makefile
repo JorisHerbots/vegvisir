@@ -3,14 +3,14 @@ PYTHONPATH	:= $(dir $(abspath $(lastword $(MAKEFILE_LIST)))):$(shell echo $$PYTH
 PYTHON	:= PYTHONPATH=$(PYTHONPATH) $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
 
-run: $(VENV)/bin/activate
-	$(PYTHON) vegvisir-cli/app.py
-
 web: $(VENV)/bin/activate
 	( \
 		source $(VENV)/bin/activate; \
 		FLASK_APP=vegvisir-web FLASK_ENV=development flask run; \
 	)
+
+run: $(VENV)/bin/activate
+	$(PYTHON) vegvisir-cli/app.py
 
 $(VENV)/bin/activate: requirements.txt
 	python3 -m venv $(VENV)
