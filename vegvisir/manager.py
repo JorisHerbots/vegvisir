@@ -39,6 +39,17 @@ class Manager:
 	def __init__(self, sudo_password):
 		logging.basicConfig(level=logging.INFO)
 		self.sudo_password = sudo_password
+
+		self._possible_client_implementations = []
+		self._possible_shaper_implementations = []
+		self._possible_server_implementations = []
+		self._possible_testcases = []
+
+		self._active_clients : List[Scenario] = []
+		self._active_shapers : List[Scenario] = []
+		self._active_servers : List[Scenario] = []
+		self._active_testcases : List[TestCase] = []
+
 		self._read_implementations_file("implementations.json")
 
 		for t in TESTCASES:

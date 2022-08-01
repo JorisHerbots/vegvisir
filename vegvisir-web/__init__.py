@@ -16,11 +16,16 @@ from flask import (
 )
 from flask_cors import cross_origin
 import getpass
+import threading 
 
 app = Flask(__name__)
 
+
+managerQueue = []
+busy_manager = []
+
 password = getpass.getpass("Please enter your sudo password: ")
-manager = Manager(password)
+
 
 @app.route("/Implementations")
 @cross_origin()
@@ -40,11 +45,8 @@ def Testcases():
 @cross_origin()
 def Runtest():
 
+	manager = Manager(password)
 	request_form = request.json
-	print(request_form)
-
-	print(request_form["clients"])
-
 
 	for client in request_form["clients"]:
 		manager.add_active_implementation(client)
@@ -56,11 +58,41 @@ def Runtest():
 		manager.add_active_implementation(server)
 
 	for testcase in request_form["testcases"]:
+		print("added testcase")
 		manager.add_active_testcase(testcase)
 
-	manager.run_tests()
+	print(manager._active_testcases)
+	managerQueue.append(manager)
 
 	return ""
+
+
+@app.route("/GetQueue")
+@cross_origin()
+def GetQueue():
+	pass
+
+
+
+
+def runTestsThread():
+	while True:
+		if len(managerQueue) == 0:
+			time.sleep(1)
+		else:
+			try:
+				busy_manager = managerQueue.pop(0)
+				print(managerQueue)
+				busy_manager.run_tests()
+				print("euuuhhhhh")
+			except:
+				pass
+
+
+th = threading.Thread(target=runTestsThread)
+th.start()
+
+
 
     
 # @bp.route('/Implemenentations', methods=['GET'])
