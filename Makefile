@@ -4,13 +4,12 @@ PYTHON	:= PYTHONPATH=$(PYTHONPATH) $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
 
 web: $(VENV)/bin/activate
+	( cd vegvisir-web; npm run --silent dev &> '/dev/null';) &
 	( \
 		source $(VENV)/bin/activate; \
 		FLASK_APP=vegvisir-web FLASK_ENV=production flask run;\
-	) &
-	cd vegvisir-web; npm run dev;
+	) 
 
-	
 
 run: $(VENV)/bin/activate
 	$(PYTHON) vegvisir-cli/app.py

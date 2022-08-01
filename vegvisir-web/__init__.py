@@ -15,10 +15,12 @@ from flask import (
 	Flask, Blueprint, render_template, request, flash, redirect, url_for, jsonify, abort
 )
 from flask_cors import cross_origin
+import getpass
 
 app = Flask(__name__)
 
-manager = Manager("olaf")
+password = getpass.getpass("Please enter your sudo password: ")
+manager = Manager(password)
 
 @app.route("/Implementations")
 @cross_origin()
@@ -58,7 +60,7 @@ def Runtest():
 
 	manager.run_tests()
 
-	return "lol"
+	return ""
 
     
 # @bp.route('/Implemenentations', methods=['GET'])
