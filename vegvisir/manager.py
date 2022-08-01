@@ -37,7 +37,7 @@ class Manager:
 	sudo_password = ""
 
 	def __init__(self, sudo_password):
-		logging.basicConfig(level=logging.DEBUG)
+		logging.basicConfig(level=logging.INFO)
 		self.sudo_password = sudo_password
 		self._read_implementations_file("implementations.json")
 
@@ -204,16 +204,11 @@ class Manager:
 
 	# Runs all tests for all active clients, shapers, servers and test case permutations
 	def run_tests(self):
-		print("huh?")
 		for server in self._active_servers:
-			print("huh?s")
 			for shaper in self._active_shapers:
-				print("huh?ss")
 				for client in self._active_clients:
-					print("huh?c")
 					for test_case in self._active_testcases:
-						print("huh?dudududu")
 						runner = Runner(self.sudo_password)
 						runner.run_test(client, shaper, server, test_case)
-
+						
 

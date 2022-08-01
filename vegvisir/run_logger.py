@@ -50,7 +50,7 @@ class RunLogger:
 		# universal log
 		self.log_file = tempfile.NamedTemporaryFile(dir="/tmp", prefix="output_log_")
 		self.log_handler = logging.FileHandler(self.log_file.name)
-		self.log_handler.setLevel(logging.DEBUG)	
+		self.log_handler.setLevel(logging.INFO)	
 
 		formatter = LogFileFormatter("%(asctime)s %(message)s")
 		self.log_handler.setFormatter(formatter)

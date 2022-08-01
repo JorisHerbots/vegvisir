@@ -112,8 +112,7 @@ class Runner:
 		if client.type == Type.DOCKER:
 			params += " ".join(client.get_configureable_environment_variables())
 
-		logging.debug(params)
-		print(params)
+		logging.info("Parameters: " + params)
 		return params
 
 	# shuts down all running docker containers
