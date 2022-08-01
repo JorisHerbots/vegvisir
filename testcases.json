@@ -1,0 +1,10 @@
+{
+	"servetest": {
+		"id": "servetest",
+		"name": "ServeTest",
+		"parameters": [
+			{"name": "request_url", "type": "string", "description": "url of mpd file", "default": "https://server4/video/bbb/BigBuckBunny_1s_simple_2014_05_09.mpd"},
+			{"name": "timeout", "type": "integer", "description": "timeout in seconds", "default": 60}
+		]	
+	}
+}

@@ -9,7 +9,7 @@ services:
     tty: true
     environment:
       - WAITFORSERVER=$WAITFORSERVER
-      - SCENARIO=$SCENARIO
+      - SCENARIO=$SHAPERSCENARIO
     env_file: 
       - shaper.env
     cap_add: 

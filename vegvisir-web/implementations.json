@@ -35,11 +35,13 @@
 		"role": [
 			"shaper"
 		],
-		"env": [
-			{"name": "argument", "description": "argument", "default": "\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\"", "type": "dropdown", 
-			"options": ["\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\""]
+		"active": true,
+		"scenarios": {
+			"simple-p2p": {
+				"arguments": "\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\"",
+				"active": true
 			}
-		]
+		}
 	},
 	"tc-netem": {
 		"image": "vegvisir-containers/tc-netem",
@@ -48,11 +50,20 @@
 			"shaper"
 		],
 		"active": true,
-		"env": [
-			{"name": "argument", "description": "argument", "default": "\"simple 15 10\"", "type": "dropdown", 
-			"options": ["\"simple 15 10\"", "\"akamai_cellular_emulation.sh loss_based median 37\"", "\"akamai_cellular_emulation.sh experience_based fair 37\""]
+		"scenarios": {
+			"simple": {
+				"arguments": "\"simple 15 10\"",
+				"active": true
+			},
+			"akamai cellular loss": {
+				"arguments": "\"akamai_cellular_emulation.sh loss_based median 37\"",
+				"active": false
+			},
+			"akamai cellular experience": {
+				"arguments": "\"akamai_cellular_emulation.sh experience_based fair 37\"",
+				"active": false
 			}
-			]
+		}
 	},
 	"chrome": {
 		"name": "Google Chrome unstable",

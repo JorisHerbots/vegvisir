@@ -6,8 +6,11 @@ PIP = $(VENV)/bin/pip
 web: $(VENV)/bin/activate
 	( \
 		source $(VENV)/bin/activate; \
-		FLASK_APP=vegvisir-web FLASK_ENV=development flask run; \
-	)
+		FLASK_APP=vegvisir-web FLASK_ENV=production flask run;\
+	) &
+	cd vegvisir-web; npm run dev;
+
+	
 
 run: $(VENV)/bin/activate
 	$(PYTHON) vegvisir-cli/app.py

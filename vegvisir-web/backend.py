@@ -38,29 +38,16 @@ def Testcases():
 @cross_origin()
 def Runtest():
 
-	request_form = request.json
-	print(request_form)
-
-	print(request_form["clients"])
+    request_form = request.json
+    print(request_form)
 
 
-	for client in request_form["clients"]:
-		manager.add_active_implementation(client)
+    return "lol"
 
-	for shaper in request_form["shapers"]:
-		manager.add_active_implementation(shaper)
 
-	for server in request_form["servers"]:
-		manager.add_active_implementation(server)
 
-	for testcase in request_form["testcases"]:
-		manager.add_active_testcase(testcase)
 
-	manager.run_tests()
 
-	return "lol"
-
-    
 # @bp.route('/Implemenentations', methods=['GET'])
 # def Implemenentations():
 

@@ -5,7 +5,6 @@ import subprocess
 import sys
 import logging
 from typing import List
-from vegvisir.implementation import RunStatus, Scenario
 import threading
 import time
 from watchdog.events import FileSystemEventHandler
@@ -120,7 +119,6 @@ class TestCase:
 
 	cert_fingerprint: str = ""
 	
-	scenario: Scenario = None
 	testend: TestEnd = TestEndTimeout()
 
 	def __init__(self):
@@ -153,28 +151,11 @@ class TestCase:
 	def additional_envs(self) -> List[str]:
 		return [""]
 
-class ServeTest(TestCase):
-	file_to_find = "create-name-todo.json"
-	timeout_time = 60
+	
+	def generate_json(self):
+		pass
 
-	def __init__(self):
-		super().__init__()
-		self.name = "servetest"
-		self.testend = TestEndUntilDownload()
 
-		self._www_dir = StaticDirectory("./www")
-		self.request_urls: str = "https://server4:443/video/bbb/BigBuckBunny_1s_simple_2014_05_09.mpd"
-
-	def testname(self, perspective: Perspective):
-		if perspective == Perspective.SERVER:
-			return "http3"
-		return super().testname(perspective)
-
-	def additional_containers(self) -> List[str]:
-		return []#["iperf_server", "iperf_client"]
-
-	def additional_envs(self) -> List[str]:
-		return ["IPERF_CONGESTION=cubic"]
 
 def generate_cert_chain(directory: str, length: int = 1):
 	cmd = "./certs.sh " + directory + " " + str(length)
@@ -198,13 +179,3 @@ class StaticDirectory():
 
 	def __init__(self, name):
 		self.name = name
-
-class TestCaseWrapper():
-	testcase = None
-	active: bool = False
-	status: RunStatus = RunStatus.WAITING
-
-## List of all supported tests
-TESTCASES = [
-	ServeTest
-]
