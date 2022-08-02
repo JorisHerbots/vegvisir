@@ -1,4 +1,4 @@
-Flask
-flask-cors
+quart
+quart-cors
 pyhostman
 watchdog

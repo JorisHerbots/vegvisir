@@ -34,9 +34,12 @@ class Manager:
 	_active_servers : List[Scenario] = []
 	_active_testcases : List[TestCase] = []
 
+	_progress = 0
+	_max_progress = 0
+
 	sudo_password = ""
 
-	def __init__(self, sudo_password):
+	def __init__(self, sudo_password, progress_status_queue=None):
 		logging.basicConfig(level=logging.INFO)
 		self.sudo_password = sudo_password
 
@@ -50,12 +53,12 @@ class Manager:
 		self._active_servers : List[Scenario] = []
 		self._active_testcases : List[TestCase] = []
 
+		self._progress_status_queue = progress_status_queue
+
 		self._read_implementations_file("implementations.json")
 
 		for t in TESTCASES:
 			self._possible_testcases.append(t())
-
-		#self._active_testcases.append(self._possible_testcases[0])
 		
 
 
@@ -215,11 +218,19 @@ class Manager:
 
 	# Runs all tests for all active clients, shapers, servers and test case permutations
 	def run_tests(self):
+		self._max_progress = len(self._active_clients) * len(self._active_servers) * len(self._active_shapers) * len(self._active_testcases)
+		self._progress_status_queue.append("0 / " + str(self._max_progress))
+
+
 		for server in self._active_servers:
 			for shaper in self._active_shapers:
 				for client in self._active_clients:
 					for test_case in self._active_testcases:
 						runner = Runner(self.sudo_password)
 						runner.run_test(client, shaper, server, test_case)
+						self._progress += 1
+
+						if self._progress_status_queue != None:
+							self._progress_status_queue.append(str(self._progress) + " / " + str(self._max_progress))
 						
 
