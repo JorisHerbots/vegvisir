@@ -2,7 +2,7 @@
 
 <template>
   <main>
- 
+<!--  
 
   <div class="w-96">
     <div class="flex justify-between mb-1 ">
@@ -12,7 +12,14 @@
     <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
       <div class="bg-teal-500 h-2.5 rounded-full progress" :style="progressStyle"></div>
     </div>
-  </div>
+  </div> -->
+
+
+      <li  v-for="(item, index) in tests">
+        <TestCard :Test='item'></TestCard>
+     </li>
+  
+
   </main>
 </template>
 
@@ -20,16 +27,13 @@
 
 <script lang="ts">
 import axios from 'axios';
-import ImplementationList from '@/components/ImplementationList.vue'
-import AddImplementationModal from '@/components/AddImplementationModal.vue';
-import ConfigurationModal from '@/components/ConfigurationModal.vue';
-import TestCaseList from '@/components/TestCaseList.vue';
-import TestConfigurationModal from '@/components/TestConfigurationModal.vue';
+import TestCard from '@/components/TestCard.vue';
 
 
 
 export default {
   components: {
+    TestCard
 },
   props: {
   },
@@ -38,32 +42,58 @@ export default {
     LastValue: 0,
     status: "No information available yet",
     percent: 0,
+    tests: {}
     }),
    created() {
 
     axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
 
-    let ws = new WebSocket("ws://127.0.0.1:5000/ws");
 
-    ws.addEventListener('message', function (event) {
-      this.status = event.data;
-      console.log('Message from server ', event.data);
+    this.GetTests()
+    let ws2 = new WebSocket("ws://127.0.0.1:5000/TestsWebSocket");
 
-      let string = event.data;
-      string = string.replace(" ", "");
-      const myArray = string.split("/")
-
-      this.percent = (parseInt(myArray[0]) / parseInt(myArray[1])) * 100;
-
-    }.bind(this));
-    //ws.addEventListener('open', this.openEvent.bind(this));
-    ws.addEventListener('open', function (event) {
-      ws.send('Hello Server!');
+    ws2.addEventListener('message', function (event) {
+      this.tests = JSON.parse(event.data);
     }.bind(this));
 
   },
   methods: {
+    GetTests() {
+      axios({
+        url: "http://127.0.0.1:5000/GetTests",
+        /*params: deviceID,*/
+        method: "GET"
+      })
+        .then(response => {
 
+            this.tests = response.data;
+            response = response.data
+            console.log(response["uniqueid"])
+            // for (let i in response){
+            //     if (response[i]["role"][0] === "client")
+            //     {
+            //       let j = structuredClone(response[i]);
+            //       j.id = i;
+            //       this.AvailableClients.push(j);
+            //     }
+            //     else if (response[i]["role"][0] === "shaper")
+            //     {
+            //       let j = structuredClone(response[i]);
+            //       j.id = i;
+            //       this.AvailableShapers.push(j);
+            //     }
+            //     else if (response[i]["role"][0] === "server")
+            //     {
+            //       let j = structuredClone(response[i]);
+            //       j.id = i;
+            //       this.AvailableServers.push(j);
+            //     }
+            // }
+        })
+        .catch(error => { 
+          console.log(error)
+        });
+    }
    }
   ,
   computed: {

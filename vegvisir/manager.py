@@ -39,7 +39,7 @@ class Manager:
 
 	sudo_password = ""
 
-	def __init__(self, sudo_password, progress_status_queue=None):
+	def __init__(self, sudo_password, id, progress_status_queue=None):
 		logging.basicConfig(level=logging.INFO)
 		self.sudo_password = sudo_password
 
@@ -54,6 +54,7 @@ class Manager:
 		self._active_testcases : List[TestCase] = []
 
 		self._progress_status_queue = progress_status_queue
+		self._id = id
 
 		self._read_implementations_file("implementations.json")
 

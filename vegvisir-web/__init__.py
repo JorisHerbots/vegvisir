@@ -18,6 +18,8 @@ from quart_cors import route_cors
 import getpass
 import threading 
 import asyncio
+import uuid
+import traceback
 
 app = Quart(__name__)
 
@@ -29,9 +31,15 @@ SocketWatcherEnabled = False
 connected_sockets = set()
 
 password = getpass.getpass("Please enter your sudo password: ")
+loop = None
 
+# Should correspond to tests.json file 
+tests = {}
+tests_updated = asyncio.Event()
+test_connected_sockets = set()
 
-
+with open("tests.json") as f:
+	tests = json.load(f)
 
 @app.route("/Implementations")
 @route_cors()
@@ -47,11 +55,21 @@ async def Testcases():
     data = json.load(f)
     return data
 
+
+
+
+
 @app.route("/Runtest", methods=['POST'])
 @route_cors()
 async def Runtest():
 	global queue 
-	manager = Manager(password, queue)
+	global tests
+	global tests_updated
+
+	id = str(uuid.uuid1())
+
+	manager = Manager(password, id, queue)
+	
 	request_form = await request.get_json()
 
 	for client in request_form["clients"]:
@@ -67,15 +85,45 @@ async def Runtest():
 		print("added testcase")
 		manager.add_active_testcase(testcase)
 
+
+	dictionary = {}
+	dictionary["id"] = id 
+	dictionary["status"] = "waiting"
+	dictionary["name"] = "unimplemented"
+
+	tests[id] = dictionary
+
 	print(manager._active_testcases)
 	manager_queue.append(manager)
+	tests_updated.set()
 
 	return ""
+
+
+@app.route("/GetTests")
+@route_cors()
+async def GetTests():
+	global tests
+
+	return tests
+
+
 
 async def consumer():
 	while True:
 		data = await websocket.receive()
 
+
+def collect_testwebsocket(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        global test_connected_sockets
+        test_connected_sockets.add(websocket._get_current_object())
+        try:
+            return await func(*args, **kwargs)
+        finally:
+            test_connected_sockets.remove(websocket._get_current_object())
+    return wrapper
 
 def collect_websocket(func):
     @wraps(func)
@@ -88,6 +136,41 @@ def collect_websocket(func):
             connected_sockets.remove(websocket._get_current_object())
     return wrapper
 
+
+# Websocket to send status updates about tests
+@app.websocket('/TestsWebSocket')
+@collect_testwebsocket
+async def TestsWebSocket():
+	consumer_task = asyncio.create_task(consumer())
+	await websocket.accept()
+	try:
+		await asyncio.gather(consumer_task)
+	finally:
+		consumer_task.cancel()
+
+
+
+async def TestsWebSocketWatcher():
+	global tests
+	global test_connected_sockets
+	global tests_updated
+
+	while True: 
+		await tests_updated.wait()
+		tests_updated.clear()
+		try:
+			new_tests_string = str(tests).replace("'", '"')
+
+			for ws in test_connected_sockets:
+				try:
+					await ws.send(new_tests_string)
+				except Exception as e:
+					print(e)		
+					print(traceback.format_exc())
+		except:		
+			pass
+
+		
 
 @app.websocket('/ws')
 @collect_websocket
@@ -122,9 +205,20 @@ async def SocketWatcher():
 				pass
 
 
+async def setTestsUpdated():
+	global tests_updated
+
+	tests_updated.set()
 
 def runTestsThread():
 	global busy_manager
+	global tests
+	global manager_queue
+	global tests_updated 
+	global loop
+
+	#thread = asyncio.get_event_loop()
+
 	while True:
 		if len(manager_queue) == 0:
 			busy_manager == None
@@ -132,16 +226,29 @@ def runTestsThread():
 		else:
 			try:
 				busy_manager = manager_queue.pop(0)
-				print(manager_queue)
+				
+				tests[busy_manager._id]["status"] = "running"
+
+				if loop != None:
+					asyncio.run_coroutine_threadsafe(setTestsUpdated(), loop)
 				busy_manager.run_tests()
-			except:
-				pass
+
+				tests[busy_manager._id]["status"] = "done"
+
+				if loop != None:
+					asyncio.run_coroutine_threadsafe(setTestsUpdated(), loop)
+			except Exception as e:
+				print(e)
+				print(traceback.format_exc())
 
 @app.before_serving
 async def lifespan():
+	global loop
 	loop = asyncio.get_event_loop()
 	loop.create_task(SocketWatcher())
+	loop.create_task(TestsWebSocketWatcher())
 
 
 th = threading.Thread(target=runTestsThread)
 th.start()
+
