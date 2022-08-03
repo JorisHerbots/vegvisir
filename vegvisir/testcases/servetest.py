@@ -38,4 +38,4 @@ class ServeTest(TestCase):
 
 	def set_parameters(self, parameters):
 		self.request_urls = parameters["request_url"]
-		self.timeout = parameters["timeout"]
+		self.timeout_time = int(parameters["timeout"])
