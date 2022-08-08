@@ -5,9 +5,9 @@ PIP = $(VENV)/bin/pip
 
 web: $(VENV)/bin/activate
 	source $(VENV)/bin/activate;
-	( cd vegvisir-web; npm run --silent dev &> '/dev/null';) &
+	( cd vegvisirweb; npm run --silent dev &> '/dev/null';) &
 	( \
-		QUART_APP=vegvisir-web QUART_ENV=development quart run;\
+		QUART_APP=vegvisirweb QUART_ENV=development quart run;\
 	) 
 
 run: $(VENV)/bin/activate

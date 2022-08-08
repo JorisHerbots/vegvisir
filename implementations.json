@@ -36,8 +36,8 @@
 			"shaper"
 		],
 		"env": [
-			{"name": "argument", "description": "argument", "default": "\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\"", "type": "dropdown", 
-			"options": ["\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\""]
+			{"name": "argument", "description": "argument", "default": "simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25", "type": "dropdown", 
+			"options": ["simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25"]
 			}
 		]
 	},
@@ -49,8 +49,8 @@
 		],
 		"active": true,
 		"env": [
-			{"name": "argument", "description": "argument", "default": "\"simple 15 10\"", "type": "dropdown", 
-			"options": ["\"simple 15 10\"", "\"akamai_cellular_emulation.sh loss_based median 37\"", "\"akamai_cellular_emulation.sh experience_based fair 37\""]
+			{"name": "argument", "description": "argument", "default": "simple 15 10", "type": "dropdown", 
+			"options": ["simple 15 10", "akamai_cellular_emulation.sh loss_based median 37", "akamai_cellular_emulation.sh experience_based fair 37"]
 			}
 			]
 	},

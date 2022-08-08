@@ -53,7 +53,7 @@ class Manager:
 		self._active_servers : List[Scenario] = []
 		self._active_testcases : List[TestCase] = []
 
-		self._progress_status_queue = progress_status_queue
+		self._add_to_message_queue = progress_status_queue
 		self._id = id
 
 		self._read_implementations_file("implementations.json")
@@ -186,7 +186,7 @@ class Manager:
 				logging.debug(variable)
 				if variable["name"] == "argument":
 					logging.debug("adding as argumnet")
-					argument = variable["value"]
+					argument = '"' + variable["value"] + '"'
 				else:
 					logging.debug("adding as env")
 					environment_variables.append(variable["value"])
@@ -211,7 +211,7 @@ class Manager:
 			
 			for parameter in testcase["parameters"]:
 				parameters_dict[parameter["name"]] = parameter["value"]
-
+			
 			python_testcase.set_parameters(parameters_dict)
 
 		self._active_testcases.append(python_testcase)
@@ -220,7 +220,7 @@ class Manager:
 	# Runs all tests for all active clients, shapers, servers and test case permutations
 	def run_tests(self):
 		self._max_progress = len(self._active_clients) * len(self._active_servers) * len(self._active_shapers) * len(self._active_testcases)
-		self._progress_status_queue.append("0 / " + str(self._max_progress))
+		self._add_to_message_queue("progress_update", "0 / " + str(self._max_progress))
 
 
 		for server in self._active_servers:
@@ -231,7 +231,6 @@ class Manager:
 						runner.run_test(client, shaper, server, test_case)
 						self._progress += 1
 
-						if self._progress_status_queue != None:
-							self._progress_status_queue.append(str(self._progress) + " / " + str(self._max_progress))
+						self._add_to_message_queue("progress_update", str(self._progress) + " / " + str(self._max_progress))
 						
 

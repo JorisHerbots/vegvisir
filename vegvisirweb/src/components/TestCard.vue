@@ -2,7 +2,7 @@
 <template>
 
 
-<div @click="Clicked(Test.id)"  class="card block p-6 max-w-none bg-white  border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
+<div @click="Clicked()"  class="card block p-6 max-w-none bg-white  border border-gray-200 shadow-md hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
     <div class="flex flex-row">
     
     <div class="grow">
@@ -15,7 +15,7 @@
       <div class="w-96 mr-64">
         <div class="flex justify-between mb-1 ">
           <span class="text-base font-medium text-teal-500 dark:text-white">Progress</span>
-          <span class="text-sm font-medium text-teal-500 dark:text-white">{{status}}</span>
+          <span class="text-sm font-medium text-teal-500 dark:text-white">{{testsStore.status}}</span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
           <div class="bg-teal-500 h-2.5 rounded-full progress" :style="progressStyle"></div>
@@ -35,7 +35,7 @@
 
     <div class="flex flex-col justify-center">
     <button @click.stop.prevent @click="RemoveClicked(Test.id)" class="bg-transparent hover:bg-red-500 text-red-700 font-semibold hover:text-white py-2 px-4 border border-red-500 hover:border-transparent rounded">
-      Open
+      Remove
     </button>
     </div>
     </div>
@@ -47,36 +47,30 @@
 
 
 <script lang="ts">
+import { storeToRefs } from 'pinia'
+import { useTestsStore } from '@/stores/UseTestsStore.ts';
+
 export default {
   props: {
     Test: {}
   },
   data: () => ({
     status: "No information available yet",
-    percent: 0
+    percent: 0,
   }),
+  setup() {
+    const testsStore = useTestsStore();
+
+    return {testsStore};
+  },
   created() {
-    let ws = new WebSocket("ws://127.0.0.1:5000/ws");
-
-    ws.addEventListener('message', function (event) {
-      this.status = event.data;
-      console.log('Message from server ', event.data);
-
-      let string = event.data;
-      string = string.replace(" ", "");
-      const myArray = string.split("/")
-
-      this.percent = (parseInt(myArray[0]) / parseInt(myArray[1])) * 100;
-
-    }.bind(this));
-
   },
   methods: {
-    Clicked(id) {
-      this.$emit("Clicked", id);
+    Clicked() {
+      this.$router.push({ path: '/ViewTest', query: {id: this.Test.id} })
     },
     RemoveClicked(id) {
-      this.$emit("RemoveClicked", id);
+      this.testsStore.removeTest(id);
     }
   },
   computed: {

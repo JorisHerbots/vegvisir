@@ -21,7 +21,16 @@ import asyncio
 import uuid
 import traceback
 
+from vegvisirweb.websocketqueue import WebSocketQueue, MessageSendWorker, MessageParser
+
 app = Quart(__name__)
+
+
+
+web_socket_queue = WebSocketQueue()
+web_sockets_worker = MessageSendWorker()
+web_socket_queue.add_worker(web_sockets_worker)
+
 
 manager_queue = []
 queue = []
@@ -39,7 +48,20 @@ tests_updated = asyncio.Event()
 test_connected_sockets = set()
 
 with open("tests.json") as f:
-	tests = json.load(f)
+	try:
+		tests = json.load(f)
+	except:
+		tests = {}
+
+
+def UpdateJSONfile():
+	global tests 
+
+	print("updating JSON file")
+
+	json_string = json.dumps(tests)
+	with open("tests.json", 'w') as outfile:
+		outfile.write(json_string)
 
 @app.route("/Implementations")
 @route_cors()
@@ -56,19 +78,15 @@ async def Testcases():
     return data
 
 
-
-
-
 @app.route("/Runtest", methods=['POST'])
 @route_cors()
 async def Runtest():
-	global queue 
 	global tests
 	global tests_updated
 
 	id = str(uuid.uuid1())
 
-	manager = Manager(password, id, queue)
+	manager = Manager(password, id, add_message_to_queue_sync)
 	
 	request_form = await request.get_json()
 
@@ -90,12 +108,14 @@ async def Runtest():
 	dictionary["id"] = id 
 	dictionary["status"] = "waiting"
 	dictionary["name"] = "unimplemented"
+	dictionary["time_added"] = str(time.time())
+	dictionary["configuration"] = request_form
 
 	tests[id] = dictionary
 
-	print(manager._active_testcases)
 	manager_queue.append(manager)
-	tests_updated.set()
+	
+	await add_message_to_queue("add_test", json.dumps(dictionary))
 
 	return ""
 
@@ -108,39 +128,32 @@ async def GetTests():
 	return tests
 
 
-
+# Consumer for websocket
+# discards the data 
 async def consumer():
 	while True:
 		data = await websocket.receive()
 
 
-def collect_testwebsocket(func):
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        global test_connected_sockets
-        test_connected_sockets.add(websocket._get_current_object())
-        try:
-            return await func(*args, **kwargs)
-        finally:
-            test_connected_sockets.remove(websocket._get_current_object())
-    return wrapper
-
-def collect_websocket(func):
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        global connected_sockets
-        connected_sockets.add(websocket._get_current_object())
-        try:
-            return await func(*args, **kwargs)
-        finally:
-            connected_sockets.remove(websocket._get_current_object())
-    return wrapper
+# Collects the web
+#
+def collect_testswebsocket(func):
+	@wraps(func)
+	async def wrapper(*args, **kwargs):
+		global web_sockets_worker
+		web_sockets_worker.add_websocket(websocket._get_current_object())
+		print("added web socket to worker")
+		try:
+			return await func(*args, **kwargs)
+		finally:
+			web_sockets_worker.remove_websocket(websocket._get_current_object())
+	return wrapper
 
 
 # Websocket to send status updates about tests
 @app.websocket('/TestsWebSocket')
-@collect_testwebsocket
-async def TestsWebSocket():
+@collect_testswebsocket
+async def tests_websocket():
 	consumer_task = asyncio.create_task(consumer())
 	await websocket.accept()
 	try:
@@ -148,76 +161,40 @@ async def TestsWebSocket():
 	finally:
 		consumer_task.cancel()
 
+# synchronous method to add a message to the web_socket_queue
+# Use this version when you need to add something to the queue but you do not have acces to the event loop (eg. in another thread)
+# params
+#	message_type	: one of the available message types of the MessageParser class
+# 	message			: the message to send
+# post
+#	Encoded version of message added to web_socket_queue
+def add_message_to_queue_sync(message_type, message):
+	global loop 
+	asyncio.run_coroutine_threadsafe(add_message_to_queue(message_type, message), loop=loop)
 
 
-async def TestsWebSocketWatcher():
-	global tests
-	global test_connected_sockets
-	global tests_updated
+# Asynchronous method to add a message to the web_socket_queue
+# params
+#	message_type	: one of the available message types of the MessageParser class
+# 	message			: the message to send
+# post
+#	Encoded version of message added to web_socket_queue
+async def add_message_to_queue(message_type, message):
+	global web_socket_queue
 
-	while True: 
-		await tests_updated.wait()
-		tests_updated.clear()
-		try:
-			new_tests_string = str(tests).replace("'", '"')
-
-			for ws in test_connected_sockets:
-				try:
-					await ws.send(new_tests_string)
-				except Exception as e:
-					print(e)		
-					print(traceback.format_exc())
-		except:		
-			pass
-
-		
-
-@app.websocket('/ws')
-@collect_websocket
-async def ws():
-	global last_status
-
-	consumer_task = asyncio.create_task(consumer())
-	await websocket.send(last_status)
+	print(f"adding message to queue {message} with type {message_type}")
 	try:
-		await asyncio.gather(consumer_task)
-	finally:
-		consumer_task.cancel()
+		encoded_message = MessageParser().encode_message(message_type, message)
+	except Exception as e:
+		print(e)
+	await web_socket_queue.add_message(encoded_message)
 
-async def SocketWatcher():
-	global queue
-	global connected_sockets
-	global last_status
-	while True: 
-		if len(queue) == 0:
-			await asyncio.sleep(1)
-		else:
-			try:
-				message = queue.pop(0)
-				last_status = message
-	
-				for ws in connected_sockets:
-					try:
-						await ws.send(message)
-					except:
-						pass			
-			except:		
-				pass
-
-
-async def setTestsUpdated():
-	global tests_updated
-
-	tests_updated.set()
-
-def runTestsThread():
+def run_tests_thread():
 	global busy_manager
 	global tests
 	global manager_queue
 	global tests_updated 
 	global loop
-
-	#thread = asyncio.get_event_loop()
 
 	while True:
 		if len(manager_queue) == 0:
@@ -230,13 +207,13 @@ def runTestsThread():
 				tests[busy_manager._id]["status"] = "running"
 
 				if loop != None:
-					asyncio.run_coroutine_threadsafe(setTestsUpdated(), loop)
+					asyncio.run_coroutine_threadsafe(add_message_to_queue("update_test", json.dumps(tests[busy_manager._id])), loop=loop)
 				busy_manager.run_tests()
 
 				tests[busy_manager._id]["status"] = "done"
 
 				if loop != None:
-					asyncio.run_coroutine_threadsafe(setTestsUpdated(), loop)
+					asyncio.run_coroutine_threadsafe(add_message_to_queue("update_test", json.dumps(tests[busy_manager._id])), loop=loop)
 			except Exception as e:
 				print(e)
 				print(traceback.format_exc())
@@ -245,10 +222,9 @@ def runTestsThread():
 async def lifespan():
 	global loop
 	loop = asyncio.get_event_loop()
-	loop.create_task(SocketWatcher())
-	loop.create_task(TestsWebSocketWatcher())
+	loop.create_task(web_socket_queue.watch_queue_and_notify_workers())
 
 
-th = threading.Thread(target=runTestsThread)
+th = threading.Thread(target=run_tests_thread)
 th.start()
 
