@@ -6,14 +6,10 @@
     <TestConfigurationModal v-if="TestModalVisible" @accept="ModalAccept" :ActiveImplementation="ActiveTestCase"></TestConfigurationModal>
     <AddImplementationModal @ClickedImplementation="this.Add" v-if="AddModalVisisble" @close="this.AddModalVisisble = false;" :AvailableImplementations="VisibleImplementationsToAdd"></AddImplementationModal>
 
-    <div id="ImplementationsView" class="m-4">
-    <ImplementationList @AddClicked="ShowAddClientScreen('client')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="ActiveClients"></ImplementationList>
-    <ImplementationList @AddClicked="ShowAddClientScreen('shaper')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="ActiveShapers"></ImplementationList>
-    <ImplementationList @AddClicked="ShowAddClientScreen('server')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test" :listItems="ActiveServers"></ImplementationList>
-    </div>
 
-    <TestCaseList @AddClicked="ShowAddClientScreen('testcase')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="ml-4 mr-4 h-64" :listItems="ActiveTestCases"></TestCaseList>
-
+    <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded m-4 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="testsStore.test.name" placeholder="test name">
+    
+    
     <button @click="RunClicked()" class="absolute bg-transparent mt-4 right-4 z-1 bg-green-500 font-semibold text-white py-2 px-4 border border-transparent rounded">
         Run test
     </button>
@@ -21,8 +17,13 @@
     <button @click="ExportClicked()" class="absolute bg-transparent mt-4 right-64 z-1 bg-green-500 font-semibold text-white py-2 px-4 border border-transparent rounded">
         Export
     </button>
+    <div id="ImplementationsView" class="m-4">
+    <ImplementationList @AddClicked="ShowAddClientScreen('client')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.clients"></ImplementationList>
+    <ImplementationList @AddClicked="ShowAddClientScreen('shaper')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.shapers"></ImplementationList>
+    <ImplementationList @AddClicked="ShowAddClientScreen('server')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test" :listItems="testsStore.test.configuration.servers"></ImplementationList>
+    </div>
 
-
+    <TestCaseList @AddClicked="ShowAddClientScreen('testcase')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="ml-4 mr-4 h-64" :listItems="testsStore.test.configuration.testcases"></TestCaseList>
 
 
   </main>
@@ -37,8 +38,7 @@ import AddImplementationModal from '@/components/AddImplementationModal.vue';
 import ConfigurationModal from '@/components/ConfigurationModal.vue';
 import TestCaseList from '@/components/TestCaseList.vue';
 import TestConfigurationModal from '@/components/TestConfigurationModal.vue';
-
-
+import { useTestsStore } from '@/stores/UseTestsStore.ts';
 
 export default {
   components: {
@@ -51,10 +51,6 @@ export default {
   props: {
   },
   data: () => ({
-    ActiveClients: [],
-    ActiveShapers: [],
-    ActiveServers: [],
-    ActiveTestCases: [],
     AvailableClients: [],
     AvailableShapers: [],
     AvailableServers: [],
@@ -67,12 +63,14 @@ export default {
     ActiveTestCase: {},
     TestModalVisible: false
     }),
+   setup () {
+    const testsStore = useTestsStore();
+
+    return {testsStore}
+   },
    created() {
 
     axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
-    this.ActiveClients = []
-    this.ActiveShapers = []
-    this.ActiveServers = []
     this.GetAndFillAvailableImplementations();
     this.GetAndFillAvailableTestCases();
   },
@@ -98,7 +96,7 @@ export default {
 
     },
     RunClicked() {
-      let obj = {clients: this.ActiveClients, shapers: this.ActiveShapers, servers: this.ActiveServers, testcases: this.ActiveTestCases}
+      let obj = {configuration: {clients: this.testsStore.test.configuration.clients, shapers: this.testsStore.test.configuration.shapers, servers: this.testsStore.test.configuration.servers, testcases: this.testsStore.test.configuration.testcases},  name: this.testsStore.test.name}
       axios({
         url: "http://127.0.0.1:5000/Runtest",
         data: obj,
@@ -129,35 +127,34 @@ export default {
             window.URL.revokeObjectURL(url);  
         }, 0); 
     }
-    console.log("euuuh");
     },
     ExportClicked(){
-      let obj = {clients: this.ActiveClients, shapers: this.ActiveShapers, servers: this.ActiveServers, testcases: this.ActiveTestCases};
+      let obj = {configuration: {clients: this.testsStore.test.configuration.clients, shapers: this.testsStore.test.configuration.shapers, servers: this.testsStore.test.configuration.servers, testcases: this.testsStore.test.configuration.testcases}, name: this.testsStore.test.name};
       let text = JSON.stringify(obj);
 
       this.download(text, "test.json", "json");
     },
     RemoveActiveImplementation(ImplementationId){
-      this.ActiveClients = this.ActiveClients.filter(client => client.active_id != ImplementationId);
-      this.ActiveShapers = this.ActiveShapers.filter(client => client.active_id != ImplementationId);
-      this.ActiveServers = this.ActiveServers.filter(client => client.active_id != ImplementationId);
-      this.ActiveTestCases = this.ActiveTestCases.filter(client => client.active_id != ImplementationId);
+      this.testsStore.test.configuration.clients = this.testsStore.test.configuration.clients.filter(client => client.active_id != ImplementationId);
+      this.testsStore.test.configuration.shapers = this.testsStore.test.configuration.shapers.filter(client => client.active_id != ImplementationId);
+      this.testsStore.test.configuration.servers = this.testsStore.test.configuration.servers.filter(client => client.active_id != ImplementationId);
+      this.testsStore.test.configuration.testcases = this.testsStore.test.configuration.testcases.filter(client => client.active_id != ImplementationId);
     },
     RemoveActiveClientImplementation(ImplementationId){
-      this.ActiveClients = this.ActiveClients.filter(client => client.active_id != ImplementationId);
+      this.testsStore.test.configuration.clients = this.testsStore.test.configuration.clients.filter(client => client.active_id != ImplementationId);
     },
     ImplementationOptions(ImplementationId) {
       
-      if (this.ActiveTestCases.find(o => o.active_id === ImplementationId)) {
-        this.ActiveTestCase = this.ActiveTestCases.find(o => o.active_id === ImplementationId);     
+      if (this.testsStore.test.configuration.testcases.find(o => o.active_id === ImplementationId)) {
+        this.ActiveTestCase = this.testsStore.test.configuration.testcases.find(o => o.active_id === ImplementationId);     
         this.TestModalVisible = true;
       }
-      if (this.ActiveClients.find(o => o.active_id === ImplementationId))
-        this.ActiveImplementation = this.ActiveClients.find(o => o.active_id === ImplementationId);
-      if (this.ActiveShapers.find(o => o.active_id === ImplementationId))
-        this.ActiveImplementation = this.ActiveShapers.find(o => o.active_id === ImplementationId);
-      if (this.ActiveServers.find(o => o.active_id === ImplementationId))
-        this.ActiveImplementation = this.ActiveServers.find(o => o.active_id === ImplementationId);
+      if (this.testsStore.test.configuration.clients.find(o => o.active_id === ImplementationId))
+        this.ActiveImplementation = this.testsStore.test.configuration.clients.find(o => o.active_id === ImplementationId);
+      if (this.testsStore.test.configuration.shapers.find(o => o.active_id === ImplementationId))
+        this.ActiveImplementation = this.testsStore.test.configuration.shapers.find(o => o.active_id === ImplementationId);
+      if (this.testsStore.test.configuration.servers.find(o => o.active_id === ImplementationId))
+        this.ActiveImplementation = this.testsStore.test.configuration.servers.find(o => o.active_id === ImplementationId);
 
       this.ModalVisible = true;
       
@@ -165,9 +162,7 @@ export default {
     },
     ClientImplementationClicked(ImplementationId) {
       this.ModalVisible = true;
-      console.log(ImplementationId);
-      this.ActiveImplementation = this.ActiveClients.find(o => o.active_id === ImplementationId);
-      console.log(this.ActiveImplementation);
+      this.ActiveImplementation = this.testsStore.test.configuration.clients.find(o => o.active_id === ImplementationId);
     },
     GetAndFillAvailableImplementations() {
 
@@ -180,7 +175,7 @@ export default {
         method: "GET"
       })
         .then(response => {
-            console.log(response);
+
 
             this.Implementations = response.data;
             response = response.data
@@ -220,9 +215,7 @@ export default {
         method: "GET"
       })
         .then(response => {
-            console.log(response);
-
-            
+          
             response = response.data
             for (let i in response){
               this.AvailableTestCases.push(response[i])
@@ -234,11 +227,8 @@ export default {
           console.log(error)
         });
 
-        console.log()
-
     },
     Add(Id) {
-       console.log("lol")
       if (this.AvailableClients.some(implementation => implementation.id === Id))
         this.AddActiveClient(Id)
       if (this.AvailableShapers.some(implementation => implementation.id === Id))
@@ -261,7 +251,7 @@ export default {
             j.parameters[envid].value = j.parameters[envid].default;
           }
 
-          this.ActiveTestCases.push(j) 
+          this.testsStore.test.configuration.testcases.push(j) 
         } 
       }
       this.AddModalVisisble = false;      
@@ -279,7 +269,7 @@ export default {
             j.env[envid].value = j.env[envid].default;
           }
 
-          this.ActiveClients.push(j) 
+          this.testsStore.test.configuration.clients.push(j) 
         } 
       }
       this.AddModalVisisble = false;
@@ -297,7 +287,7 @@ export default {
             j.env[envid].value = j.env[envid].default;
           }
 
-          this.ActiveShapers.push(j) 
+          this.testsStore.test.configuration.shapers.push(j) 
         } 
       }
       this.AddModalVisisble = false;
@@ -315,7 +305,7 @@ export default {
             j.env[envid].value = j.env[envid].default;
           }
 
-          this.ActiveServers.push(j) 
+          this.testsStore.test.configuration.servers.push(j) 
         } 
       }
       this.AddModalVisisble = false;

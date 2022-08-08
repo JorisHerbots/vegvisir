@@ -5,6 +5,9 @@
 
     <div class="font-semibold text-3xl text-teal-500 tracking-tight content-center text-center mt-4">{{testsStore.test}}</div>
 
+    <button @click="EditAndRerun" class="bg-transparent hover:bg-orange-500 text-orange-500 font-semibold hover:text-white py-2 px-4 border border-orange-500 hover:border-transparent rounded">
+      Edit and rerun
+    </button>
     
 <!--  
 
@@ -47,6 +50,20 @@ export default {
    created() {
 
     axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
+
+
+  },
+  methods: {
+    EditAndRerun() {
+      // Deep copy
+      let temp = JSON.parse(JSON.stringify(this.testsStore.test));
+      console.log(temp); 
+      temp.name = temp.name + "(1)";
+
+
+      this.testsStore.test = temp
+      this.$router.push({ path: '/configure' })
+    }
 
 
   },

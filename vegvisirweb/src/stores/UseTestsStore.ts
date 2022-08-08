@@ -4,7 +4,7 @@ import axios from 'axios';
 
 export const useTestsStore = defineStore('post', () => {
   const tests = ref(0);
-  const test = ref("test_TODO");
+  const test = ref({configuration: {servers : [], clients : [], shapers : [], testcases: []}});
   const websocket = ref(null);
   const status = ref("");
   const changed = ref(false);

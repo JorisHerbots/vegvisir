@@ -80,7 +80,7 @@ async def Testcases():
 
 @app.route("/Runtest", methods=['POST'])
 @route_cors()
-async def Runtest():
+async def run_test():
 	global tests
 	global tests_updated
 
@@ -90,16 +90,16 @@ async def Runtest():
 	
 	request_form = await request.get_json()
 
-	for client in request_form["clients"]:
+	for client in request_form["configuration"]["clients"]:
 		manager.add_active_implementation(client)
 
-	for shaper in request_form["shapers"]:
+	for shaper in request_form["configuration"]["shapers"]:
 		manager.add_active_implementation(shaper)
 
-	for server in request_form["servers"]:
+	for server in request_form["configuration"]["servers"]:
 		manager.add_active_implementation(server)
 
-	for testcase in request_form["testcases"]:
+	for testcase in request_form["configuration"]["testcases"]:
 		print("added testcase")
 		manager.add_active_testcase(testcase)
 
@@ -107,9 +107,9 @@ async def Runtest():
 	dictionary = {}
 	dictionary["id"] = id 
 	dictionary["status"] = "waiting"
-	dictionary["name"] = "unimplemented"
+	dictionary["name"] = request_form["name"]
 	dictionary["time_added"] = str(time.time())
-	dictionary["configuration"] = request_form
+	dictionary["configuration"] = request_form["configuration"]
 
 	tests[id] = dictionary
 
