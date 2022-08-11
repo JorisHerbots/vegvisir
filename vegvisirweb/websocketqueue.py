@@ -103,7 +103,10 @@ class MessageParser():
         "add_test": "ADD",
         "remove_test": "REM",
         "update_test": "UPD",
-        "progress_update": "PRO"
+        "progress_update": "PRO",
+        "request_all_logfiles": "RAL",
+        "update_all_logfiles": "UAL",
+        "request_logfiles_in_folder": "RLF"
     }
 
     # Used to convert headers to messagetypes

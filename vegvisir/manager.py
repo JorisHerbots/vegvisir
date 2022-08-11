@@ -36,6 +36,7 @@ class Manager:
 
 	_progress = 0
 	_max_progress = 0
+	name = ""
 
 	sudo_password = ""
 
@@ -204,6 +205,8 @@ class Manager:
 			if item.id == testcase["id"]:
 				python_testcase = copy.deepcopy(item)
 				break 
+		
+		python_testcase.name = testcase["active_id"]
 
 		if "parameters" in testcase:
 
@@ -221,16 +224,23 @@ class Manager:
 	def run_tests(self):
 		self._max_progress = len(self._active_clients) * len(self._active_servers) * len(self._active_shapers) * len(self._active_testcases)
 		self._add_to_message_queue("progress_update", "0 / " + str(self._max_progress))
-
+		
+		log_dirs = []
 
 		for server in self._active_servers:
 			for shaper in self._active_shapers:
 				for client in self._active_clients:
 					for test_case in self._active_testcases:
 						runner = Runner(self.sudo_password)
-						runner.run_test(client, shaper, server, test_case)
+						runner.name = self.name
+						result = runner.run_test(client, shaper, server, test_case)
+							
+						log_dirs.append(result.log_dir)
+
 						self._progress += 1
 
 						self._add_to_message_queue("progress_update", str(self._progress) + " / " + str(self._max_progress))
 						
 
+
+		return log_dirs

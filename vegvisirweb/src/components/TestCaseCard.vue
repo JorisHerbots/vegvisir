@@ -11,9 +11,11 @@
     <p class="font-normal text-gray-700 dark:text-gray-400">{{Implementation.name}}</p>
     </div>
     <div class="flex flex-col justify-center">
-    <button @click.stop.prevent @click="RemoveClicked(Implementation.active_id)" class="bg-transparent hover:bg-red-500 text-red-700 font-semibold hover:text-white py-2 px-4 border border-red-500 hover:border-transparent rounded">
-      Remove
-    </button>
+    <div v-if="CanBeRemoved">
+      <button @click.stop.prevent @click="RemoveClicked(Implementation.active_id)" class="bg-transparent hover:bg-red-500 text-red-700 font-semibold hover:text-white py-2 px-4 border border-red-500 hover:border-transparent rounded">
+        Remove
+      </button>
+    </div>
     </div>
     </div>
 </div>
@@ -26,13 +28,14 @@
 <script lang="ts">
 export default {
   props: {
-    Implementation: {}
+    Implementation: {},
+    CanBeRemoved: false
   },
   data: () => ({}),
   methods: {
     Clicked(id) {
       console.log(this.Implementation)
-      this.$emit("Clicked", id);
+      this.$emit("clicked", id);
     },
     RemoveClicked(id) {
       this.$emit("RemoveClicked", id);

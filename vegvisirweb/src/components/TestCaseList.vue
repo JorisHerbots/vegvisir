@@ -2,18 +2,20 @@
 
 
 <template>
-  <div class="outer">
+  <div class="outerC">
   <div id="list" class="bg-white border">
     
       <li  v-for="(item, index) in listItems">
-        <TestCaseCard @clicked="CardClicked" @RemoveClicked="CardRemoveClicked" :Implementation="item"></TestCaseCard>
+        <TestCaseCard @clicked="CardClicked" @RemoveClicked="CardRemoveClicked" :Implementation="item" :CanBeRemoved="CanBeModified"></TestCaseCard>
      </li>
   
     
     </div>
+    <div v-if="CanBeModified">
         <button @click="AddClicked()" id="but" class="absolute bg-transparent bottom-4 right-4 z-1 hover:bg-green-500 text-green-700 font-semibold hover:text-white py-2 px-4 border border-green-500 hover:border-transparent rounded">
         Add
       </button>
+    </div>
   </div>
 
   <!-- <ImplementationCard  Name="item.name" Description="item.description"></ImplementationCard> -->
@@ -28,6 +30,7 @@ export default {
   name: "TestCaseList",
   props: {
     listItems: Array,
+    CanBeModified: false
   },
   components: {
     TestCaseCard
@@ -53,7 +56,7 @@ export default {
 <style>
 
 
-.outer {   
+.outerC {   
   width: auto;
   list-style-type: none;
   height: inherit}

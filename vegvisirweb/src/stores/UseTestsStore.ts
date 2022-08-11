@@ -7,6 +7,7 @@ export const useTestsStore = defineStore('post', () => {
   const test = ref({configuration: {servers : [], clients : [], shapers : [], testcases: []}});
   const websocket = ref(null);
   const status = ref("");
+  const log_files = ref([]);
   const changed = ref(false);
   
   websocket.value = new WebSocket("ws://127.0.0.1:5000/TestsWebSocket");
@@ -38,11 +39,17 @@ export const useTestsStore = defineStore('post', () => {
       if (header === "PRO") {
         status.value = message;
       }
+
+      if (header === "UAL") {
+        log_files.value = JSON.parse(message);
+      }
+
   
     }.bind(this));
 
 
     function removeTest(testId) {
+      console.log("heeer")
       delete tests.value[testId]
       if (websocket.value.readyState === 1) {
 
@@ -51,7 +58,23 @@ export const useTestsStore = defineStore('post', () => {
 
     }
 
+    function getAllLogFilesInFolder(folder) {
+      if (websocket.value.readyState === 1) {
 
-  return { tests, test, websocket, status, changed, removeTest}
+        websocket.value.send("RLF : " + folder)
+      }   
+    }
+
+    function getAllLogFiles(testId) {
+      console.log("dkfksdjf")
+      if (websocket.value.readyState === 1) {
+
+        websocket.value.send("RAL : " + testId.toString())
+      } 
+      console.log("getting all og file")
+    }
+
+
+  return { tests, test, websocket, log_files, status, changed, removeTest, getAllLogFiles, getAllLogFilesInFolder}
 
 })

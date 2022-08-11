@@ -6,14 +6,16 @@
   <div id="list" class="bg-white border">
     
       <li  v-for="(item, index) in listItems">
-        <ImplementationCard @clicked="CardClicked" @RemoveClicked="CardRemoveClicked" :Implementation="item"></ImplementationCard>
+        <ImplementationCard @clicked="CardClicked" @RemoveClicked="CardRemoveClicked" :Implementation="item" :CanBeRemoved="CanBeModified"></ImplementationCard>
      </li>
   
-    
+
     </div>
-        <button @click="AddClicked()" id="but" class="absolute bg-transparent bottom-4 right-4 z-1 hover:bg-green-500 text-green-700 font-semibold hover:text-white py-2 px-4 border border-green-500 hover:border-transparent rounded">
-        Add
-      </button>
+      <div v-if="CanBeModified">
+          <button @click="AddClicked()" id="but" class="absolute bg-transparent bottom-4 right-4 z-1 hover:bg-green-500 text-green-700 font-semibold hover:text-white py-2 px-4 border border-green-500 hover:border-transparent rounded">
+          Add
+        </button>
+      </div>
   </div>
 
   <!-- <ImplementationCard  Name="item.name" Description="item.description"></ImplementationCard> -->
@@ -28,6 +30,7 @@ export default {
   name: "ImplementationList",
   props: {
     listItems: Array,
+    CanBeModified: false
   },
   components: {
     ImplementationCard

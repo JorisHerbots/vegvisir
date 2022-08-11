@@ -20,6 +20,7 @@ from .testcases import *
 
 class Runner:
 	sudo_password : str = ""
+	name: str = ""
 
 	def __init__(self, sudo_password):
 		self.sudo_password = sudo_password
@@ -319,21 +320,25 @@ class Runner:
 		# testcase.name
 		self._start_time = datetime.now()
 		self._test_label = ""
-		self._log_dir = "logs/{}/{:%Y-%m-%dT%H:%M:%S}".format(self._test_label,self._start_time)
-		log_dir = os.getcwd() + "/" + self._log_dir + "/"
-		log_dir = log_dir + server.implementation.repo + "_" + server.implementation.name + "_" + server.implementation.tag + "_"
-		if client.implementation.type == Type.DOCKER:
-			log_dir = log_dir + client.implementation.repo + "_" + client.implementation.name + "_" + client.implementation.tag
-		else:
-			log_dir = log_dir + client.name 
+		self._log_dir = "logs/{}/{:%Y-%m-%dT%H:%M:%S}".format(self.name,self._start_time)
+		log_dir = os.path.join(os.getcwd(), self._log_dir)
+		log_dir += "/"
 
-		log_dir = log_dir + "/" + shaper.implementation.name + "_" + shaper.name + "/" + testcase.name
+		log_dir = log_dir + client.name + "/" + shaper.name + "/" + server.name + "/" + testcase.name
+
+		# log_dir = log_dir + server.implementation.repo + "_" + server.implementation.name + "_" + server.implementation.tag + "_"
+		# if client.implementation.type == Type.DOCKER:
+		# 	log_dir = log_dir + client.implementation.repo + "_" + client.implementation.name + "_" + client.implementation.tag
+		# else:
+		# 	log_dir = log_dir + client.name 
+
+		# log_dir = log_dir + "/" + shaper.implementation.name + "_" + shaper.name + "/" + testcase.name
 
 		# TODO fix more than 1 repetition
 		# if self._test_repetitions > 1:
 		# 	log_dir += '_run_' + str(self._curr_repetition)
 
-
+		result.log_dir = log_dir
 		run_logger.create_log_locations(log_dir)
 
 

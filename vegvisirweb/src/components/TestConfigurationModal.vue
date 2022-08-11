@@ -25,14 +25,39 @@
                       <li  v-for="(item, index) in ActiveImplementation['parameters']">
                         <div v-if="'type' in item && item.type === 'dropdown'">         
                           {{item.name}}                  
-                          <select class="bg-gray-200  border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" name="temp">
+                          
+                          <div v-if="CanBeModified">
+                            <select class="bg-gray-200  border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" name="temp">
+                              
+                              <option  v-for="(item2, index2) in item.options" value="item2">{{item2}}</option>
                             
-                            <option  v-for="(item2, index2) in item.options" value="item2">{{item2}}</option>
-                          </select>
+                            
+                            </select>
+                          </div>
+
+                          <div v-if="!CanBeModified">
+                            <select class="bg-gray-200  border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" name="temp" disabled>
+                              
+                              <option  v-for="(item2, index2) in item.options" value="item2">{{item2}}</option>
+                            
+                            
+                            </select>                            
+                          </div>
+                        
+                        
                         </div>
                         <div v-if="!('type' in item) || item.type !== 'dropdown'">  
                           {{item.name}} 
-                          <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="item.value" :placeholder="item.default">
+                          
+                          <div v-if="CanBeModified">
+                            <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="item.value" :placeholder="item.default">
+                          </div>
+
+                          <div v-if="!CanBeModified">
+                            <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="item.value" :placeholder="item.default" readonly>
+                          </div>
+                       
+                       
                         </div>
                       </li> 
                   </div>
@@ -58,7 +83,8 @@
 <script lang="ts">
 export default {
   props: {
-    ActiveImplementation: {}
+    ActiveImplementation: {},
+    CanBeModified: false
   },
 
   data: () => ({}),

@@ -23,6 +23,7 @@ class TestResult:
 	start_time: datetime = 0
 	end_time: datetime = 0
 	status: Status = Status.FAILED
+	log_dir: str = ""
 
 	def __init__(self):
 		pass

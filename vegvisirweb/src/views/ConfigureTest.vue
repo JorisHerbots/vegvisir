@@ -2,10 +2,19 @@
 
 <template>
   <main>
-    <ConfigurationModal v-if="ModalVisible" @accept="ModalAccept" :ActiveImplementation="ActiveImplementation"></ConfigurationModal>
-    <TestConfigurationModal v-if="TestModalVisible" @accept="ModalAccept" :ActiveImplementation="ActiveTestCase"></TestConfigurationModal>
+    <ConfigurationModal v-if="ModalVisible" @accept="ModalAccept" :ActiveImplementation="ActiveImplementation" :CanBeModified="true"></ConfigurationModal>
+    <TestConfigurationModal v-if="TestModalVisible" @accept="ModalAccept" :ActiveImplementation="ActiveTestCase" :CanBeModified="true"></TestConfigurationModal>
     <AddImplementationModal @ClickedImplementation="this.Add" v-if="AddModalVisisble" @close="this.AddModalVisisble = false;" :AvailableImplementations="VisibleImplementationsToAdd"></AddImplementationModal>
 
+    <div v-if="showError">
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error</strong>
+        <span class="block sm:inline">    Please fill in a name</span>
+        <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+          <svg @click="showError = false;" class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+        </span>
+      </div>
+    </div>
 
     <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded m-4 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="testsStore.test.name" placeholder="test name">
     
@@ -18,12 +27,12 @@
         Export
     </button>
     <div id="ImplementationsView" class="m-4">
-    <ImplementationList @AddClicked="ShowAddClientScreen('client')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.clients"></ImplementationList>
-    <ImplementationList @AddClicked="ShowAddClientScreen('shaper')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.shapers"></ImplementationList>
-    <ImplementationList @AddClicked="ShowAddClientScreen('server')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test" :listItems="testsStore.test.configuration.servers"></ImplementationList>
+    <ImplementationList @AddClicked="ShowAddClientScreen('client')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.clients" :CanBeModified="true"></ImplementationList>
+    <ImplementationList @AddClicked="ShowAddClientScreen('shaper')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.shapers" :CanBeModified="true"></ImplementationList>
+    <ImplementationList @AddClicked="ShowAddClientScreen('server')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test" :listItems="testsStore.test.configuration.servers" :CanBeModified="true"></ImplementationList>
     </div>
 
-    <TestCaseList @AddClicked="ShowAddClientScreen('testcase')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="ml-4 mr-4 h-64" :listItems="testsStore.test.configuration.testcases"></TestCaseList>
+    <TestCaseList @AddClicked="ShowAddClientScreen('testcase')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="ml-4 mr-4 h-64" :listItems="testsStore.test.configuration.testcases" :CanBeModified="true"></TestCaseList>
 
 
   </main>
@@ -61,7 +70,8 @@ export default {
     Implementations: [],
     ActiveImplementation: {},
     ActiveTestCase: {},
-    TestModalVisible: false
+    TestModalVisible: false,
+    showError: false
     }),
    setup () {
     const testsStore = useTestsStore();
@@ -96,6 +106,12 @@ export default {
 
     },
     RunClicked() {
+
+      if (this.testsStore.test.name === "" || !("name" in this.testsStore.test)) {
+        this.showError = true;
+        return;
+      }
+
       let obj = {configuration: {clients: this.testsStore.test.configuration.clients, shapers: this.testsStore.test.configuration.shapers, servers: this.testsStore.test.configuration.servers, testcases: this.testsStore.test.configuration.testcases},  name: this.testsStore.test.name}
       axios({
         url: "http://127.0.0.1:5000/Runtest",
@@ -109,6 +125,7 @@ export default {
         console.log(error);
       })
 
+      this.showError = false;
 
     },
     download(data, filename, type) {
@@ -145,6 +162,8 @@ export default {
     },
     ImplementationOptions(ImplementationId) {
       
+      // TODO: why is this not if else with modalvisible
+
       if (this.testsStore.test.configuration.testcases.find(o => o.active_id === ImplementationId)) {
         this.ActiveTestCase = this.testsStore.test.configuration.testcases.find(o => o.active_id === ImplementationId);     
         this.TestModalVisible = true;

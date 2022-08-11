@@ -25,15 +25,36 @@
                       <li  v-for="(item, index) in ActiveImplementation['env']">
                         <div v-if="'type' in item && item.type === 'dropdown'">         
                           {{item.name}}                  
+                          
+                          <div v-if="CanBeModified">
                           <select class="bg-gray-200  border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" name="temp">
                             
                             <option  v-for="(item2, index2) in item.options" value="item2">{{item2}}</option>
                           </select>
+                          </div>
+
+                          <div v-if="!CanBeModified">
+                            <select class="bg-gray-200  border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" disabled name="temp">
+                              
+                              <option  v-for="(item2, index2) in item.options" value="item2">{{item2}}</option>
+                            </select>
+                          </div>
+
+
                         </div>
+                        
                         <div v-if="!('type' in item) || item.type !== 'dropdown'">  
                           {{item.name}} 
-                          <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="item.value" :placeholder="item.default">
+                          <div v-if="CanBeModified">
+                            <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="item.value" :placeholder="item.default">
+                          </div>
+
+                          <div v-if="!CanBeModified">
+                            <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="item.value" :placeholder="item.default" readonly>
+                          </div>
                         </div>
+
+
                       </li> 
                   </div>
                   <div v-if="!('env' in ActiveImplementation)">
@@ -43,7 +64,13 @@
                   <div v-if="'scenarios' in ActiveImplementation">
                       <li  v-for="(item, index) in ActiveImplementation['scenarios']">
                           {{index}} 
-                          <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="item.value" :placeholder="item.arguments">
+                           <div v-if="CanBeModified">
+                            <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="item.value" :placeholder="item.arguments">
+                          </div>
+
+                          <div v-if="!CanBeModified">
+                            <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="item.value" :placeholder="item.arguments" readonly>
+                          </div>
                       </li> 
                   </div>
                 </p>
@@ -64,7 +91,8 @@
 <script lang="ts">
 export default {
   props: {
-    ActiveImplementation: {}
+    ActiveImplementation: {},
+    CanBeModified: false
   },
 
   data: () => ({}),

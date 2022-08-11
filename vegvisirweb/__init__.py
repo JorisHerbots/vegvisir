@@ -4,15 +4,16 @@ from zipfile import ZipFile
 import tempfile
 
 from functools import wraps
-from werkzeug.utils import send_file
+# from werkzeug.utils import send_file
 import time
 from datetime import datetime
 import os
+import sys 
 import json
 
 from vegvisir.manager import Manager
 
-from quart import Quart,websocket,request
+from quart import Quart,websocket,request,send_file
 
 from quart_cors import route_cors
 import getpass
@@ -108,8 +109,11 @@ async def run_test():
 	dictionary["id"] = id 
 	dictionary["status"] = "waiting"
 	dictionary["name"] = request_form["name"]
+	manager.name = request_form["name"]
+
 	dictionary["time_added"] = str(time.time())
 	dictionary["configuration"] = request_form["configuration"]
+
 
 	tests[id] = dictionary
 
@@ -131,9 +135,42 @@ async def GetTests():
 # Consumer for websocket
 # discards the data 
 async def consumer():
+	global tests
+
 	while True:
 		data = await websocket.receive()
 
+		print("here")
+		(message_type, message) = MessageParser().decode_message(data)
+
+		print(message)
+		print("consuming")
+
+		if (message_type == "request_all_logfiles"):
+			filenames = []
+			
+			try:
+				print(tests)
+				test = tests[message]
+				for log_dir in test["log_dirs"]:
+					filenames.extend(await get_filenames_from_folder(log_dir))
+			except Exception as e:
+				print(e)
+				print(traceback.format_exc())
+
+			await add_message_to_queue("update_all_logfiles", json.dumps(filenames))
+
+		if (message_type == "request_logfiles_in_folder"):
+			filenames = []
+			log_dir = message
+			
+			try:
+				filenames.extend(await get_filenames_from_folder(log_dir))
+			except Exception as e:
+				print(e)
+				print(traceback.format_exc())
+
+			await add_message_to_queue("update_all_logfiles", json.dumps(filenames))
 
 # Collects the web
 #
@@ -189,6 +226,31 @@ async def add_message_to_queue(message_type, message):
 		print(e)
 	await web_socket_queue.add_message(encoded_message)
 
+@app.route('/logs/<path:req_path>')
+@route_cors()
+async def log_listing(req_path):
+	BASE_DIR = os.getcwd() + '/logs'
+
+	# Joining the base and the requested path
+	abs_path = os.path.join(BASE_DIR, req_path)
+
+	# print(BASE_DIR)
+	# print(req_path)
+	# print(abs_path)
+
+	# Return 404 if path doesn't exist
+	if not os.path.exists(abs_path):
+		return abort(404)
+
+	# Check if path is a file and serve
+	if os.path.isfile(abs_path):
+		return await send_file(abs_path, as_attachment=True)
+
+	# Show directory contents
+	files = os.listdir(abs_path)
+	return files
+
+
 def run_tests_thread():
 	global busy_manager
 	global tests
@@ -208,9 +270,10 @@ def run_tests_thread():
 
 				if loop != None:
 					asyncio.run_coroutine_threadsafe(add_message_to_queue("update_test", json.dumps(tests[busy_manager._id])), loop=loop)
-				busy_manager.run_tests()
+				log_dirs = busy_manager.run_tests()
 
 				tests[busy_manager._id]["status"] = "done"
+				tests[busy_manager._id]["log_dirs"] = log_dirs
 
 				if loop != None:
 					asyncio.run_coroutine_threadsafe(add_message_to_queue("update_test", json.dumps(tests[busy_manager._id])), loop=loop)
@@ -228,3 +291,43 @@ async def lifespan():
 th = threading.Thread(target=run_tests_thread)
 th.start()
 
+
+
+async def get_filenames_from_folder(root):
+	# TODO: make finding directory cleaner
+	#cwd = os.getcwd() + "/logs"
+
+	#root = cwd + root
+
+	file_list = []
+
+
+	for path, subdirs, files in os.walk(root):
+		for name in files:
+			file_list.append(os.path.join(path, name))
+	print("eeeeeuuuhhh")
+	print(root)
+	print(file_list)
+
+	return file_list
+
+
+# Gets filenames from this folder and subfolders
+@app.route('/FilesInPath')
+@route_cors()
+async def get_filenames_from_folder_req():
+	print("lol")
+	# TODO: make finding directory cleaner
+	cwd = os.getcwd() + "/logs"
+
+	root = cwd + request.args.get("path")
+	print(root)
+
+	file_list = []
+
+
+	for path, subdirs, files in os.walk(root):
+		for name in files:
+			file_list.append(os.path.join(path, name))
+
+	return file_list
