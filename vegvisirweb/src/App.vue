@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
 import ImplementationCard from './components/ImplementationCard.vue'
 import ImplementationList from './components/ImplementationList.vue'
 </script>
