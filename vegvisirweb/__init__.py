@@ -22,6 +22,8 @@ import asyncio
 import uuid
 import traceback
 
+import sqlite3 
+
 from vegvisirweb.websocketqueue import WebSocketQueue, MessageSendWorker, MessageParser
 
 app = Quart(__name__)
@@ -33,6 +35,7 @@ web_sockets_worker = MessageSendWorker()
 web_socket_queue.add_worker(web_sockets_worker)
 
 
+
 manager_queue = []
 queue = []
 busy_manager = None
@@ -42,6 +45,10 @@ connected_sockets = set()
 
 password = getpass.getpass("Please enter your sudo password: ")
 loop = None
+
+
+sqlite_connection = sqlite3.connect("vegvisir.db")
+sqlite_cursor = sqlite_connection.cursor()
 
 # Should correspond to tests.json file 
 tests = {}
@@ -57,8 +64,6 @@ with open("tests.json") as f:
 
 def UpdateJSONfile():
 	global tests 
-
-	print("updating JSON file")
 
 	json_string = json.dumps(tests)
 	with open("tests.json", 'w') as outfile:
@@ -84,6 +89,8 @@ async def Testcases():
 async def run_test():
 	global tests
 	global tests_updated
+	global sqlite_cursor
+	global sqlite_connection
 
 	id = str(uuid.uuid1())
 
@@ -119,6 +126,9 @@ async def run_test():
 
 	manager_queue.append(manager)
 	
+	sqlite_cursor.execute('INSERT INTO tests VALUES(?,?,?,?,?)', (id, dictionary["name"], json.dumps(dictionary), "waiting", False))
+	sqlite_connection.commit()
+
 	await add_message_to_queue("add_test", json.dumps(dictionary))
 
 	return ""
@@ -127,7 +137,12 @@ async def run_test():
 @app.route("/GetTests")
 @route_cors()
 async def GetTests():
-	global tests
+	#global tests
+
+	tests = {}
+
+	for row in sqlite_cursor.execute("SELECT json FROM tests WHERE removed != 1"):
+		tests[json.loads(row[0])["id"]] = (json.loads(row[0]))
 
 	return tests
 
@@ -140,17 +155,12 @@ async def consumer():
 	while True:
 		data = await websocket.receive()
 
-		print("here")
 		(message_type, message) = MessageParser().decode_message(data)
-
-		print(message)
-		print("consuming")
 
 		if (message_type == "request_all_logfiles"):
 			filenames = []
 			
 			try:
-				print(tests)
 				test = tests[message]
 				for log_dir in test["log_dirs"]:
 					filenames.extend(await get_filenames_from_folder(log_dir))
@@ -172,6 +182,14 @@ async def consumer():
 
 			await add_message_to_queue("update_all_logfiles", json.dumps(filenames))
 
+
+		if (message_type == "remove_test"):
+
+			sqlite_cursor.execute("UPDATE tests SET removed = 1 WHERE id = :id", {"id": message}) 
+			sqlite_connection.commit()
+
+	
+
 # Collects the web
 #
 def collect_testswebsocket(func):
@@ -179,7 +197,6 @@ def collect_testswebsocket(func):
 	async def wrapper(*args, **kwargs):
 		global web_sockets_worker
 		web_sockets_worker.add_websocket(websocket._get_current_object())
-		print("added web socket to worker")
 		try:
 			return await func(*args, **kwargs)
 		finally:
@@ -258,6 +275,9 @@ def run_tests_thread():
 	global tests_updated 
 	global loop
 
+	sqlite_connection_worker_thread = sqlite3.connect("vegvisir.db")
+	sqlite_cursor_worker_thread = sqlite_connection_worker_thread.cursor()
+
 	while True:
 		if len(manager_queue) == 0:
 			busy_manager == None
@@ -270,6 +290,10 @@ def run_tests_thread():
 
 				if loop != None:
 					asyncio.run_coroutine_threadsafe(add_message_to_queue("update_test", json.dumps(tests[busy_manager._id])), loop=loop)
+
+				sqlite_cursor_worker_thread.execute('UPDATE tests SET status = "running", json = :json WHERE id = :id', {"id": busy_manager._id, "json": json.dumps(tests[busy_manager._id])})
+				sqlite_connection_worker_thread.commit()
+
 				log_dirs = busy_manager.run_tests()
 
 				tests[busy_manager._id]["status"] = "done"
@@ -277,6 +301,10 @@ def run_tests_thread():
 
 				if loop != None:
 					asyncio.run_coroutine_threadsafe(add_message_to_queue("update_test", json.dumps(tests[busy_manager._id])), loop=loop)
+
+				sqlite_cursor_worker_thread.execute('UPDATE tests SET status = "done", json= :json WHERE id = :id', {"id": busy_manager._id, "json": json.dumps(tests[busy_manager._id])})
+				sqlite_connection_worker_thread.commit()
+				
 			except Exception as e:
 				print(e)
 				print(traceback.format_exc())
@@ -305,9 +333,6 @@ async def get_filenames_from_folder(root):
 	for path, subdirs, files in os.walk(root):
 		for name in files:
 			file_list.append(os.path.join(path, name))
-	print("eeeeeuuuhhh")
-	print(root)
-	print(file_list)
 
 	return file_list
 
@@ -316,12 +341,10 @@ async def get_filenames_from_folder(root):
 @app.route('/FilesInPath')
 @route_cors()
 async def get_filenames_from_folder_req():
-	print("lol")
 	# TODO: make finding directory cleaner
 	cwd = os.getcwd() + "/logs"
 
 	root = cwd + request.args.get("path")
-	print(root)
 
 	file_list = []
 

@@ -2,13 +2,35 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue';
 import axios from 'axios';
 
+
+
+interface Configuration {
+  clients: any[],
+  servers: any[],
+  shapers: any[],
+  testcases: any[] 
+}
+
+interface Test {
+  configuration: Configuration,
+  id: string,
+  log_dirs?: string[],
+  name: string,
+  status: string,
+  time_added: string
+}
+
+interface Testdictionary {
+  [key: string]: Test
+}
+
 export const useTestsStore = defineStore('post', () => {
-  const tests = ref(0);
+  const tests = ref<Testdictionary>({});
   const test = ref({configuration: {servers : [], clients : [], shapers : [], testcases: []}});
-  const websocket = ref(null);
-  const status = ref("");
-  const log_files = ref([]);
-  const changed = ref(false);
+  const websocket = ref<WebSocket>();
+  const status = ref<string>("");
+  const log_files = ref<string[]>([]);
+  const changed = ref<boolean>(false);
   
   websocket.value = new WebSocket("ws://127.0.0.1:5000/TestsWebSocket");
   axios({
@@ -17,6 +39,7 @@ export const useTestsStore = defineStore('post', () => {
     method: "GET"
   })
     .then(response => {
+        console.info(response.data)
         tests.value = response.data;
     })
     .catch(error => { 
@@ -48,8 +71,7 @@ export const useTestsStore = defineStore('post', () => {
     }.bind(this));
 
 
-    function removeTest(testId) {
-      console.log("heeer")
+    function removeTest(testId : string) {
       delete tests.value[testId]
       if (websocket.value.readyState === 1) {
 
@@ -58,20 +80,18 @@ export const useTestsStore = defineStore('post', () => {
 
     }
 
-    function getAllLogFilesInFolder(folder) {
+    function getAllLogFilesInFolder(folder : string) {
       if (websocket.value.readyState === 1) {
 
         websocket.value.send("RLF : " + folder)
       }   
     }
 
-    function getAllLogFiles(testId) {
-      console.log("dkfksdjf")
+    function getAllLogFiles(testId : string) {
       if (websocket.value.readyState === 1) {
 
         websocket.value.send("RAL : " + testId.toString())
       } 
-      console.log("getting all og file")
     }
 
 
