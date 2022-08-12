@@ -69,13 +69,13 @@ export default {
     if (this.testsStore.test.configuration.clients.length != 0) {
       this.activeClient = this.testsStore.test.configuration.clients[0].active_id
     }
-    if (this.testsStore.test.configuration.shapers.length != 1) {
+    if (this.testsStore.test.configuration.shapers.length != 0) {
       this.activeShaper = this.testsStore.test.configuration.shapers[0].active_id
     }
-    if (this.testsStore.test.configuration.servers.length != 1) {
+    if (this.testsStore.test.configuration.servers.length != 0) {
       this.activeServer = this.testsStore.test.configuration.servers[0].active_id
     }
-    if (this.testsStore.test.configuration.testcases.length != 1) {
+    if (this.testsStore.test.configuration.testcases.length != 0) {
       this.activeTestcase = this.testsStore.test.configuration.testcases[0].active_id
     }
     this.GetLogFiles();
