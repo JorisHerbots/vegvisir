@@ -85,7 +85,6 @@ export default {
       return "width: " + this.percent.toString() + "%;"
     },
     date() {
-      console.log(this.Test.time_added);
       var d = new Date(parseInt(this.Test.time_added) * 1000); // The 0 there is the key, which sets the date to the epoch
       return d.toISOString().slice(0, 10) + " " + d.toISOString().slice(11, 19) 
     }
