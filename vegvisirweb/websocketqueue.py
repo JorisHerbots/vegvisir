@@ -106,7 +106,8 @@ class MessageParser():
         "progress_update": "PRO",
         "request_all_logfiles": "RAL",
         "update_all_logfiles": "UAL",
-        "request_logfiles_in_folder": "RLF"
+        "request_logfiles_in_folder": "RLF",
+        "request_status_update": "RSU"
     }
 
     # Used to convert headers to messagetypes

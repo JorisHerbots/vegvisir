@@ -28,14 +28,13 @@ export default {
   },
   setup() {
     const testsStore = useTestsStore();
-
+    testsStore.requestRunningTestStatusUpdate();
     return {testsStore}
   },
   data: () => ({}),
    created() {
-
     axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
-  }
+  },
 };
 </script>
 

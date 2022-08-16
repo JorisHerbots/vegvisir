@@ -4,6 +4,28 @@
   <main>
 
       <div class="font-semibold text-3xl text-teal-500 tracking-tight content-center text-center mt-4">{{testsStore.test.name}}</div>
+
+
+      <div class="w-96 mr-4 top-4 absolute right-4">
+        <div class="flex justify-between mb-1 ">
+          <span class="text-base font-medium text-teal-500 dark:text-white">Progress</span>
+          <div v-if='testsStore.test.status == "running"'>
+            <span class="text-sm font-medium text-teal-500 dark:text-white">{{testsStore.status}}</span>
+          </div>
+          <div v-if='testsStore.test.status == "done"'>
+            <span class="text-sm font-medium text-teal-500 dark:text-white">{{(testsStore.test.configuration.clients.length * testsStore.test.configuration.shapers.length * testsStore.test.configuration.servers.length * testsStore.test.configuration.testcases.length) + " / " + 
+              (testsStore.test.configuration.clients.length * testsStore.test.configuration.shapers.length * testsStore.test.configuration.servers.length * testsStore.test.configuration.testcases.length) }}</span>
+          </div>
+          <div v-if='testsStore.test.status != "done" && testsStore.test.status != "running"'>
+            <span class="text-sm font-medium text-teal-500 dark:text-white">{{"0 / " + 
+              (testsStore.test.configuration.clients.length * testsStore.test.configuration.shapers.length * testsStore.test.configuration.servers.length * testsStore.test.configuration.testcases.length) }}</span>
+          </div>                
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div class="bg-teal-500 h-2.5 rounded-full progress" :style="progressStyle"></div>
+        </div>
+      </div>
+
     <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400 content-end mr-4 ml-4">
         <li v-for="(item, index) in Tabs" @click='ActiveTab = item; testsStore.getAllLogFiles(testsStore.test.id);'>
             <a v-if="item == ActiveTab" href="#" aria-current="page" class="inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500">{{item}}</a>
@@ -30,12 +52,12 @@
     <TestConfigurationModal v-if="TestModalVisible" @accept="ModalAccept" :ActiveImplementation="ActiveTestCase" :CanBeModified="false"></TestConfigurationModal>
 
       <div id="ImplementationsView" class="m-4 pt-16">
-        <ImplementationList @AddClicked="ShowAddClientScreen('client')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.clients" :CanBeRemoved="false"></ImplementationList>
-        <ImplementationList @AddClicked="ShowAddClientScreen('shaper')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.shapers" :CanBeRemoved="false"></ImplementationList>
-        <ImplementationList @AddClicked="ShowAddClientScreen('server')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test" :listItems="testsStore.test.configuration.servers" :CanBeRemoved="false"></ImplementationList>
+        <ImplementationList @AddClicked="ShowAddClientScreen('client')" @CardClicked="ImplementationOptions"  class="test mr-4" :listItems="testsStore.test.configuration.clients" :CanBeRemoved="false"></ImplementationList>
+        <ImplementationList @AddClicked="ShowAddClientScreen('shaper')" @CardClicked="ImplementationOptions"  class="test mr-4" :listItems="testsStore.test.configuration.shapers" :CanBeRemoved="false"></ImplementationList>
+        <ImplementationList @AddClicked="ShowAddClientScreen('server')" @CardClicked="ImplementationOptions"  class="test" :listItems="testsStore.test.configuration.servers" :CanBeRemoved="false"></ImplementationList>
       </div>
 
-      <TestCaseList @AddClicked="ShowAddClientScreen('testcase')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="pt-16 ml-4 mr-4 h-64" :listItems="testsStore.test.configuration.testcases" :CanBeRemoved="false"></TestCaseList>
+      <TestCaseList @AddClicked="ShowAddClientScreen('testcase')" @CardClicked="ImplementationOptions" class="pt-16 ml-4 mr-4 h-64" :listItems="testsStore.test.configuration.testcases" :CanBeRemoved="false"></TestCaseList>
     </div>
 
     <div v-if='ActiveTab === "Logs"'>
@@ -205,7 +227,16 @@ export default {
       })
     },
     progressStyle() {
-      return "width: " + this.percent.toString() + "%;"
+      if (this.testsStore.test.status == "done") {
+        return "width: " + 100 + "%;"
+      }
+      if (this.testsStore.test.status == "running") {
+        this.percent = this.testsStore.status.split("/").reduce((a,b) => parseInt(a) / parseInt(b)) * 100;
+    
+        return "width: " + this.percent.toString() + "%;"
+      }
+      else 
+        return "width: " + 0 + "%;"
     }
   }
 };

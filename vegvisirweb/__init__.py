@@ -39,7 +39,7 @@ web_socket_queue.add_worker(web_sockets_worker)
 manager_queue = []
 queue = []
 busy_manager = None
-last_status = ""
+running_test_last_status = ""
 SocketWatcherEnabled = False
 connected_sockets = set()
 
@@ -161,7 +161,12 @@ async def consumer():
 			filenames = []
 			
 			try:
-				test = tests[message]
+				# grab the json in string format
+				test = sqlite_cursor.execute("SELECT json FROM tests WHERE id = :id", {"id": message}).fetchone()[0]
+				
+				# convert to python dictionary
+				test =  json.loads(test)
+
 				for log_dir in test["log_dirs"]:
 					filenames.extend(await get_filenames_from_folder(log_dir))
 			except Exception as e:
@@ -188,7 +193,12 @@ async def consumer():
 			sqlite_cursor.execute("UPDATE tests SET removed = 1 WHERE id = :id", {"id": message}) 
 			sqlite_connection.commit()
 
-	
+		if (message_type == "request_status_update"):
+			global running_test_last_status
+			
+			await add_message_to_queue("progress_update", running_test_last_status)
+
+
 
 # Collects the web
 #
@@ -235,9 +245,15 @@ def add_message_to_queue_sync(message_type, message):
 #	Encoded version of message added to web_socket_queue
 async def add_message_to_queue(message_type, message):
 	global web_socket_queue
+	global running_test_last_status
 
 	print(f"adding message to queue {message} with type {message_type}")
 	try:
+
+		# Keep track of the last progress update
+		if message_type == "progress_update":
+			running_test_last_status = message 
+
 		encoded_message = MessageParser().encode_message(message_type, message)
 	except Exception as e:
 		print(e)
