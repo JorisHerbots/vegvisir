@@ -100,6 +100,7 @@ class MessageParser():
     # Used to convert messagetypes to headers
     # New message type-header pairs should be added to this dictionary
     _message_type_to_header = {
+        # Test related
         "add_test": "ADD",
         "remove_test": "REM",
         "update_test": "UPD",
@@ -107,7 +108,21 @@ class MessageParser():
         "request_all_logfiles": "RAL",
         "update_all_logfiles": "UAL",
         "request_logfiles_in_folder": "RLF",
-        "request_status_update": "RSU"
+        "request_status_update": "RSU",
+
+        # Imageset related 
+        "imagesets_request_available": "IRA",
+        "imagesets_request_loaded": "IRL",
+        "imagesets_update_available": "IUA",
+        "imagesets_update_loaded": "IUL",
+        "imagesets_request_images": "IRI",
+        "imagesets_update_images": "IUI",
+        "imagesets_load_imageset": "ILI",
+        "imagesets_remove_imageset": "IRR",
+        "imagesets_activate_imageset": "IAI",
+        "imagesets_disable_imageset": "IDI",
+        "imageset_request_create": "IRC",
+        "imageset_request_export": "IRE"
     }
 
     # Used to convert headers to messagetypes

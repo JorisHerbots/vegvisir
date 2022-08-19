@@ -22,6 +22,7 @@ import ImplementationList from './components/ImplementationList.vue'
         <RouterLink to="/" class="block mt-4 lg:inline-block lg:mt-0 text-teal-200 hover:text-white mr-4">Home</RouterLink>
         <RouterLink to="/Configure" class="block mt-4 lg:inline-block lg:mt-0 text-teal-200 hover:text-white mr-4">Test</RouterLink> 
         <RouterLink to="/About" class="block mt-4 lg:inline-block lg:mt-0 text-teal-200 hover:text-white mr-4">Progress</RouterLink> 
+        <RouterLink to="/ConfigureDocker" class="block mt-4 lg:inline-block lg:mt-0 text-teal-200 hover:text-white mr-4">Docker</RouterLink> 
       </div>
       <!-- <div>
         <a href="#" class="inline-block text-sm px-4 py-2 leading-none border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white mt-4 lg:mt-0">Download</a>
