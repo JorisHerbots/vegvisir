@@ -163,8 +163,8 @@ class Runner:
 			client_cmd = scenario.implementation.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls, client_log_dir=run_logger.client_log_dir_local, server_log_dir=run_logger.server_log_dir_local, shaper_log_dir=run_logger.shaper_log_dir_local)
 			logging.debug("Vegvisir: running client: %s", client_cmd)
 			client_proc = subprocess.Popen(
-				client_cmd.split(' '),
-				shell=False,
+				client_cmd,
+				shell=True,
 				stdout=subprocess.PIPE,
 				stderr=subprocess.STDOUT,
 			)
