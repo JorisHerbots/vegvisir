@@ -31,13 +31,9 @@ app = Quart(__name__)
 
 IMAGESETS_IMPORT_EXPORT_DIRECTORY = "./imagesets_import_export"
 
-tests_web_socket_queue = WebSocketQueue()
-tests_web_sockets_worker = MessageSendWorker()
-tests_web_socket_queue.add_worker(tests_web_sockets_worker)
-
-imagesets_web_socket_queue = WebSocketQueue()
-imagesets_web_sockets_worker = MessageSendWorker() 
-imagesets_web_socket_queue.add_worker(imagesets_web_sockets_worker)
+web_socket_queue = WebSocketQueue()
+web_sockets_worker = MessageSendWorker()
+web_socket_queue.add_worker(web_sockets_worker)
 
 manager_queue = []
 queue = []
@@ -159,13 +155,13 @@ async def run_test():
 	sqlite_cursor.execute('INSERT INTO tests VALUES(?,?,?,?,?)', (id, dictionary["name"], json.dumps(dictionary), "waiting", False))
 	sqlite_connection.commit()
 
-	await add_message_to_queue(tests_web_socket_queue, "add_test", json.dumps(dictionary))
+	await add_message_to_queue(web_socket_queue, "add_test", json.dumps(dictionary))
 
 	return ""
 
 
 def manager_add_to_test_queue_callback(message_type, message):
-	add_message_to_queue_sync(tests_web_socket_queue, message_type, message)
+	add_message_to_queue_sync(web_socket_queue, message_type, message)
 
 
 @app.route("/GetTests")
@@ -179,85 +175,6 @@ async def GetTests():
 		tests[json.loads(row[0])["id"]] = (json.loads(row[0]))
 
 	return tests
-
-
-# Consumer for websocket
-# discards the data 
-async def tests_websocket_consumer():
-	global tests
-
-	while True:
-		data = await websocket.receive()
-
-		(message_type, message) = MessageParser().decode_message(data)
-
-		if (message_type == "request_all_logfiles"):
-			filenames = []
-			
-			try:
-				# grab the json in string format
-				test = sqlite_cursor.execute("SELECT json FROM tests WHERE id = :id", {"id": message}).fetchone()[0]
-				
-				# convert to python dictionary
-				test =  json.loads(test)
-
-				for log_dir in test["log_dirs"]:
-					filenames.extend(await get_filepaths_from_directory(log_dir))
-			except Exception as e:
-				print(e)
-				print(traceback.format_exc())
-
-			await add_message_to_queue(tests_web_socket_queue, "update_all_logfiles", json.dumps(filenames))
-
-		if (message_type == "request_logfiles_in_folder"):
-			filenames = []
-			log_dir = message
-			
-			try:
-				filenames.extend(await get_filepaths_from_directory(log_dir))
-			except Exception as e:
-				print(e)
-				print(traceback.format_exc())
-
-			await add_message_to_queue(tests_web_socket_queue, "update_all_logfiles", json.dumps(filenames))
-
-
-		if (message_type == "remove_test"):
-
-			sqlite_cursor.execute("UPDATE tests SET removed = 1 WHERE id = :id", {"id": message}) 
-			sqlite_connection.commit()
-
-		if (message_type == "request_status_update"):
-			global running_test_last_status
-			
-			await add_message_to_queue(tests_web_socket_queue, "progress_update", running_test_last_status)
-
-
-
-# Collects the tests websockets
-#
-def collect_testswebsocket(func):
-	@wraps(func)
-	async def wrapper(*args, **kwargs):
-		global tests_web_sockets_worker
-		tests_web_sockets_worker.add_websocket(websocket._get_current_object())
-		try:
-			return await func(*args, **kwargs)
-		finally:
-			tests_web_sockets_worker.remove_websocket(websocket._get_current_object())
-	return wrapper
-
-
-# Websocket to send status updates about tests
-@app.websocket('/TestsWebSocket')
-@collect_testswebsocket
-async def tests_websocket():
-	consumer_task = asyncio.create_task(tests_websocket_consumer())
-	await websocket.accept()
-	try:
-		await asyncio.gather(consumer_task)
-	finally:
-		consumer_task.cancel()
 
 
 def imagesets_get_loaded():
@@ -314,38 +231,68 @@ def imageset_get_images(imageset_name):
 			
 	return list(images)
 
-# "imagesets_request_available": "IRA",
-# "imagesets_request_loaded": "IRL",
-# "imagesets_update_available": "IUA",
-# "imagesets_update_loaded": "IUL",
-# "imagesets_request_images": "IRI",
-# "imagesets_load_imageset": "ILI",
-# "imagesets_remove_imageset": "IRR",
-# "imagesets_activate_imageset": "IAI",
-# "imagesets_disable_imageset": "IDI",
-# "imageset_request_create": "IRC",
-# "imageset_request_export": "IRE"
-
 
 # Consumer for imagesets websocket
 # discards the data 
-async def imagesets_websocket_consumer():
+async def websocket_consumer():
+	global tests
 
 	while True:
 		data = await websocket.receive()
 
 		(message_type, message) = MessageParser().decode_message(data)
 
+		if (message_type == "request_all_logfiles"):
+			filenames = []
+			
+			try:
+				# grab the json in string format
+				test = sqlite_cursor.execute("SELECT json FROM tests WHERE id = :id", {"id": message}).fetchone()[0]
+				
+				# convert to python dictionary
+				test =  json.loads(test)
+
+				for log_dir in test["log_dirs"]:
+					filenames.extend(await get_filepaths_from_directory(log_dir))
+			except Exception as e:
+				print(e)
+				print(traceback.format_exc())
+
+			await add_message_to_queue(web_socket_queue, "update_all_logfiles", json.dumps(filenames))
+
+		if (message_type == "request_logfiles_in_folder"):
+			filenames = []
+			log_dir = message
+			
+			try:
+				filenames.extend(await get_filepaths_from_directory(log_dir))
+			except Exception as e:
+				print(e)
+				print(traceback.format_exc())
+
+			await add_message_to_queue(web_socket_queue, "update_all_logfiles", json.dumps(filenames))
+
+
+		if (message_type == "remove_test"):
+
+			sqlite_cursor.execute("UPDATE tests SET removed = 1 WHERE id = :id", {"id": message}) 
+			sqlite_connection.commit()
+
+		if (message_type == "request_status_update"):
+			global running_test_last_status
+			
+			await add_message_to_queue(web_socket_queue, "progress_update", running_test_last_status)
+
 		if message_type == "imagesets_request_available":
 			filenames = await get_filenames_from_directory(IMAGESETS_IMPORT_EXPORT_DIRECTORY)
 
-			await add_message_to_queue(imagesets_web_socket_queue, "imagesets_update_available", json.dumps(filenames))
+			await add_message_to_queue(web_socket_queue, "imagesets_update_available", json.dumps(filenames))
 
 		if message_type == "imagesets_request_loaded":
 			#TODO: also check json ?
 			loaded_imagesets = imagesets_get_loaded()
 
-			await add_message_to_queue(imagesets_web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))
+			await add_message_to_queue(web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))
 
 		if message_type == "imagesets_request_images":
 			#TODO: also check json ?
@@ -356,7 +303,7 @@ async def imagesets_websocket_consumer():
 			net_images["name"] = message 
 			net_images["images"] = images
 
-			await add_message_to_queue(imagesets_web_socket_queue, "imagesets_update_images", json.dumps(net_images))
+			await add_message_to_queue(web_socket_queue, "imagesets_update_images", json.dumps(net_images))
 
 		if message_type == "imagesets_load_imageset":
 			
@@ -368,7 +315,7 @@ async def imagesets_websocket_consumer():
 
 			# Send update of loaded imagesets
 			loaded_imagesets = imagesets_get_loaded()
-			await add_message_to_queue(imagesets_web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))
+			await add_message_to_queue(web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))
 
 		if message_type == "imagesets_remove_imageset":
 			
@@ -376,7 +323,7 @@ async def imagesets_websocket_consumer():
 			
 			# Send update of loaded imagesets
 			loaded_imagesets = imagesets_get_loaded()
-			await add_message_to_queue(imagesets_web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))
+			await add_message_to_queue(web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))
 			
 		if message_type == "imagesets_activate_imageset":
 			print("request to activate " + message)
@@ -425,28 +372,23 @@ async def imagesets_websocket_consumer():
 			# Send update of available imagesets
 			filenames = await get_filenames_from_directory(IMAGESETS_IMPORT_EXPORT_DIRECTORY)
 
-			await add_message_to_queue(imagesets_web_socket_queue, "imagesets_update_available", json.dumps(filenames))
+			await add_message_to_queue(web_socket_queue, "imagesets_update_available", json.dumps(filenames))
 
-
-
-
-	
-
-def collect_imagesetwebsockets(func):
+def collect_websockets(func):
 	@wraps(func)
 	async def wrapper(*args, **kwargs):
-		global imagesets_web_sockets_worker
-		imagesets_web_sockets_worker.add_websocket(websocket._get_current_object())
+		global web_sockets_worker
+		web_sockets_worker.add_websocket(websocket._get_current_object())
 		try:
 			return await func(*args, **kwargs)
 		finally:
-			imagesets_web_sockets_worker.remove_websocket(websocket._get_current_object())
+			web_sockets_worker.remove_websocket(websocket._get_current_object())
 	return wrapper
 
-@app.websocket("/ImagesetsWebSocket")
-@collect_imagesetwebsockets
+@app.websocket("/WebSocket")
+@collect_websockets
 async def imagesets_websocket():
-	consumer_task = asyncio.create_task(imagesets_websocket_consumer())
+	consumer_task = asyncio.create_task(websocket_consumer())
 	await websocket.accept()
 	try:
 		await asyncio.gather(consumer_task)
@@ -531,7 +473,7 @@ def run_tests_thread():
 				tests[busy_manager._id]["status"] = "running"
 
 				if loop != None:
-					asyncio.run_coroutine_threadsafe(add_message_to_queue(tests_web_socket_queue, "update_test", json.dumps(tests[busy_manager._id])), loop=loop)
+					asyncio.run_coroutine_threadsafe(add_message_to_queue(web_socket_queue, "update_test", json.dumps(tests[busy_manager._id])), loop=loop)
 
 				sqlite_cursor_worker_thread.execute('UPDATE tests SET status = "running", json = :json WHERE id = :id', {"id": busy_manager._id, "json": json.dumps(tests[busy_manager._id])})
 				sqlite_connection_worker_thread.commit()
@@ -542,7 +484,7 @@ def run_tests_thread():
 				tests[busy_manager._id]["log_dirs"] = log_dirs
 
 				if loop != None:
-					asyncio.run_coroutine_threadsafe(add_message_to_queue(tests_web_socket_queue, "update_test", json.dumps(tests[busy_manager._id])), loop=loop)
+					asyncio.run_coroutine_threadsafe(add_message_to_queue(web_socket_queue, "update_test", json.dumps(tests[busy_manager._id])), loop=loop)
 
 				sqlite_cursor_worker_thread.execute('UPDATE tests SET status = "done", json= :json WHERE id = :id', {"id": busy_manager._id, "json": json.dumps(tests[busy_manager._id])})
 				sqlite_connection_worker_thread.commit()
@@ -555,8 +497,8 @@ def run_tests_thread():
 async def lifespan():
 	global loop
 	loop = asyncio.get_event_loop()
-	loop.create_task(tests_web_socket_queue.watch_queue_and_notify_workers())
-	loop.create_task(imagesets_web_socket_queue.watch_queue_and_notify_workers())
+	loop.create_task(web_socket_queue.watch_queue_and_notify_workers())
+	loop.create_task(web_socket_queue.watch_queue_and_notify_workers())
 
 
 th = threading.Thread(target=run_tests_thread)

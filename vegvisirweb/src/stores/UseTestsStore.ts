@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue';
 import axios from 'axios';
-import { waitForOpenConnection, sendMessage } from '@/stores/WebSocketSender';
+import { useWebSocketStore } from '@/stores/UseWebSocketStore';
+
 
 interface Configuration {
   clients: any[],
@@ -26,12 +27,12 @@ interface Testdictionary {
 export const useTestsStore = defineStore('tests', () => {
   const tests = ref<Testdictionary>({});
   const test = ref({configuration: {servers : [], clients : [], shapers : [], testcases: []}});
-  const websocket = ref<WebSocket>();
   const status = ref<string>("");
   const log_files = ref<string[]>([]);
   const changed = ref<boolean>(false);
+  const websocketStore = useWebSocketStore();
   
-  websocket.value = new WebSocket("ws://127.0.0.1:5000/TestsWebSocket");
+
   
   axios({
     url: "http://127.0.0.1:5000/GetTests",
@@ -47,7 +48,7 @@ export const useTestsStore = defineStore('tests', () => {
     });
 
 
-    websocket.value.addEventListener('message', function (event) {
+    websocketStore.websocket.addEventListener('message', function (event) {
 
       let split = [event.data.slice(0, 3), event.data.slice(5)];
       let header = split[0]
@@ -71,37 +72,24 @@ export const useTestsStore = defineStore('tests', () => {
     }.bind(this));
 
     function requestRunningTestStatusUpdate() {
-      sendMessage(websocket.value, "RSU :  ");
+      websocketStore.sendOnWebSocket("RSU :  ");
     }
 
 
     function removeTest(testId : string) {
       delete tests.value[testId]
-      if (websocket.value.readyState === 1) {
-        websocket.value.send("REM : " + testId.toString())
-      }
-
+      websocketStore.sendOnWebSocket("REM : " + testId.toString())
     }
 
     function getAllLogFilesInFolder(folder : string) {
-      if (websocket.value.readyState === 1) {
-
-        websocket.value.send("RLF : " + folder)
-      }   
+      websocketStore.sendOnWebSocket("RLF : " + folder)  
     }
-
-
-  
-
 
     function getAllLogFiles(testId : string) {
-      if (websocket.value.readyState === 1) {
-
-        websocket.value.send("RAL : " + testId.toString())
-      } 
+      websocketStore.sendOnWebSocket("RAL : " + testId.toString())
     }
 
 
-  return { tests, test, websocket, log_files, status, changed, removeTest, getAllLogFiles, getAllLogFilesInFolder, requestRunningTestStatusUpdate}
+  return { tests, test, log_files, status, changed, removeTest, getAllLogFiles, getAllLogFilesInFolder, requestRunningTestStatusUpdate}
 
 })

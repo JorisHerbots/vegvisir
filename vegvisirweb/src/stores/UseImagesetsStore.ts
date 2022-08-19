@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue';
 import { waitForOpenConnection, sendMessage } from '@/stores/WebSocketSender';
+import { useWebSocketStore } from '@/stores/UseWebSocketStore';
 
 interface ImagesDictionary {
   [key: string]: string[]
@@ -11,7 +12,6 @@ export const useImagesetsStore = defineStore('imagesets', () => {
   const imagesets_loaded = ref<string[]>([]);
   const imagesets_available = ref<string[]>([]);
   const imagesets_images = ref<ImagesDictionary>({})
-  const websocket = ref<WebSocket>();
 
   const inverse_dictionary = obj => Object.fromEntries(Object.entries(obj).map(a => a.reverse()))
 
@@ -50,10 +50,11 @@ export const useImagesetsStore = defineStore('imagesets', () => {
   function decode_header(header : string) : string {
     return _header_to_message_type[header]
   }
-  
-  websocket.value = new WebSocket("ws://127.0.0.1:5000/ImagesetsWebSocket");
 
-    websocket.value.addEventListener('message', function (event) {
+  const websocketStore = useWebSocketStore()
+  
+
+    websocketStore.websocket.addEventListener('message', function (event : any) {
 
       let split = [event.data.slice(0, 3), event.data.slice(5)];
       let header = split[0]
@@ -80,42 +81,42 @@ export const useImagesetsStore = defineStore('imagesets', () => {
     }.bind(this));
 
   function requestAvailableImagesetsUpdate() {
-    sendMessage(websocket.value, encode_messagetype("imagesets_request_available") + " :  ");
+    websocketStore.sendOnWebSocket(encode_messagetype("imagesets_request_available") + " :  ");
   }
 
   function requestLoadedImagesetsUpdate() {
-    sendMessage(websocket.value, encode_messagetype("imagesets_request_loaded") + " :  ");
+    websocketStore.sendOnWebSocket(encode_messagetype("imagesets_request_loaded") + " :  ");
   }
 
 
   function requestImagesInImageset(name: string) {
-    sendMessage(websocket.value, encode_messagetype("imagesets_request_images") + " : " + name);
+    websocketStore.sendOnWebSocket(encode_messagetype("imagesets_request_images") + " : " + name);
   }
 
 
   function requestImportImageset(name : string) {
-    sendMessage(websocket.value, encode_messagetype("imagesets_load_imageset") + " : " + name);
+    websocketStore.sendOnWebSocket(encode_messagetype("imagesets_load_imageset") + " : " + name);
   }
 
   function requestRemoveImageset(name : string) {
-    sendMessage(websocket.value, encode_messagetype("imagesets_remove_imageset") + " : " + name);
+    websocketStore.sendOnWebSocket(encode_messagetype("imagesets_remove_imageset") + " : " + name);
   }
 
   function requestActivateImageset(name : string) {
-    sendMessage(websocket.value, encode_messagetype("imagesets_activate_imageset") + " : " + name);
+    websocketStore.sendOnWebSocket(encode_messagetype("imagesets_activate_imageset") + " : " + name);
   }
 
   function requestDisableImageset(name: string) {
-    sendMessage(websocket.value, encode_messagetype("imagesets_disable_imageset") + " : " + name);
+    websocketStore.sendOnWebSocket(encode_messagetype("imagesets_disable_imageset") + " : " + name);
   }
 
   function requestCreateImageset(name: string) {
-    sendMessage(websocket.value, encode_messagetype("imageset_request_create") + " : " + name);
+    websocketStore.sendOnWebSocket(encode_messagetype("imageset_request_create") + " : " + name);
   }
 
   function requestExportImageset(name: string) {
-    sendMessage(websocket.value, encode_messagetype("imageset_request_export") + " : " + name);
+    websocketStore.sendOnWebSocket(encode_messagetype("imageset_request_export") + " : " + name);
   }
 
-  return { websocket, imagesets_available, imagesets_loaded, requestAvailableImagesetsUpdate, requestLoadedImagesetsUpdate, requestImportImageset, requestActivateImageset, requestDisableImageset, requestCreateImageset, requestExportImageset, requestRemoveImageset}
+  return { imagesets_available, imagesets_loaded, requestAvailableImagesetsUpdate, requestLoadedImagesetsUpdate, requestImportImageset, requestActivateImageset, requestDisableImageset, requestCreateImageset, requestExportImageset, requestRemoveImageset}
 })
