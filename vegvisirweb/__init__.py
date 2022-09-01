@@ -438,7 +438,7 @@ async def add_message_to_queue(queue, message_type, message):
 		print(e)
 	await queue.add_message(encoded_message)
 
-#
+# Route to get logs
 @app.route('/logs/<path:req_path>')
 @route_cors()
 async def log_listing(req_path):
