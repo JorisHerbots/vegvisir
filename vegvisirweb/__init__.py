@@ -30,6 +30,8 @@ from vegvisirweb.websocketqueue import WebSocketQueue, MessageSendWorker, Messag
 app = Quart(__name__)
 
 IMAGESETS_IMPORT_EXPORT_DIRECTORY = "./imagesets_import_export"
+IMPLEMENTATIONS_JSON = "implementations.json"
+TESTCASES_JSON = "testcases.json"
 
 web_socket_queue = WebSocketQueue()
 web_sockets_worker = MessageSendWorker()
@@ -49,10 +51,8 @@ loop = None
 sqlite_connection = sqlite3.connect("vegvisir.db")
 sqlite_cursor = sqlite_connection.cursor()
 
-# Should correspond to tests.json file 
+
 tests = {}
-tests_updated = asyncio.Event()
-test_connected_sockets = set()
 
 with open("tests.json") as f:
 	try:
@@ -60,16 +60,12 @@ with open("tests.json") as f:
 	except:
 		tests = {}
 
-
-def UpdateJSONfile():
-	global tests 
-
-	json_string = json.dumps(tests)
-	with open("tests.json", 'w') as outfile:
-		outfile.write(json_string)
-
+# Returns all implementation in the general implementations json file and all the
+# implementation from the loaded imagesets from their respective json file
+# returns:
+#	dictionary with as key the name of the implementation and as value another dictionary with all the information/parameters
 def getAllImplementations():
-	f = open("implementations.json")
+	f = open(IMPLEMENTATIONS_JSON)
 	data = json.load(f)
 
 	all_implementations_json = data
@@ -90,34 +86,21 @@ def getAllImplementations():
 				data = imageset_json["implementations"][value]
 				all_implementations_json[imageset_name + "/" + value] = data
 	
-	print(all_implementations_json)
 	return all_implementations_json
 
+# Returns all the testcases
+# returns:
+#	dictionary with as key the name of the testcase and as value another dictionary with the information/parameters
 def getAllTestcases():
-    f = open("testcases.json")
+    f = open(TESTCASES_JSON)
     data = json.load(f)
     return data
 
-
-@app.route("/Implementations")
-@route_cors()
-async def Implemenentations():
-	f = open("implementations.json")
-	data = json.load(f)
-	#getAllImplementations()
-	return getAllImplementations()
-
-@app.route("/Testcases")
-@route_cors()
-async def Testcases():
-    return getAllTestcases()
-
-
+# Route to run a test
 @app.route("/Runtest", methods=['POST'])
 @route_cors()
 async def run_test():
 	global tests
-	global tests_updated
 	global sqlite_cursor
 	global sqlite_connection
 
@@ -166,12 +149,10 @@ async def run_test():
 def manager_add_to_test_queue_callback(message_type, message):
 	add_message_to_queue_sync(web_socket_queue, message_type, message)
 
-
+# Route to get tests 
 @app.route("/GetTests")
 @route_cors()
 async def GetTests():
-	#global tests
-
 	tests = {}
 
 	for row in sqlite_cursor.execute("SELECT json FROM tests WHERE removed != 1"):
@@ -179,7 +160,8 @@ async def GetTests():
 
 	return tests
 
-
+# returns: 
+#	dictionary with as keys the names of the loaded imagesets and as values the string "true" or "false" representing if the imageset is enabled or not
 def imagesets_get_loaded():
 	loaded_imagesets = set()
 
@@ -214,6 +196,9 @@ def imagesets_get_loaded():
 
 	return combined_list
 
+# Gets the image names from docker
+# returns:
+#	list with strings representing the names of the loaded images
 def imageset_get_images(imageset_name):
 	images = set()
 
@@ -453,6 +438,7 @@ async def add_message_to_queue(queue, message_type, message):
 		print(e)
 	await queue.add_message(encoded_message)
 
+#
 @app.route('/logs/<path:req_path>')
 @route_cors()
 async def log_listing(req_path):
@@ -482,7 +468,6 @@ def run_tests_thread():
 	global busy_manager
 	global tests
 	global manager_queue
-	global tests_updated 
 	global loop
 
 	sqlite_connection_worker_thread = sqlite3.connect("vegvisir.db")
@@ -530,7 +515,11 @@ async def lifespan():
 th = threading.Thread(target=run_tests_thread)
 th.start()
 
-
+# returns all the filenames in the provided directory
+# param:
+#	root: directory path with or without trailing /
+# returns:
+#  list with filenames in directory				
 async def get_filenames_from_directory(root):
 
 	filepath_list = await get_filepaths_from_directory(root)
@@ -542,13 +531,12 @@ async def get_filenames_from_directory(root):
 
 	return file_list
 
-	
+# returns all the filepaths in the provided directory
+# param:
+#	root: directory path with or without trailing /
+# returns:
+#  list with filepaths of files in directory			
 async def get_filepaths_from_directory(root):
-	# TODO: make finding directory cleaner
-	#cwd = os.getcwd() + "/logs"
-
-	#root = cwd + root
-
 	file_list = []
 
 
@@ -558,21 +546,3 @@ async def get_filepaths_from_directory(root):
 
 	return file_list
 
-
-# Gets filenames from this folder and subfolders
-@app.route('/FilesInPath')
-@route_cors()
-async def get_filepaths_from_directory_req():
-	# TODO: make finding directory cleaner
-	cwd = os.getcwd() + "/logs"
-
-	root = cwd + request.args.get("path")
-
-	file_list = []
-
-
-	for path, subdirs, files in os.walk(root):
-		for name in files:
-			file_list.append(os.path.join(path, name))
-
-	return file_list
