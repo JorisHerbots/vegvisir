@@ -7,6 +7,8 @@ import { waitForOpenConnection, sendMessage } from '@/stores/WebSocketSender';
 export const useWebSocketStore = defineStore('websocket', () => {
     const websocket = ref<WebSocket>(new WebSocket("ws://127.0.0.1:5000/WebSocket"));
 
+    const inverse_dictionary = obj => Object.fromEntries(Object.entries(obj).map(a => a.reverse()))
+
     const message_type_to_header : {[key: string] : string} = {
       // Test related
       "add_test": "ADD",
@@ -39,7 +41,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
       "implementations_testcases_update": "ITU"
     } 
 
-    const header_to_message_type = obj => Object.fromEntries(Object.entries(obj).map(a => a.reverse()))
+    const header_to_message_type : {[key: string] : string} = inverse_dictionary(message_type_to_header)
 
     function sendOnWebSocket(message: string) {
         sendMessage(websocket.value, message);        

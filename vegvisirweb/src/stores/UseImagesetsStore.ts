@@ -4,29 +4,23 @@ import { waitForOpenConnection, sendMessage } from '@/stores/WebSocketSender';
 import { useWebSocketStore } from '@/stores/UseWebSocketStore';
 
 interface ImagesDictionary {
-  [key: string]: string[]
-}
+  [key: string]: string[]}
 
 
 export const useImagesetsStore = defineStore('imagesets', () => {
   const imagesets_loaded = ref<string[]>([]);
   const imagesets_available = ref<string[]>([]);
   const imagesets_images = ref<ImagesDictionary>({})
-
-
-
-  const _header_to_message_type : {[key: string] : string} = inverse_dictionary(_message_type_to_header)
+  const websocketStore = useWebSocketStore()
+  
 
   function encode_messagetype(message_type : string) : string {
-    return _message_type_to_header[message_type];
+    return websocketStore.message_type_to_header[message_type];
   }
 
   function decode_header(header : string) : string {
-    return _header_to_message_type[header]
+    return websocketStore.header_to_message_type[header]
   }
-
-  const websocketStore = useWebSocketStore()
-  
 
     websocketStore.websocket.addEventListener('message', function (event : any) {
 
