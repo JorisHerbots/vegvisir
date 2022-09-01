@@ -1,4 +1,3 @@
-
 // source: https://gist.github.com/ndrbrt/4fb9af2084316ac0c0f9d3c46b9f2d02 
 const waitForOpenConnection = (socket : WebSocket) => {
     return new Promise<void>((resolve, reject) => {
@@ -19,7 +18,7 @@ const waitForOpenConnection = (socket : WebSocket) => {
     })
 }
 
-const sendMessage = async (socket : WebSocket, msg) => {
+const sendMessage = async (socket : WebSocket, msg : string) => {
     if (socket.readyState !== socket.OPEN) {
         try {
             await waitForOpenConnection(socket)
@@ -30,4 +29,4 @@ const sendMessage = async (socket : WebSocket, msg) => {
     }
 }
 
-export{waitForOpenConnection, sendMessage};
+export {waitForOpenConnection, sendMessage};
