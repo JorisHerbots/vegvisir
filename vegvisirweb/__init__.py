@@ -22,6 +22,9 @@ import asyncio
 import uuid
 import traceback
 
+import re 
+import copy
+
 import sqlite3 
 from vegvisir.docker_manager import *
 
@@ -96,6 +99,33 @@ def getAllTestcases():
     data = json.load(f)
     return data
 
+
+# Given a test, return a list of all the imagesets necessary / used in the test
+# param:
+#	test: dictionary
+# returns:
+# 	list with strings of the names
+def getImagesetsUsedInTest(test):
+	implementations = copy.deepcopy(test["configuration"]["clients"])
+	implementations += (test["configuration"]["shapers"])
+	implementations += (test["configuration"]["servers"])
+
+	print("printing implmeentations")
+	print(implementations)
+
+	imagesets = set()
+
+	for impl in implementations:
+		if "image" in impl:
+			if "vegvisir/" in impl["image"]:
+				result = re.search("vegvisir/(.*):", impl["image"])
+				result = result.group(1)
+
+				imagesets.add(result)
+
+	return list(imagesets)
+
+
 # Route to run a test
 @app.route("/Runtest", methods=['POST'])
 @route_cors()
@@ -144,6 +174,7 @@ async def run_test():
 	await add_message_to_queue(web_socket_queue, "add_test", json.dumps(dictionary))
 
 	return ""
+
 
 
 def manager_add_to_test_queue_callback(message_type, message):
@@ -378,12 +409,21 @@ async def websocket_consumer():
 
 			await add_message_to_queue(web_socket_queue, "implementations_testcases_update", json.dumps(all_testcases))
 
+		if message_type == "test_request_necessary_imagesets":
+			test = None
 
-		# "implementations_request": "IMR",
-        # "implementations_update": "IMU",
-        # "implementations_testcases_request": "ITR",
-        # "implementations_testcases_update": "ITU"
+			try:
+				# grab the json in string format
+				test = sqlite_cursor.execute("SELECT json FROM tests WHERE id = :id", {"id": message}).fetchone()[0]
+				
+				# convert to python dictionary
+				test =  json.loads(test)
+			except Exception as e:
+				print(e)
+				print(traceback.format_exc())		
 
+
+			await add_message_to_queue(web_socket_queue, "test_update_necessary_imagesets", json.dumps(getImagesetsUsedInTest(test)))
 
 def collect_websockets(func):
 	@wraps(func)

@@ -83,6 +83,12 @@
 
     </div>
 
+    <div v-if='ActiveTab === "Imagesets"'>
+      this test requires/used the following imagesets:
+      {{testsStore.necessary_imagesets}}
+
+    </div>
+
     <div v-if='ActiveTab === "All log files"'>
 
       <div class="search-wrapper">
@@ -138,10 +144,11 @@ export default {
   },
   setup() {
     const testsStore = useTestsStore();
-    let Tabs = ["Logs", "Configuration", "All log files"];
+    let Tabs = ["Logs", "Configuration", "All log files", "Imagesets"];
     let ActiveTab = "Logs";
 
     testsStore.getAllLogFiles(testsStore.test.id);
+    testsStore.requestNecessaryImagesets(testsStore.test.id);
     return {testsStore, Tabs, ActiveTab}
   },
   data: () => ({

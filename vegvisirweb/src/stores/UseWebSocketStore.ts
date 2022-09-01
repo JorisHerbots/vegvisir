@@ -19,6 +19,8 @@ export const useWebSocketStore = defineStore('websocket', () => {
       "update_all_logfiles": "UAL",
       "request_logfiles_in_folder": "RLF",
       "request_status_update": "RSU",
+      "test_request_necessary_imagesets": "TRN",
+      "test_update_necessary_imagesets": "TUN",
   
       // Imageset related 
       "imagesets_request_available": "IRA",
@@ -39,6 +41,8 @@ export const useWebSocketStore = defineStore('websocket', () => {
       "implementations_update": "IMU",
       "implementations_testcases_request": "ITR",
       "implementations_testcases_update": "ITU"
+
+
     } 
 
     const header_to_message_type : {[key: string] : string} = inverse_dictionary(message_type_to_header)

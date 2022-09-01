@@ -14,6 +14,7 @@ import re
 import shutil
 from pathlib import Path
 import copy
+import glob
 
 
 from .runner import Runner
@@ -63,6 +64,33 @@ class Manager:
 			self._possible_testcases.append(t())
 		
 
+	# Returns all implementation in the general implementations json file and all the
+	# implementation from the loaded imagesets from their respective json file
+	# returns:
+	#	dictionary with as key the name of the implementation and as value another dictionary with all the information/parameters
+	def getAllImplementations(self):
+		f = open("implementations.json")
+		data = json.load(f)
+
+		all_implementations_json = data
+		
+		imageset_json_paths = glob.glob(os.path.join("./implementations", "*.json"))
+		
+		for imageset_json_path in imageset_json_paths:
+
+			filename = imageset_json_path.split("/")[-1]
+			imageset_name = filename.replace(".json", "")
+
+
+			f = open(imageset_json_path)
+			imageset_json = json.load(f)
+
+			if imageset_json["enabled"]:
+				for value in imageset_json["implementations"]:
+					data = imageset_json["implementations"][value]
+					all_implementations_json[imageset_name + "/" + value] = data
+		
+		return all_implementations_json
 
 
 	# params
@@ -72,14 +100,7 @@ class Manager:
 	# post 
 	# 	_clients, _shapers, _servers are filled
 	def _read_implementations_file(self, file: str):
-		self._clients = []
-		self._servers = []
-		self._shapers = []
-
-		with open(file) as f:
-			implementations = json.load(f)
-
-		self.set_implementations(implementations)
+		self.set_implementations(self.getAllImplementations())
 
 	# params
 	# 	implementations
@@ -172,10 +193,8 @@ class Manager:
 		python_implementation = None
 
 		for item in lookup_list:
-			print(item.name)
 			if item.name == implementation["id"]:
 				python_implementation = item 
-				print(item.name)
 				break 
 
 		environment_variables = []

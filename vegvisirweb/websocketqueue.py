@@ -109,6 +109,8 @@ class MessageParser():
         "update_all_logfiles": "UAL",
         "request_logfiles_in_folder": "RLF",
         "request_status_update": "RSU",
+        "test_request_necessary_imagesets": "TRN",
+        "test_update_necessary_imagesets": "TUN",
 
         # Imageset related 
         "imagesets_request_available": "IRA",

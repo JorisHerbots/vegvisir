@@ -31,6 +31,7 @@ export const useTestsStore = defineStore('tests', () => {
   const log_files = ref<string[]>([]);
   const changed = ref<boolean>(false);
   const websocketStore = useWebSocketStore();
+  const necessary_imagesets = ref<string[]>([]);
   
 
   
@@ -67,6 +68,10 @@ export const useTestsStore = defineStore('tests', () => {
       if (header === "UAL") {
         log_files.value = JSON.parse(message);
       }
+
+      if (header == websocketStore.message_type_to_header["test_update_necessary_imagesets"]) {
+        necessary_imagesets.value = JSON.parse(message)
+      }
   
   
     }.bind(this));
@@ -89,7 +94,11 @@ export const useTestsStore = defineStore('tests', () => {
       websocketStore.sendOnWebSocket("RAL : " + testId.toString())
     }
 
+    function requestNecessaryImagesets(testId: string) {
+      websocketStore.sendOnWebSocket(websocketStore.message_type_to_header["test_request_necessary_imagesets"] + " : " + testId.toString())
+    }
 
-  return { tests, test, log_files, status, changed, removeTest, getAllLogFiles, getAllLogFilesInFolder, requestRunningTestStatusUpdate}
+
+  return { tests, test, log_files, status, changed, necessary_imagesets, removeTest, getAllLogFiles, getAllLogFilesInFolder, requestRunningTestStatusUpdate, requestNecessaryImagesets}
 
 })
