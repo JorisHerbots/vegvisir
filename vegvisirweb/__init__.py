@@ -367,6 +367,11 @@ async def websocket_consumer():
 
 			docker_create_imageset(data, setname)
 
+			#TODO: also check json ?
+			loaded_imagesets = imagesets_get_loaded()
+
+			await add_message_to_queue(web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))
+
 
 		if message_type == "imageset_request_export":
 			setname = message
