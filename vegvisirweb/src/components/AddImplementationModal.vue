@@ -82,7 +82,8 @@ export default {
   },
   computed: {
     filteredList() {
-      return this.AvailableImplementations.filter(implementation => {
+      let list = Object.values(this.AvailableImplementations)
+      return list.filter(implementation => {
         return implementation.id.toLowerCase().includes(this.search.toLowerCase())
       })
     }

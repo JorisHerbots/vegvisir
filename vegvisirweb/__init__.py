@@ -93,6 +93,11 @@ def getAllImplementations():
 	print(all_implementations_json)
 	return all_implementations_json
 
+def getAllTestcases():
+    f = open("testcases.json")
+    data = json.load(f)
+    return data
+
 
 @app.route("/Implementations")
 @route_cors()
@@ -105,9 +110,7 @@ async def Implemenentations():
 @app.route("/Testcases")
 @route_cors()
 async def Testcases():
-    f = open("testcases.json")
-    data = json.load(f)
-    return data
+    return getAllTestcases()
 
 
 @app.route("/Runtest", methods=['POST'])
@@ -373,6 +376,24 @@ async def websocket_consumer():
 			filenames = await get_filenames_from_directory(IMAGESETS_IMPORT_EXPORT_DIRECTORY)
 
 			await add_message_to_queue(web_socket_queue, "imagesets_update_available", json.dumps(filenames))
+
+
+		if message_type == "implementations_request":
+			all_implementations = getAllImplementations()
+
+			await add_message_to_queue(web_socket_queue, "implementations_update", json.dumps(all_implementations))
+
+		if message_type == "implementations_testcases_request":
+			all_testcases = getAllTestcases()
+
+			await add_message_to_queue(web_socket_queue, "implementations_testcases_update", json.dumps(all_testcases))
+
+
+		# "implementations_request": "IMR",
+        # "implementations_update": "IMU",
+        # "implementations_testcases_request": "ITR",
+        # "implementations_testcases_update": "ITU"
+
 
 def collect_websockets(func):
 	@wraps(func)

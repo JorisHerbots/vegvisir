@@ -48,6 +48,7 @@ import ConfigurationModal from '@/components/ConfigurationModal.vue';
 import TestCaseList from '@/components/TestCaseList.vue';
 import TestConfigurationModal from '@/components/TestConfigurationModal.vue';
 import { useTestsStore } from '@/stores/UseTestsStore.ts';
+import { useImplementationsStore } from '@/stores/UseImplementationsStore';
 
 export default {
   components: {
@@ -75,14 +76,16 @@ export default {
     }),
    setup () {
     const testsStore = useTestsStore();
+    const implementationsStore = useImplementationsStore();
 
-    return {testsStore}
+    implementationsStore.requestImplementationsUpdate();
+    implementationsStore.requestTestcasesUpdate();
+
+    return {testsStore, implementationsStore}
    },
    created() {
 
     axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
-    this.GetAndFillAvailableImplementations();
-    this.GetAndFillAvailableTestCases();
   },
   methods: {
     ModalAccept(arg) {
@@ -93,17 +96,16 @@ export default {
       this.AddModalVisisble = true;
 
       if (type === "client")
-        this.VisibleImplementationsToAdd = this.AvailableClients
+        this.VisibleImplementationsToAdd = this.implementationsStore.availableClients
       
       if (type === "shaper")
-        this.VisibleImplementationsToAdd = this.AvailableShapers
+        this.VisibleImplementationsToAdd = this.implementationsStore.availableShapers
       
       if (type === "server")
-        this.VisibleImplementationsToAdd = this.AvailableServers
+        this.VisibleImplementationsToAdd = this.implementationsStore.availableServers
 
       if (type === "testcase")
-        this.VisibleImplementationsToAdd = this.AvailableTestCases
-
+        this.VisibleImplementationsToAdd = this.implementationsStore.availableTestcases
     },
     RunClicked() {
 
@@ -183,151 +185,35 @@ export default {
       this.ModalVisible = true;
       this.ActiveImplementation = this.testsStore.test.configuration.clients.find(o => o.active_id === ImplementationId);
     },
-    GetAndFillAvailableImplementations() {
-
-      /* Remove CORS headers */
-      // axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
-
-      axios({
-        url: "http://127.0.0.1:5000/Implementations",
-        /*params: deviceID,*/
-        method: "GET"
-      })
-        .then(response => {
-
-
-            this.Implementations = response.data;
-            response = response.data
-            for (let i in response){
-                if (response[i]["role"][0] === "client")
-                {
-                  let j = structuredClone(response[i]);
-                  j.id = i;
-                  this.AvailableClients.push(j);
-                }
-                else if (response[i]["role"][0] === "shaper")
-                {
-                  let j = structuredClone(response[i]);
-                  j.id = i;
-                  this.AvailableShapers.push(j);
-                }
-                else if (response[i]["role"][0] === "server")
-                {
-                  let j = structuredClone(response[i]);
-                  j.id = i;
-                  this.AvailableServers.push(j);
-                }
-            }
-        })
-        .catch(error => { 
-          console.log(error)
-        });
-
-    },
-    GetAndFillAvailableTestCases() {
-      /* Remove CORS headers */
-      // axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
-
-      axios({
-        url: "http://127.0.0.1:5000/Testcases",
-        /*params: deviceID,*/
-        method: "GET"
-      })
-        .then(response => {
-          
-            response = response.data
-            for (let i in response){
-              this.AvailableTestCases.push(response[i])
-
-            }
-            console.log(this.AvailableTestCases);
-        })
-        .catch(error => { 
-          console.log(error)
-        });
-
-    },
     Add(Id) {
-      if (this.AvailableClients.some(implementation => implementation.id === Id))
-        this.AddActiveClient(Id)
-      if (this.AvailableShapers.some(implementation => implementation.id === Id))
-        this.AddActiveShaper(Id)
-      if (this.AvailableServers.some(implementation => implementation.id === Id))
-        this.AddActiveServer(Id)
-      if (this.AvailableTestCases.some(implementation => implementation.id === Id))
-        this.AddActiveTestCase(Id);
+      if (this.implementationsStore.availableClients[Id] !== undefined)
+        this.AddActive(this.testsStore.test.configuration.clients, this.implementationsStore.availableClients[Id]);
+      if (this.implementationsStore.availableShapers[Id] !== undefined)
+        this.AddActive(this.testsStore.test.configuration.shapers, this.implementationsStore.availableShapers[Id]);
+      if (this.implementationsStore.availableServers[Id] !== undefined)
+        this.AddActive(this.testsStore.test.configuration.servers, this.implementationsStore.availableServers[Id]);
+      if (this.implementationsStore.availableTestcases[Id] !== undefined)
+        this.AddActive(this.testsStore.test.configuration.testcases, this.implementationsStore.availableTestcases[Id]);
     },
-    AddActiveTestCase(testCaseId){
-      for (let i in this.AvailableTestCases) {
-        if (this.AvailableTestCases[i].id === testCaseId) {
-          // Deep copy
-          let j = JSON.parse(JSON.stringify(this.AvailableTestCases[i]));
+    AddActive(location, object) {
 
-          j.active_id = j.id + Math.floor(Math.random() * 1000000).toString();
+      // Deep copy
+      let j = JSON.parse(JSON.stringify(object));
 
-          // Set all env variables to default value
-          for (let envid in j.parameters) {
-            j.parameters[envid].value = j.parameters[envid].default;
-          }
+      j.active_id = j.id + Math.floor(Math.random() * 1000000).toString();
 
-          this.testsStore.test.configuration.testcases.push(j) 
-        } 
+      // Set all env variables to default value
+      for (let envid in j.parameters) {
+        j.parameters[envid].value = j.parameters[envid].default;
       }
+
+      for (let envid in j.env) {
+        j.env[envid].value = j.env[envid].default;
+      }
+
+      location.push(j) 
+
       this.AddModalVisisble = false;      
-    },
-    AddActiveClient(clientImplementationId) {
-      for (let i in this.AvailableClients) {
-        if (this.AvailableClients[i].id === clientImplementationId) {
-          // Deep copy
-          let j = JSON.parse(JSON.stringify(this.AvailableClients[i]));
-
-          j.active_id = j.id + Math.floor(Math.random() * 1000000).toString();
-
-          // Set all env variables to default value
-          for (let envid in j.env) {
-            j.env[envid].value = j.env[envid].default;
-          }
-
-          this.testsStore.test.configuration.clients.push(j) 
-        } 
-      }
-      this.AddModalVisisble = false;
-    },
-    AddActiveShaper(shaperImplementationId) {
-      for (let i in this.AvailableShapers) {
-        if (this.AvailableShapers[i].id === shaperImplementationId) {
-          // Deep copy
-          let j = JSON.parse(JSON.stringify(this.AvailableShapers[i]));
-
-          j.active_id = j.id + Math.floor(Math.random() * 1000000).toString();
-
-          // Set all env variables to default value
-          for (let envid in j.env) {
-            j.env[envid].value = j.env[envid].default;
-          }
-
-          this.testsStore.test.configuration.shapers.push(j) 
-        } 
-      }
-      this.AddModalVisisble = false;
-    },
-    AddActiveServer(serverImplementationId) {
-      for (let i in this.AvailableServers) {
-        if (this.AvailableServers[i].id === serverImplementationId) {
-          // Deep copy
-          let j = JSON.parse(JSON.stringify(this.AvailableServers[i]));
-
-          j.active_id = j.id + Math.floor(Math.random() * 1000000).toString();
-
-          // Set all env variables to default value
-          for (let envid in j.env) {
-            j.env[envid].value = j.env[envid].default;
-          }
-
-          this.testsStore.test.configuration.servers.push(j) 
-        } 
-      }
-      this.AddModalVisisble = false;
     }
   }
 };

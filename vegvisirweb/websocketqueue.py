@@ -122,7 +122,13 @@ class MessageParser():
         "imagesets_activate_imageset": "IAI",
         "imagesets_disable_imageset": "IDI",
         "imageset_request_create": "IRC",
-        "imageset_request_export": "IRE"
+        "imageset_request_export": "IRE",
+
+        # Implementations related
+        "implementations_request": "IMR",
+        "implementations_update": "IMU",
+        "implementations_testcases_request": "ITR",
+        "implementations_testcases_update": "ITU",
     }
 
     # Used to convert headers to messagetypes
