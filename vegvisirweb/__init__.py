@@ -110,16 +110,12 @@ def getImagesetsUsedInTest(test):
 	implementations += (test["configuration"]["shapers"])
 	implementations += (test["configuration"]["servers"])
 
-	print("printing implmeentations")
-	print(implementations)
-
 	imagesets = set()
 
 	for impl in implementations:
 		if "image" in impl:
 			if "vegvisir/" in impl["image"]:
-				result = re.search("vegvisir/(.*):", impl["image"])
-				result = result.group(1)
+				result = get_tag_from_image(impl["image"])
 
 				imagesets.add(result)
 
@@ -207,9 +203,9 @@ def imagesets_get_loaded():
 	for img in local_images:
 		repo = get_repo_from_image(img)
 		if repo == "vegvisir":
-			set_name = get_name_from_image(img)
+			set_name = get_tag_from_image(img)
 			loaded_imagesets.add(set_name)
-
+	
 	combined_list = {}
 	imageset_json_paths = glob.glob(os.path.join("./implementations", "*.json"))
 
@@ -228,6 +224,8 @@ def imagesets_get_loaded():
 	return combined_list
 
 # Gets the image names from docker
+# param:
+#	name of the imageset
 # returns:
 #	list with strings representing the names of the loaded images
 def imageset_get_images(imageset_name):
@@ -244,10 +242,10 @@ def imageset_get_images(imageset_name):
 	for img in local_images:
 		repo = get_repo_from_image(img)
 		if repo == "vegvisir":
-			set_name = get_name_from_image(img)
+			set_name = get_tag_from_image(img)
 			if set_name == imageset_name:
 				images.add(set_name)
-			
+		
 	return list(images)
 
 

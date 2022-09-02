@@ -35,7 +35,7 @@ def docker_create_imageset(implementations, setname) -> int:
         if "image" in implementations[x]:
             img = implementations[x]["image"]
             r = subprocess.run(
-                "docker tag {} {}".format(img, "vegvisir" + "/" + setname + ":" + get_name_from_image(img)),
+                "docker tag {} {}".format(img, "vegvisir" + "/" + get_name_from_image(img) + ":" + setname),
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -66,7 +66,7 @@ def generate_imageset_json(implementations, setname) -> str:
             img = implementations[x]["image"]
 
             implementations_dictionary[x] = deepcopy(implementations[x])
-            implementations_dictionary[x]["image"] = "vegvisir" + "/" + setname + ":" + get_name_from_image(img)
+            implementations_dictionary[x]["image"] = "vegvisir" + "/" + get_name_from_image(img) + ":" + setname 
 
     output_dictionary["enabled"] = True 
     output_dictionary["implementations"] = implementations_dictionary
