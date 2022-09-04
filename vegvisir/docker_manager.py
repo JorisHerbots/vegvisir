@@ -4,6 +4,7 @@ import subprocess
 import json
 import shutil
 import glob
+import logging
 
 
 TEMPORARY_DIRECTORY = "/tmp/vegvisir"
@@ -55,6 +56,30 @@ def docker_create_imageset(implementations, setname) -> int:
 
     return returncode
 
+# Gets the image names from docker
+# param:
+#	name of the imageset
+# returns:
+#	list with strings representing the names of the loaded images
+def imageset_get_images(imageset_name):
+	images = set()
+
+	proc = subprocess.run(
+		"docker images | awk '{print $1, $2}'",
+		shell=True,
+		stdout=subprocess.PIPE,
+		stderr=subprocess.STDOUT
+	)
+	local_images = proc.stdout.decode('utf-8').replace(' ', ':').split('\n')[1:]
+	
+	for img in local_images:
+		repo = get_repo_from_image(img)
+		if repo == "vegvisir":
+			set_name = get_tag_from_image(img)
+			if set_name == imageset_name:
+				images.add(img)
+		
+	return list(images)
 
 # generates the json for an imageset with the modified image names
 def generate_imageset_json(implementations, setname) -> str:
@@ -88,8 +113,15 @@ def docker_export_imageset(setname):
         print("Error creating temporary dictionary")
 
 
+    images_list = imageset_get_images(setname)
+    images_list_string = ""
+
+    for image in images_list:
+        images_list_string += image 
+        images_list_string += " "
+
     r = subprocess.run(
-        "docker save -o {} {}".format(os.path.join(TEMPORARY_DIRECTORY, setname.replace('/', '_') + ".tar"), "vegvisir/" + setname),
+        "docker save -o {} {}".format(os.path.join(TEMPORARY_DIRECTORY, setname.replace('/', '_') + ".tar"), images_list_string),
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -118,6 +150,50 @@ def docker_export_imageset(setname):
 
     shutil.rmtree(TEMPORARY_DIRECTORY)
 
+
+# Export a list of images to a tar file with output_file_name as name
+def docker_export_images(images_list, output_file_name):
+    try:
+        os.mkdir(TEMPORARY_DIRECTORY)
+    except:
+        print("Error creating temporary dictionary")
+
+
+    images_list_string = ""
+
+    for image in images_list:
+        images_list_string += image 
+        images_list_string += " "
+
+
+    r = subprocess.run(
+        "docker save -o {} {}".format(os.path.join(TEMPORARY_DIRECTORY, output_file_name + ".tar"), images_list_string),
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+    if r.returncode != 0:
+        try:
+            shutil.rmtree(TEMPORARY_DIRECTORY)
+        except:
+            pass 
+        raise RuntimeError("Saving docker images failed: %s", r.stdout.decode("utf-8"))
+        #print("Saving docker images failed: %s", r.stdout.decode("utf-8"))
+
+
+    # TODO ? : chmod to make it writeable by non root?
+    try:
+        shutil.make_archive("./imagesets_import_export/" + output_file_name, "zip", TEMPORARY_DIRECTORY)
+    except Exception as e:
+        try:
+            shutil.rmtree(TEMPORARY_DIRECTORY)
+        except:
+            pass
+
+        raise e
+
+    shutil.rmtree(TEMPORARY_DIRECTORY)
 
 
 # Imports/Loads an imgaset from a zip file containing a json and and a tar file

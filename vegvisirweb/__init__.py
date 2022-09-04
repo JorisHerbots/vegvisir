@@ -223,32 +223,6 @@ def imagesets_get_loaded():
 
 	return combined_list
 
-# Gets the image names from docker
-# param:
-#	name of the imageset
-# returns:
-#	list with strings representing the names of the loaded images
-def imageset_get_images(imageset_name):
-	images = set()
-
-	proc = subprocess.run(
-		"docker images | awk '{print $1, $2}'",
-		shell=True,
-		stdout=subprocess.PIPE,
-		stderr=subprocess.STDOUT
-	)
-	local_images = proc.stdout.decode('utf-8').replace(' ', ':').split('\n')[1:]
-	
-	for img in local_images:
-		repo = get_repo_from_image(img)
-		if repo == "vegvisir":
-			set_name = get_tag_from_image(img)
-			if set_name == imageset_name:
-				images.add(set_name)
-		
-	return list(images)
-
-
 # Consumer for imagesets websocket
 # discards the data 
 async def websocket_consumer():
@@ -419,7 +393,8 @@ async def websocket_consumer():
 			except Exception as e:
 				print(e)
 				print(traceback.format_exc())		
-
+		if message_type == "export_test_reproducable":
+			await export_test_reproducable(json.loads(message))
 
 			await add_message_to_queue(web_socket_queue, "test_update_necessary_imagesets", json.dumps(getImagesetsUsedInTest(test)))
 
@@ -548,7 +523,6 @@ async def lifespan():
 	loop = asyncio.get_event_loop()
 	loop.create_task(web_socket_queue.watch_queue_and_notify_workers())
 	loop.create_task(web_socket_queue.watch_queue_and_notify_workers())
-
 
 th = threading.Thread(target=run_tests_thread)
 th.start()
