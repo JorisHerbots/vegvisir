@@ -393,8 +393,7 @@ async def websocket_consumer():
 			except Exception as e:
 				print(e)
 				print(traceback.format_exc())		
-		if message_type == "export_test_reproducable":
-			await export_test_reproducable(json.loads(message))
+
 
 			await add_message_to_queue(web_socket_queue, "test_update_necessary_imagesets", json.dumps(getImagesetsUsedInTest(test)))
 
