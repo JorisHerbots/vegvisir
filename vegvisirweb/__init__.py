@@ -424,6 +424,19 @@ async def websocket_consumer():
 
 		if message_type == "export_test_reproducable":
 			await export_test_reproducable(json.loads(message))
+
+		if message_type == "imageset_request_create_with_implementations":
+			[setname, implementations_json_string] = message.split(" , ")
+
+			implementations_json = json.loads(implementations_json_string)
+			
+			create_imageset(implementations_json, setname)
+
+			#TODO: also check json ?
+			loaded_imagesets = imagesets_get_loaded()
+
+			await add_message_to_queue(web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))		
+
 			 
 		
 def collect_websockets(func):

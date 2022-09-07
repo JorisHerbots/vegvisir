@@ -82,9 +82,14 @@ export const useImagesetsStore = defineStore('imagesets', () => {
     websocketStore.sendOnWebSocket(encode_messagetype("imageset_request_create") + " : " + name);
   }
 
+  function requestCreateImagesetWithImplementations(name: string, implementations: any) {
+    websocketStore.sendOnWebSocket(encode_messagetype("imageset_request_create_with_implementations") + " : " + name + " , " + JSON.stringify(implementations))
+  }
+
   function requestExportImageset(name: string) {
     websocketStore.sendOnWebSocket(encode_messagetype("imageset_request_export") + " : " + name);
   }
 
-  return { imagesets_available, imagesets_loaded, requestAvailableImagesetsUpdate, requestLoadedImagesetsUpdate, requestImportImageset, requestActivateImageset, requestDisableImageset, requestCreateImageset, requestExportImageset, requestRemoveImageset}
+  return { imagesets_available, imagesets_loaded, requestAvailableImagesetsUpdate, requestLoadedImagesetsUpdate, requestImportImageset, requestActivateImageset, 
+    requestDisableImageset, requestCreateImageset, requestExportImageset, requestRemoveImageset, requestCreateImagesetWithImplementations}
 })

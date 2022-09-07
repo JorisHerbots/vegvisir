@@ -101,6 +101,6 @@ export const useImplementationsStore = defineStore('implementations', () => {
 
 
 
-  return { availableClients , availableShapers, availableServers, availableTestcases, requestImplementationsUpdate, requestTestcasesUpdate }
+  return { availableClients , availableShapers, availableServers, availableTestcases, implementations, requestImplementationsUpdate, requestTestcasesUpdate }
 
 })

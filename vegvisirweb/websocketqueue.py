@@ -125,6 +125,7 @@ class MessageParser():
         "imagesets_activate_imageset": "IAI",
         "imagesets_disable_imageset": "IDI",
         "imageset_request_create": "IRC",
+        "imageset_request_create_with_implementations": "IRM",
         "imageset_request_export": "IRE",
 
         # Implementations related
