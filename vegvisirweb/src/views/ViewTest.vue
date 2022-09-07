@@ -87,6 +87,12 @@
       this test requires/used the following imagesets:
       {{testsStore.necessary_imagesets}}
 
+
+    <button @click="ExportTest" class="absolute bg-transparent hover:bg-orange-500 text-orange-500 font-semibold hover:text-white py-2 px-4 border border-orange-500 hover:border-transparent rounded z-10 right-4">
+      Export test and imagesets
+    </button>
+
+
     </div>
 
     <div v-if='ActiveTab === "All log files"'>
@@ -129,6 +135,7 @@ import ConfigurationModal from '@/components/ConfigurationModal.vue';
 import TestCaseList from '@/components/TestCaseList.vue';
 import TestConfigurationModal from '@/components/TestConfigurationModal.vue';
 import ViewLogs from '../components/ViewLogs.vue';
+import { useWebSocketStore } from '@/stores/UseWebSocketStore';
 
 export default {
   components: {
@@ -175,6 +182,10 @@ export default {
       let p = "http://127.0.0.1:5000" + path 
 
       window.open(p);
+    },
+    ExportTest() {
+      const websocket = useWebSocketStore();
+      websocket.sendOnWebSocket(websocket.message_type_to_header["export_test_reproducable"] + " : " + JSON.stringify(this.testsStore.test))
     },
     EditAndRerun() {
       console.log(this.ActiveTab)

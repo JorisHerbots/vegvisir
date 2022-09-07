@@ -29,6 +29,9 @@ import sqlite3
 from vegvisir.docker_manager import *
 
 from vegvisirweb.websocketqueue import WebSocketQueue, MessageSendWorker, MessageParser
+from vegvisir.implementation_manager import *
+from vegvisir.filesystem_handler import *
+
 
 app = Quart(__name__)
 
@@ -87,9 +90,32 @@ def getAllImplementations():
 		if imageset_json["enabled"]:
 			for value in imageset_json["implementations"]:
 				data = imageset_json["implementations"][value]
-				all_implementations_json[imageset_name + "/" + value] = data
+				all_implementations_json[value + ":" + imageset_name] = data
 	
 	return all_implementations_json
+
+
+# Given a list of docker image names return all the accompanying implementations
+def get_implementations_with_docker_images(docker_images):
+	
+	implementations = getAllImplementations()
+
+	#output_implementations_list = []
+	dictionary = {}
+
+	for implementation in implementations:
+		og = implementation
+		implementation = implementations[implementation]
+		if "image" in implementation:
+			if implementation["image"] in docker_images:
+				#output_implementations_list.append(implementation)
+				dictionary[og] = implementation
+				docker_images.remove(implementation["image"])
+	
+	# TODO? throw exception if not all docker_images found (docker_images list not empty)
+
+	return dictionary
+
 
 # Returns all the testcases
 # returns:
@@ -115,7 +141,7 @@ def getImagesetsUsedInTest(test):
 	for impl in implementations:
 		if "image" in impl:
 			if "vegvisir/" in impl["image"]:
-				result = get_tag_from_image(impl["image"])
+				result = docker_get_tag_from_image(impl["image"])
 
 				imagesets.add(result)
 
@@ -146,7 +172,6 @@ async def run_test():
 		manager.add_active_implementation(server)
 
 	for testcase in request_form["configuration"]["testcases"]:
-		print("added testcase")
 		manager.add_active_testcase(testcase)
 
 
@@ -201,9 +226,9 @@ def imagesets_get_loaded():
 	local_images = proc.stdout.decode('utf-8').replace(' ', ':').split('\n')[1:]
 	
 	for img in local_images:
-		repo = get_repo_from_image(img)
+		repo = docker_get_repo_from_image(img)
 		if repo == "vegvisir":
-			set_name = get_tag_from_image(img)
+			set_name = docker_get_tag_from_image(img)
 			loaded_imagesets.add(set_name)
 	
 	combined_list = {}
@@ -300,9 +325,9 @@ async def websocket_consumer():
 			
 			# Import imageset
 			zip_file_name = message 
-			zip_file_path = os.path.join(IMAGESETS_IMPORT_EXPORT_DIRECTORY, zip_file_name)
+			imageset_name = zip_file_name.split(".zip")[0]
 
-			docker_import_imageset(zip_file_path)
+			import_imageset(imageset_name)
 
 			# Send update of loaded imagesets
 			loaded_imagesets = imagesets_get_loaded()
@@ -310,7 +335,7 @@ async def websocket_consumer():
 
 		if message_type == "imagesets_remove_imageset":
 			
-			docker_remove_imageset(message)
+			remove_imageset(message)
 			
 			# Send update of loaded imagesets
 			loaded_imagesets = imagesets_get_loaded()
@@ -353,7 +378,7 @@ async def websocket_consumer():
 			f = open("implementations.json")
 			data = json.load(f)
 
-			docker_create_imageset(data, setname)
+			create_imageset(data, setname)
 
 			#TODO: also check json ?
 			loaded_imagesets = imagesets_get_loaded()
@@ -363,8 +388,9 @@ async def websocket_consumer():
 
 		if message_type == "imageset_request_export":
 			setname = message
-			docker_export_imageset(setname)
 			
+			export_imageset(setname)
+
 			# Send update of available imagesets
 			filenames = await get_filenames_from_directory(IMAGESETS_IMPORT_EXPORT_DIRECTORY)
 
@@ -394,9 +420,12 @@ async def websocket_consumer():
 				print(e)
 				print(traceback.format_exc())		
 
-
 			await add_message_to_queue(web_socket_queue, "test_update_necessary_imagesets", json.dumps(getImagesetsUsedInTest(test)))
 
+		if message_type == "export_test_reproducable":
+			await export_test_reproducable(json.loads(message))
+			 
+		
 def collect_websockets(func):
 	@wraps(func)
 	async def wrapper(*args, **kwargs):
@@ -522,6 +551,7 @@ async def lifespan():
 	loop = asyncio.get_event_loop()
 	loop.create_task(web_socket_queue.watch_queue_and_notify_workers())
 	loop.create_task(web_socket_queue.watch_queue_and_notify_workers())
+	#loop.create_task(import_test_reproduceable("./tests_import_export/kkkkkkkkkkkkkkkk.zip"))
 
 th = threading.Thread(target=run_tests_thread)
 th.start()
@@ -556,4 +586,114 @@ async def get_filepaths_from_directory(root):
 			file_list.append(os.path.join(path, name))
 
 	return file_list
+
+
+# Exports a test so it is reproducable on another machine
+# pre:
+#	The test only used Docker implementations
+async def export_test_reproducable(test):
+
+	# Export:
+	# 1) Create imageset of images used in test (including json describing the images) and keep it in TEMPORARY_DIRECTORY
+	# 2) Modify test (json) to link to images of the new imageset instead of the "standard" images
+	# 3) Export the modified json to TEMPORARY_DIRECTORY
+	# 4) Zip both the imageset and modified json to the same zip file (by zipping the TEMPORARY_DIRECTORY) and export to test_import_export
+
+	# Import:
+	#	1) unzip into TEMPORARY_DIRECTORY
+	#	2) load test json into memory
+	#	3) load imageset
+	# 	4) run test
+	#	OPTIONAL? 5) remove imageset -> what to do when rerunning test?
+
+	# Export all images 
+	imageset_name = test["name"]
+	print()
+
+	implementations = get_implementations_from_test(test)
+	docker_imagenames = get_docker_imagesnames_from_implementations(implementations)
+	implementations = get_implementations_with_docker_images(docker_imagenames)
+	print(implementations)
+
+	create_imageset(implementations,  imageset_name)
+	export_imageset(imageset_name)
+
+	move_test_to_other_imageset(test, imageset_name)
+
+	temporary_directory = TemporaryUniqueDirectory()
+
+	f = open(os.path.join(temporary_directory.get_path(), imageset_name) + ".json",  "w")
+
+	json.dump(test, f)
+
+	f.close()
+	
+	shutil.move(os.path.join("./imagesets_import_export", imageset_name + ".zip"), os.path.join(temporary_directory.get_path(), imageset_name + ".zip"))
+	
+	print("making archive")
+	shutil.make_archive("./tests_import_export/" + imageset_name, "zip", temporary_directory.get_path())
+
+	# Export to single zip file 
+
+async def import_test_reproduceable(test_zip):
+	test_name = test_zip.split("/")[-1].split(".zip")[0]
+	temporary_directory = TemporaryUniqueDirectory()
+    
+	shutil.unpack_archive(test_zip, temporary_directory.get_path(), "zip")
+
+	test_file_path = glob.glob(os.path.join(temporary_directory.get_path(), "*.json"))[0]
+	imageset_file_path = glob.glob(os.path.join(temporary_directory.get_path(), "*.zip"))[0]
+
+	test_file = open(test_file_path)
+	test = json.load(test_file)
+
+	shutil.move(imageset_file_path, os.path.join("./imagesets_import_export", test_name + ".zip"))
+	import_imageset(test_name)
+
+	await run_test_internal(test)
+
+
+async def run_test_internal(request_form):
+	global tests
+	global sqlite_cursor
+	global sqlite_connection
+
+	id = str(uuid.uuid1())
+
+	manager = Manager(password, id, manager_add_to_test_queue_callback)
+
+	for client in request_form["configuration"]["clients"]:
+		manager.add_active_implementation(client)
+
+	for shaper in request_form["configuration"]["shapers"]:
+		manager.add_active_implementation(shaper)
+
+	for server in request_form["configuration"]["servers"]:
+		manager.add_active_implementation(server)
+
+	for testcase in request_form["configuration"]["testcases"]:
+		manager.add_active_testcase(testcase)
+
+
+	dictionary = {}
+	dictionary["id"] = id 
+	dictionary["status"] = "waiting"
+	dictionary["name"] = request_form["name"]
+	manager.name = request_form["name"]
+
+	dictionary["time_added"] = str(time.time())
+	dictionary["configuration"] = request_form["configuration"]
+
+
+	tests[id] = dictionary
+
+	manager_queue.append(manager)
+	
+	sqlite_cursor.execute('INSERT INTO tests VALUES(?,?,?,?,?)', (id, dictionary["name"], json.dumps(dictionary), "waiting", False))
+	sqlite_connection.commit()
+
+	await add_message_to_queue(web_socket_queue, "add_test", json.dumps(dictionary))
+
+	return ""
+
 

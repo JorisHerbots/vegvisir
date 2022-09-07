@@ -21,6 +21,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
       "request_status_update": "RSU",
       "test_request_necessary_imagesets": "TRN",
       "test_update_necessary_imagesets": "TUN",
+      "export_test_reproducable": "ETR",
   
       // Imageset related 
       "imagesets_request_available": "IRA",

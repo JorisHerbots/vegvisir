@@ -88,8 +88,9 @@ class Manager:
 			if imageset_json["enabled"]:
 				for value in imageset_json["implementations"]:
 					data = imageset_json["implementations"][value]
-					all_implementations_json[imageset_name + "/" + value] = data
+					all_implementations_json[value + ":" + imageset_name] = data
 		
+		print(all_implementations_json)
 		return all_implementations_json
 
 
