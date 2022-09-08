@@ -2,6 +2,13 @@
 
 <template>
   <main>
+
+    <div v-if="Object.keys(testsStore.tests).length <= 0" class="text-gray-300 text-center text-5xl z--40 mt-24 text-center">
+      No running or completed tests (yet)
+    </div>
+
+
+
     <ul>
       <li  v-for="(item, index) in testsStore.tests">
         <TestCard :Test='item'></TestCard>
