@@ -11,31 +11,31 @@ const router = createRouter({
       component: HomeView
     },
     {
-      path: '/about',
-      name: 'about',
+      path: '/progress',
+      name: 'progress',
       // route level code-splitting
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/StatusPage.vue')
     },
     {
-      path: '/configure',
-      name: 'configure',
+      path: '/configure_test',
+      name: 'configure_test',
       // route level code-splitting
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
       component: ConfigureTest
     },
     {
-      path: '/ViewTest',
-      name: 'viewtest',
+      path: '/view_test',
+      name: 'view_test',
       // route level code-splitting
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/ViewTest.vue')
     },
     {
-      path: '/ConfigureDocker',
+      path: '/configure_docker',
       name: 'configure_docker',
       // route level code-splitting
       // this generates a separate chunk (About.[hash].js) for this route

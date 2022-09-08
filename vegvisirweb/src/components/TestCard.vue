@@ -72,7 +72,7 @@ export default {
   methods: {
     Clicked() {
       this.testsStore.test = this.Test;
-      this.$router.push({ path: '/ViewTest', query: {id: this.Test.id} })
+      this.$router.push({ path: '/view_test', query: {id: this.Test.id} })
     },
     RemoveClicked(id) {
       this.testsStore.removeTest(id);
