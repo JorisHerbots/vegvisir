@@ -14,7 +14,7 @@
     </button>
 
     <!-- list of all available images with checkboxes -->
-    <div id="image-selection-list" class="ml-4 text-2xl mb-16 h-96 overflow-scroll">
+    <div id="image-selection-list" class="ml-4 text-2xl mb-16 h-96 overflow-scroll overflow-x-hidden">
       <ul>  
         <div v-for="(item, index) in implemenationsStore.implementations">    
         <li class="ml-4 h-16" v-if="(!('client' in item)) || (item.client.type === 'docker')">
