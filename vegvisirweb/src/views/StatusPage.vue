@@ -2,11 +2,11 @@
 
 <template>
   <main>
-
+    <ul>
       <li  v-for="(item, index) in testsStore.tests">
         <TestCard :Test='item'></TestCard>
      </li>
-  
+    </ul>
 
   </main>
 </template>
