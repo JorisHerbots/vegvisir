@@ -5,6 +5,11 @@
   <div class="outerC">
   <div id="list" class="bg-white border">
     
+
+    <div id="testcases-text" style="transform: rotate(-0deg);" class="absolute text-gray-300 text-center text-5xl z--40 mt-24 text-center" >
+    testcases
+    </div>
+
       <li  v-for="(item, index) in listItems">
         <TestCaseCard @clicked="CardClicked" @RemoveClicked="CardRemoveClicked" :Implementation="item" :CanBeRemoved="CanBeModified"></TestCaseCard>
      </li>
@@ -65,8 +70,12 @@ export default {
   height: inherit;
   width: inherit;
   list-style-type: none;
-  overflow: scroll;
+  overflow: auto;
   overflow-x: hidden;
+}
+
+#testcases-text {
+  left: 45%;
 }
 
 

@@ -5,6 +5,11 @@
   <div class="outer">
   <div id="list" class="bg-white border">
     
+
+    <div style="transform: rotate(-0deg);" class="absolute text-gray-300 text-center mt-96 text-5xl z--40 w-full" >
+    {{listname}}
+    </div>
+
       <li  v-for="(item, index) in listItems">
         <ImplementationCard @clicked="CardClicked" @RemoveClicked="CardRemoveClicked" :Implementation="item" :CanBeRemoved="CanBeModified"></ImplementationCard>
      </li>
@@ -30,7 +35,8 @@ export default {
   name: "ImplementationList",
   props: {
     listItems: Array,
-    CanBeModified: false
+    CanBeModified: false,
+    listname: String
   },
   components: {
     ImplementationCard
@@ -38,6 +44,7 @@ export default {
   data: () => ({}),
   created() {
     console.log(this.listItems);
+    console.log(this.listname)
   },
   methods: {
     CardClicked(arg) {

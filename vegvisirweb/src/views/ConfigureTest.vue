@@ -7,16 +7,16 @@
     <AddImplementationModal @ClickedImplementation="this.Add" v-if="AddModalVisisble" @close="this.AddModalVisisble = false;" :AvailableImplementations="VisibleImplementationsToAdd"></AddImplementationModal>
 
     <div v-if="showError">
-      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+      <div id="alert" class="absolute bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-40" role="alert">
         <strong class="font-bold">Error</strong>
-        <span class="block sm:inline">    Please fill in a name</span>
+        <span class="block sm:inline ml-4">{{errorMessage}}</span>
         <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
           <svg @click="showError = false;" class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
         </span>
       </div>
     </div>
 
-    <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded m-4 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500" id="inline-full-name" type="text" v-model="testsStore.test.name" placeholder="test name">
+    <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded m-4 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500 z-1" id="inline-full-name" type="text" v-model="testsStore.test.name" placeholder="test name">
     
     
     <button @click="RunClicked()" class="absolute bg-transparent mt-4 right-4 z-1 bg-green-500 font-semibold text-white py-2 px-4 border border-transparent rounded">
@@ -27,9 +27,9 @@
         Export
     </button>
     <div id="ImplementationsView" class="m-4">
-    <ImplementationList @AddClicked="ShowAddClientScreen('client')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.clients" :CanBeModified="true"></ImplementationList>
-    <ImplementationList @AddClicked="ShowAddClientScreen('shaper')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" :listItems="testsStore.test.configuration.shapers" :CanBeModified="true"></ImplementationList>
-    <ImplementationList @AddClicked="ShowAddClientScreen('server')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test" :listItems="testsStore.test.configuration.servers" :CanBeModified="true"></ImplementationList>
+    <ImplementationList @AddClicked="ShowAddClientScreen('client')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" listname="clients" :listItems="testsStore.test.configuration.clients" :CanBeModified="true"></ImplementationList>
+    <ImplementationList @AddClicked="ShowAddClientScreen('shaper')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" listname="shapers" :listItems="testsStore.test.configuration.shapers" :CanBeModified="true"></ImplementationList>
+    <ImplementationList @AddClicked="ShowAddClientScreen('server')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test" listname="servers" :listItems="testsStore.test.configuration.servers" :CanBeModified="true"></ImplementationList>
     </div>
 
     <TestCaseList @AddClicked="ShowAddClientScreen('testcase')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="ml-4 mr-4 h-64" :listItems="testsStore.test.configuration.testcases" :CanBeModified="true"></TestCaseList>
@@ -72,7 +72,8 @@ export default {
     ActiveImplementation: {},
     ActiveTestCase: {},
     TestModalVisible: false,
-    showError: false
+    showError: false,
+    errorMessage: String
     }),
    setup () {
     const testsStore = useTestsStore();
@@ -109,26 +110,24 @@ export default {
     },
     RunClicked() {
 
-      if (this.testsStore.test.name === "" || !("name" in this.testsStore.test)) {
-        this.showError = true;
-        return;
-      }
+      if(!this.CheckError())
+      {
 
-      let obj = {configuration: {clients: this.testsStore.test.configuration.clients, shapers: this.testsStore.test.configuration.shapers, servers: this.testsStore.test.configuration.servers, testcases: this.testsStore.test.configuration.testcases},  name: this.testsStore.test.name}
-      axios({
-        url: "http://127.0.0.1:5000/Runtest",
-        data: obj,
-        method: "POST"
-      })   
-      .then(response => {
-            console.log(response);
-      })
-      .catch(error => {
-        console.log(error);
-      })
+        let obj = {configuration: {clients: this.testsStore.test.configuration.clients, shapers: this.testsStore.test.configuration.shapers, servers: this.testsStore.test.configuration.servers, testcases: this.testsStore.test.configuration.testcases},  name: this.testsStore.test.name}
+        axios({
+          url: "http://127.0.0.1:5000/Runtest",
+          data: obj,
+          method: "POST"
+        })   
+        .then(response => {
+              console.log(response);
+        })
+        .catch(error => {
+          console.log(error);
+        })
 
       this.showError = false;
-
+      }
     },
     download(data, filename, type) {
     var file = new Blob([data], {type: type});
@@ -214,6 +213,24 @@ export default {
       location.push(j) 
 
       this.AddModalVisisble = false;      
+    },
+    CheckError() {
+      if (this.testsStore.test.name === "" || !("name" in this.testsStore.test)) {
+        this.errorMessage = "Please fill in a name"
+        this.showError = true;
+        return true;
+      }
+      console.log("euuuh")
+      for (let item in this.testsStore.test.configuration) {
+        console.log(item)
+        if (this.testsStore.test.configuration[item].length == 0)
+        {
+          this.errorMessage = "No " + item.substring(0, item.length - 1) + " found, you need at least 1."
+          this.showError = true;
+          return true;
+        }
+      }
+      
     }
   }
 };
@@ -229,6 +246,12 @@ display: flex;
 
 .test{
     flex: 1;
+}
+
+#alert {
+  top: -50px;
+  left: 25vw;
+  width: 50vw;
 }
 
 </style>
