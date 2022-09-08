@@ -569,7 +569,7 @@ async def lifespan():
 th = threading.Thread(target=run_tests_thread)
 th.start()
 
-# returns all the filenames in the provided directory
+# returns all the filenames in the provided directory except for any hidden files (for example .gitignore is not included)
 # param:
 #	root: directory path with or without trailing /
 # returns:
@@ -581,7 +581,10 @@ async def get_filenames_from_directory(root):
 
 
 	for path in filepath_list:
-		file_list.append(path.split("/")[-1])
+		file_name = path.split("/")[-1]
+
+		if file_name[0] != ".":
+			file_list.append(file_name)
 
 	return file_list
 
