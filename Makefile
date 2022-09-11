@@ -6,7 +6,7 @@ WORKING_DIRECTORY = $(shell pwd)
 
 web: $(VENV)/bin/activate
 	(  source $(VENV)/bin/activate;\
-		cd vegvisirweb; cd dist; npm run --silent build &> '/dev/null';\
+		cd vegvisirweb; npm i; npm run --silent build &> '/dev/null';\
 		docker stop vegvisir-webui-nginx;\
 		docker rm vegvisir-webui-nginx;\
 		docker run --rm --name vegvisir-webui-nginx -v $(WORKING_DIRECTORY)/vegvisirweb/nginx_server/nginx.conf:/etc/nginx/nginx.conf:ro -v $(WORKING_DIRECTORY)/vegvisirweb/dist:/usr/share/nginx/html:ro -v $(WORKING_DIRECTORY)/vegvisirweb/nginx_server/default.conf:/etc/nginx/conf.d/default.conf:ro -p 8080:80 -d nginx;\
