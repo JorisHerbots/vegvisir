@@ -1,3 +1,8 @@
+import os 
+import sys
+sys.path.insert(1, sys.argv[1])
+
+
 import threading
 from typing import List
 from zipfile import ZipFile
@@ -7,7 +12,6 @@ from functools import wraps
 # from werkzeug.utils import send_file
 import time
 from datetime import datetime
-import os
 import sys 
 import json
 
@@ -50,7 +54,7 @@ running_test_last_status = ""
 SocketWatcherEnabled = False
 connected_sockets = set()
 
-password = getpass.getpass("Please enter your sudo password: ")
+password = sys.argv[2]
 loop = None
 
 
@@ -713,3 +717,5 @@ async def run_test_internal(request_form):
 	return ""
 
 
+if __name__ == '__main__':
+	app.run()
