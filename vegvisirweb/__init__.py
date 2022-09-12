@@ -1,6 +1,14 @@
 import os 
 import sys
-sys.path.insert(1, sys.argv[1])
+import getpass
+password = None 
+
+if __name__ == '__main__':
+	sys.path.insert(1, sys.argv[1])
+	password = sys.argv[2]
+else:
+	password = getpass.getpass("Please enter sudo password: ")
+
 
 
 import threading
@@ -20,7 +28,7 @@ from vegvisir.manager import Manager
 from quart import Quart,websocket,request,send_file
 
 from quart_cors import route_cors
-import getpass
+
 import threading 
 import asyncio
 import uuid
@@ -54,7 +62,7 @@ running_test_last_status = ""
 SocketWatcherEnabled = False
 connected_sockets = set()
 
-password = sys.argv[2]
+
 loop = None
 
 
