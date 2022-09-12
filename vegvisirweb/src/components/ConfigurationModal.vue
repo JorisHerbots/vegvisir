@@ -19,6 +19,17 @@
             </div>
             <!-- Modal body -->
             <div class="p-6 space-y-1">
+
+          <div v-if="showError">
+            <div id="alert" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-40" role="alert">
+              <strong class="font-bold">Error</strong>
+              <span class="block sm:inline ml-4">{{errorMessage}}</span>
+              <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                <svg @click="showError = false;" class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+              </span>
+            </div>
+          </div>
+
                 <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">
 
                   <div v-if="'env' in ActiveImplementation">
@@ -95,10 +106,49 @@ export default {
     CanBeModified: false
   },
 
-  data: () => ({}),
+  data: () => ({
+    showError: false,
+    errorMessage: String
+  }),
   methods: {
     Accept() {
-      this.$emit("accept", true);
+      if (!this.CheckErrors())
+        this.$emit("accept", true);
+    },
+    CheckErrors() {
+      if (!this.CanBeModified) {
+        return false;
+      }
+
+      for (let item in this.ActiveImplementation["env"]) {
+
+        item = this.ActiveImplementation["env"][item];
+        if (item.hasOwnProperty("type")) {
+          // dropdown 
+          if (item.type == "dropdown") {
+            // User can't do anything wrong
+          }
+          if (item.type == "") {
+            // Assume input can't be empty
+            if (item.value === "") {
+              //error
+              this.errorMessage = "Value of configurable property " + item.name + " can't be empty!";
+              this.showError = true;
+              return true;
+            }
+          }
+        }
+        else {
+          if (item.value == "") {
+            //error
+              this.errorMessage = "Value of configurable property " + item.name + " can't be empty!";
+              this.showError = true;
+              return true;
+          }          
+        }
+      }
+
+      return false;
     }
   },
   mounted(this: ComponentPublicInstance): void {
