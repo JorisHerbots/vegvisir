@@ -1,8 +1,4 @@
-<script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import ImplementationCard from './components/ImplementationCard.vue'
-import ImplementationList from './components/ImplementationList.vue'
-</script>
+
 
 <template>
   <!-- <header> -->
@@ -28,6 +24,9 @@ import ImplementationList from './components/ImplementationList.vue'
         <a href="#" class="inline-block text-sm px-4 py-2 leading-none border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white mt-4 lg:mt-0">Download</a>
       </div> -->
     </div>
+    <button @click="showShutdown = true;" class="bg-transparent bg-red-500 font-semibold text-white py-2 px-4 border border-red-500 hover:border-transparent rounded">
+      Shutdown
+    </button>
   </nav>
 
   <!-- <ImplementationList :listItems="listItemsTest"></ImplementationList> -->
@@ -44,27 +43,53 @@ import ImplementationList from './components/ImplementationList.vue'
       </nav>
     </div> -->
   <!-- </header> -->
-
+  <div v-if="showShutdown">
+  <ShutdownConfirmModal @cancel="showShutdown = false;" @shutdown="shutdown" ></ShutdownConfirmModal>
+  </div>
   <RouterView />
+
+
 </template>
 
 
 <script lang="ts">
+import axios from 'axios';
+import { ref, watch } from 'vue';
+import { RouterLink, RouterView } from 'vue-router'
+import ImplementationCard from './components/ImplementationCard.vue'
+import ImplementationList from './components/ImplementationList.vue'
+import ShutdownConfirmModal from './components/ShutdownConfirmModal.vue'
+
 export default {
-  computed: {
-    listItemsTest() {
+  components: {
+      ShutdownConfirmModal
+  },
+  setup() {
+    const showShutdown = ref<Boolean>(false);
 
-      let test = {Name: "Chrome", Description: "Version 92"};
-      let test2 = {Name: "Chromium", Description: "Version 94"}
+    return { showShutdown}
 
-      console.log("test");
-
-      return [test, test2,test, test2,test, test2,test, test2,test, test2,test, test2,test, test2,test, test2,test, test2,test, test2,test, test2]
-
+  },
+  methods: {
+    shutdown() {
+      axios({
+          url: "http://127.0.0.1:5000/Shutdown",
+          method: "GET"
+        })   
+        .then(response => {
+              console.log(response);
+        })
+        .catch(error => {
+          console.log(error);
+        }) 
     }
+  },
+  computed: {
+  },
+  data: () => ({
+  }),
+  created() {
   }
-
-
 }
 
 </script>

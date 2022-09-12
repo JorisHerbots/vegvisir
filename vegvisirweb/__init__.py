@@ -3,14 +3,6 @@ import sys
 import getpass
 password = None 
 
-if __name__ == '__main__':
-	sys.path.insert(1, sys.argv[1])
-	password = sys.argv[2]
-else:
-	password = getpass.getpass("Please enter sudo password: ")
-
-
-
 import threading
 from typing import List
 from zipfile import ZipFile
@@ -43,6 +35,9 @@ from vegvisir.docker_manager import *
 from vegvisirweb.websocketqueue import WebSocketQueue, MessageSendWorker, MessageParser
 from vegvisir.implementation_manager import *
 from vegvisir.filesystem_handler import *
+from multiprocessing import Process, Value
+
+
 
 
 app = Quart(__name__)
@@ -62,9 +57,10 @@ running_test_last_status = ""
 SocketWatcherEnabled = False
 connected_sockets = set()
 
-
+stop_threads =  False
 loop = None
 
+server = None
 
 sqlite_connection = sqlite3.connect("vegvisir.db")
 sqlite_cursor = sqlite_connection.cursor()
@@ -264,6 +260,7 @@ def imagesets_get_loaded():
 # discards the data 
 async def websocket_consumer():
 	global tests
+	global password
 
 	while True:
 		data = await websocket.receive()
@@ -449,8 +446,20 @@ async def websocket_consumer():
 
 			await add_message_to_queue(web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))		
 
-			 
-		
+		if message_type == "password_set":
+			print("lol")
+			password = message
+			await add_message_to_queue(web_socket_queue, "password_set_status", "set")
+
+		if message_type == "password_is_set":
+			if password != None:
+				await add_message_to_queue(web_socket_queue, "password_set_status", "set")
+			else:
+				await add_message_to_queue(web_socket_queue, "password_set_status", "notset")			
+
+
+    
+
 def collect_websockets(func):
 	@wraps(func)
 	async def wrapper(*args, **kwargs):
@@ -530,7 +539,7 @@ async def log_listing(req_path):
 	return files
 
 
-def run_tests_thread():
+def run_tests_thread(stop_thread):
 	global busy_manager
 	global tests
 	global manager_queue
@@ -540,6 +549,8 @@ def run_tests_thread():
 	sqlite_cursor_worker_thread = sqlite_connection_worker_thread.cursor()
 
 	while True:
+		if stop_thread():
+			return
 		if len(manager_queue) == 0:
 			busy_manager == None
 			time.sleep(3)
@@ -555,7 +566,7 @@ def run_tests_thread():
 				sqlite_cursor_worker_thread.execute('UPDATE tests SET status = "running", json = :json WHERE id = :id', {"id": busy_manager._id, "json": json.dumps(tests[busy_manager._id])})
 				sqlite_connection_worker_thread.commit()
 
-				log_dirs = busy_manager.run_tests()
+				log_dirs = busy_manager.run_tests(stop_thread)
 
 				tests[busy_manager._id]["status"] = "done"
 				tests[busy_manager._id]["log_dirs"] = log_dirs
@@ -578,7 +589,7 @@ async def lifespan():
 	loop.create_task(web_socket_queue.watch_queue_and_notify_workers())
 	#loop.create_task(import_test_reproduceable("./tests_import_export/kkkkkkkkkkkkkkkk.zip"))
 
-th = threading.Thread(target=run_tests_thread)
+th = threading.Thread(target=run_tests_thread, args=[lambda: stop_threads])
 th.start()
 
 # returns all the filenames in the provided directory except for any hidden files (for example .gitignore is not included)
@@ -724,6 +735,22 @@ async def run_test_internal(request_form):
 
 	return ""
 
+@app.route("/Shutdown", methods=['GET'])
+@route_cors()
+def graceful_shutdown():
+	global stop_threads
+	global server
+	global th
+	global loop
 
-if __name__ == '__main__':
-	app.run()
+	print("shutting down")
+
+	stop_threads = True
+	th.join()
+	exit(0)
+
+	return json.dumps(["Shutting down"])
+
+
+
+

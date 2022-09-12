@@ -241,7 +241,7 @@ class Manager:
 
 
 	# Runs all tests for all active clients, shapers, servers and test case permutations
-	def run_tests(self):
+	def run_tests(self, stop_thread):
 		self._max_progress = len(self._active_clients) * len(self._active_servers) * len(self._active_shapers) * len(self._active_testcases)
 		self._add_to_message_queue("progress_update", "0 / " + str(self._max_progress))
 		
@@ -251,6 +251,9 @@ class Manager:
 			for shaper in self._active_shapers:
 				for client in self._active_clients:
 					for test_case in self._active_testcases:
+						if stop_thread():
+							return log_dirs
+
 						runner = Runner(self.sudo_password)
 						runner.name = self.name
 						result = runner.run_test(client, shaper, server, test_case)

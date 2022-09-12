@@ -133,6 +133,12 @@ class MessageParser():
         "implementations_update": "IMU",
         "implementations_testcases_request": "ITR",
         "implementations_testcases_update": "ITU",
+
+
+        # Password
+        "password_set": "PSA",
+        "password_is_set": "ISP",
+        "password_set_status": "PSS"
     }
 
     # Used to convert headers to messagetypes

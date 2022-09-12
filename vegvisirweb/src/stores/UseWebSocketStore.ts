@@ -42,9 +42,12 @@ export const useWebSocketStore = defineStore('websocket', () => {
       "implementations_request": "IMR",
       "implementations_update": "IMU",
       "implementations_testcases_request": "ITR",
-      "implementations_testcases_update": "ITU"
+      "implementations_testcases_update": "ITU",
 
-
+      // Password
+      "password_set": "PSA",
+      "password_is_set": "ISP",
+      "password_set_status": "PSS"
     } 
 
     const header_to_message_type : {[key: string] : string} = inverse_dictionary(message_type_to_header)
