@@ -1,3 +1,4 @@
+SHELL	:= /bin/bash
 VENV	:= .venv
 PYTHONPATH	:= $(dir $(abspath $(lastword $(MAKEFILE_LIST)))):$(shell echo $$PYTHONPATH)
 PYTHON	:= PYTHONPATH=$(PYTHONPATH) $(VENV)/bin/python
