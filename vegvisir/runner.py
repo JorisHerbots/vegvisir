@@ -221,6 +221,7 @@ class Runner:
 		stdout=subprocess.PIPE,
 		stderr=subprocess.STDOUT
 		)
+		print("Vegvisir: %s", proc.stdout.decode("utf-8"))
 
 		return proc 
 
@@ -234,7 +235,7 @@ class Runner:
 	def run_additional_containers(self, testcase, params):
 
 		# Only do something if additional containers list is not empty 
-		if testcase.additional_containers:
+		if testcase.additional_containers():
 			containers = " ".join(testcase.additional_containers())
 
 			cmd = (
