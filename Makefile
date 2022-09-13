@@ -5,7 +5,7 @@ PYTHON	:= PYTHONPATH=$(PYTHONPATH) $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
 WORKING_DIRECTORY = $(shell pwd)
 
-web:  $(VENV)/bin/activate npm-install
+web:  $(VENV)/bin/activate npm-install env-files
 	@echo "Building frontend"
 	@(  source $(VENV)/bin/activate;\
 		cd vegvisirweb; npm run --silent build-only &> '/dev/null';)
@@ -26,14 +26,14 @@ web:  $(VENV)/bin/activate npm-install
 
 
 
-web-dev: $(VENV)/bin/activate npm-install
+web-dev: $(VENV)/bin/activate npm-install env-files
 	@echo "Running frontend"
 	@(  source $(VENV)/bin/activate;\
 		cd vegvisirweb; npm run --silent dev 2> '/dev/null' | head -n 4;) &
 	@echo "Running backend"
 	@( \
 		source $(VENV)/bin/activate;\
-		QUART_APP=vegvisirweb QUART_ENV=development quart run &> '/dev/null';\
+		QUART_APP=vegvisirweb QUART_ENV=development quart run;\
 	) 
 
 run: $(VENV)/bin/activate
@@ -52,3 +52,8 @@ clean:
 	python3 -Bc "import pathlib; [p.rmdir() for p in pathlib.Path('.').rglob('__pycache__')]"
 	rm -rf $(VENV)
 	rm -rf logs/*
+
+env-files:
+	@touch server.env
+	@touch shaper.env 
+	@touch client.env
