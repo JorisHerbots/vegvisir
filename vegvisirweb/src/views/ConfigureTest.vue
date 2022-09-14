@@ -192,7 +192,7 @@ export default {
         this.AddActive(this.testsStore.test.configuration.clients, this.implementationsStore.availableClients[Id]);
       if (this.implementationsStore.availableShapers[Id] !== undefined)
         this.AddActive(this.testsStore.test.configuration.shapers, this.implementationsStore.availableShapers[Id]);
-      if (this.implementationsStore.availableServconsters[Id] !== undefined)
+      if (this.implementationsStore.availableServers[Id] !== undefined)
         this.AddActive(this.testsStore.test.configuration.servers, this.implementationsStore.availableServers[Id]);
       if (this.implementationsStore.availableTestcases[Id] !== undefined)
         this.AddActive(this.testsStore.test.configuration.testcases, this.implementationsStore.availableTestcases[Id]);
