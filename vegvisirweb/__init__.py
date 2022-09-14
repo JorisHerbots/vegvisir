@@ -166,7 +166,7 @@ async def run_test():
 
 	id = str(uuid.uuid1())
 
-	manager = Manager(password, id, manager_add_to_test_queue_callback)
+	manager = Manager(password, id, update_test_status)
 	
 	request_form = await request.get_json()
 
@@ -205,9 +205,6 @@ async def run_test():
 	return ""
 
 
-
-def manager_add_to_test_queue_callback(message_type, message):
-	add_message_to_queue_sync(web_socket_queue, message_type, message)
 
 # Route to get tests 
 @app.route("/GetTests")
@@ -447,9 +444,10 @@ async def websocket_consumer():
 			await add_message_to_queue(web_socket_queue, "imagesets_update_loaded", json.dumps(loaded_imagesets))		
 
 		if message_type == "password_set":
-			print("lol")
 			password = message
 			await add_message_to_queue(web_socket_queue, "password_set_status", "set")
+
+			finish_running_tests()
 
 		if message_type == "password_is_set":
 			if password != None:
@@ -539,6 +537,81 @@ async def log_listing(req_path):
 	return files
 
 
+def update_test_status(id, status):
+	global tests 
+	global loop 
+	global web_socket_queue
+
+	sqlite_connection_worker_thread = sqlite3.connect("vegvisir.db")
+	sqlite_cursor_worker_thread = sqlite_connection_worker_thread.cursor()
+
+	test_json = tests[id]
+	test_json["progress"] = status
+
+	sqlite_cursor_worker_thread.execute('UPDATE tests SET status = "running", json = :json WHERE id = :id', {"id": id, "json": json.dumps(test_json)})
+	sqlite_connection_worker_thread.commit()
+	
+	add_message_to_queue_sync(web_socket_queue, "progress_update", status)
+
+# Given a status "x / y" as string
+# return the number x as an integer
+def get_current_progress_from_status(status):
+	progress = int(status.split("/")[0].replace(" ", ""))
+	return progress
+
+# Given a status "x / y" as string
+# return the number y as an integer
+def get_max_progress_from_status(status):
+	progress = int(status.split("/")[1].replace(" ", ""))
+	return progress
+
+# Finish any tests that are still in the database as "running"
+def finish_running_tests():
+	global manager_queue
+	global password 
+	global tests
+
+	while (password == None):
+		time.sleep(1)
+
+	sqlite_connection_worker_thread = sqlite3.connect("vegvisir.db")
+	sqlite_cursor_worker_thread = sqlite_connection_worker_thread.cursor()
+
+	response = sqlite_cursor_worker_thread.execute('SELECT json FROM tests WHERE status = "running"')
+	running_tests = response.fetchall()
+
+	for running_test in running_tests:
+		running_test_json = running_test[0]
+
+		running_test_json = json.loads(running_test_json)
+
+		progress = get_current_progress_from_status(running_test_json["progress"])
+
+		manager = Manager(password, running_test_json["id"], update_test_status)
+
+		for client in running_test_json["configuration"]["clients"]:
+			manager.add_active_implementation(client)
+
+		for shaper in running_test_json["configuration"]["shapers"]:
+			manager.add_active_implementation(shaper)
+
+		for server in running_test_json["configuration"]["servers"]:
+			manager.add_active_implementation(server)
+
+		for testcase in running_test_json["configuration"]["testcases"]:
+			manager.add_active_testcase(testcase)
+
+		manager.name = running_test_json["name"]
+		manager.previous_run_progress = progress 
+
+
+		tests[running_test_json["id"]] = running_test_json
+		manager_queue.append(manager)
+
+	sqlite_connection_worker_thread.commit()
+
+
+
 def run_tests_thread(stop_thread):
 	global busy_manager
 	global tests
@@ -567,15 +640,23 @@ def run_tests_thread(stop_thread):
 				sqlite_connection_worker_thread.commit()
 
 				log_dirs = busy_manager.run_tests(stop_thread)
-
-				tests[busy_manager._id]["status"] = "done"
 				tests[busy_manager._id]["log_dirs"] = log_dirs
+
+				if get_current_progress_from_status(tests[busy_manager._id]["progress"]) == get_max_progress_from_status(tests[busy_manager._id]["progress"]):
+					tests[busy_manager._id]["status"] = "done"
+
+					sqlite_cursor_worker_thread.execute('UPDATE tests SET status = "done", json= :json WHERE id = :id', {"id": busy_manager._id, "json": json.dumps(tests[busy_manager._id])})
+					sqlite_connection_worker_thread.commit()
+
+				else:
+					sqlite_cursor_worker_thread.execute('UPDATE tests SET status = "running", json= :json WHERE id = :id', {"id": busy_manager._id, "json": json.dumps(tests[busy_manager._id])})
+					sqlite_connection_worker_thread.commit()			
+
 
 				if loop != None:
 					asyncio.run_coroutine_threadsafe(add_message_to_queue(web_socket_queue, "update_test", json.dumps(tests[busy_manager._id])), loop=loop)
 
-				sqlite_cursor_worker_thread.execute('UPDATE tests SET status = "done", json= :json WHERE id = :id', {"id": busy_manager._id, "json": json.dumps(tests[busy_manager._id])})
-				sqlite_connection_worker_thread.commit()
+
 				
 			except Exception as e:
 				print(e)
@@ -591,6 +672,7 @@ async def lifespan():
 
 th = threading.Thread(target=run_tests_thread, args=[lambda: stop_threads])
 th.start()
+
 
 # returns all the filenames in the provided directory except for any hidden files (for example .gitignore is not included)
 # param:
@@ -699,7 +781,7 @@ async def run_test_internal(request_form):
 
 	id = str(uuid.uuid1())
 
-	manager = Manager(password, id, manager_add_to_test_queue_callback)
+	manager = Manager(password, id, update_test_status)
 
 	for client in request_form["configuration"]["clients"]:
 		manager.add_active_implementation(client)

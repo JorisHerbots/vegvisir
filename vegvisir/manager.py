@@ -39,6 +39,8 @@ class Manager:
 	_max_progress = 0
 	name = ""
 
+	previous_run_progress = 0
+
 	sudo_password = ""
 
 	def __init__(self, sudo_password, id, progress_status_queue=None):
@@ -243,7 +245,7 @@ class Manager:
 	# Runs all tests for all active clients, shapers, servers and test case permutations
 	def run_tests(self, stop_thread):
 		self._max_progress = len(self._active_clients) * len(self._active_servers) * len(self._active_shapers) * len(self._active_testcases)
-		self._add_to_message_queue("progress_update", "0 / " + str(self._max_progress))
+		self._add_to_message_queue(self._id, str(self.previous_run_progress) + " / " + str(self._max_progress))
 		
 		log_dirs = []
 
@@ -251,6 +253,10 @@ class Manager:
 			for shaper in self._active_shapers:
 				for client in self._active_clients:
 					for test_case in self._active_testcases:
+						if self.previous_run_progress > self._progress:
+							self._progress += 1
+							continue 
+
 						if stop_thread():
 							return log_dirs
 
@@ -262,7 +268,7 @@ class Manager:
 
 						self._progress += 1
 
-						self._add_to_message_queue("progress_update", str(self._progress) + " / " + str(self._max_progress))
+						self._add_to_message_queue(self._id, str(self._progress) + " / " + str(self._max_progress))
 						
 
 
