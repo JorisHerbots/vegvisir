@@ -196,7 +196,7 @@ export default {
 
 
       this.testsStore.test = temp
-      this.$router.push({ path: '/configure' })
+      this.$router.push({ path: '/configure_test' })
     },
     ModalAccept() {
       this.ModalVisible = false;
