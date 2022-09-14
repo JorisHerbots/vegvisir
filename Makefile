@@ -5,7 +5,7 @@ PYTHON	:= PYTHONPATH=$(PYTHONPATH) $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
 WORKING_DIRECTORY = $(shell pwd)
 
-web:  $(VENV)/bin/activate npm-install env-files
+web:  $(VENV)/bin/activate install-docker-containers npm-install env-files
 	@echo "Building frontend"
 	@(  source $(VENV)/bin/activate;\
 		cd vegvisirweb; npm run --silent build-only &> '/dev/null';)
@@ -26,7 +26,7 @@ web:  $(VENV)/bin/activate npm-install env-files
 
 
 
-web-dev: $(VENV)/bin/activate npm-install env-files
+web-dev: $(VENV)/bin/activate install-docker-containers npm-install env-files
 	@echo "Running frontend"
 	@(  source $(VENV)/bin/activate;\
 		cd vegvisirweb; npm run --silent dev 2> '/dev/null' | head -n 4;) &
@@ -57,3 +57,6 @@ env-files:
 	@touch server.env
 	@touch shaper.env 
 	@touch client.env
+
+install-docker-containers:
+	@./install_containers.sh > '/dev/null';
