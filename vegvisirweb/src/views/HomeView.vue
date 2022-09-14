@@ -9,7 +9,7 @@
   
   <div v-if="!passwordStore.password_is_set" class="content-center text-xl text-center font-bold w-screen mb-32 ">
     Vegvisir needs your sudo password to work, please enter it <br>
-  <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded m-4 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500 z-1" v-model="password" default="" type="password" id="inline-full-name" placeholder="password">
+  <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded m-4 py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-teal-500 z-1" v-model="password" type="password" id="inline-full-name" placeholder="password">
     
     <button @click="sendPassword" class=" mt-4 mb-8 bbg-transparent hover:bg-teal-500 text-teal-500 font-semibold hover:text-white py-2 px-4 border border-teal-500 hover:border-transparent rounded">
         Submit
@@ -94,6 +94,7 @@ export default {
     }),
    created() {
     axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
+    this.password = ""
   },
   methods: {
     sendPassword() {
