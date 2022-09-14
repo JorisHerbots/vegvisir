@@ -49,6 +49,8 @@ import TestCaseList from '@/components/TestCaseList.vue';
 import TestConfigurationModal from '@/components/TestConfigurationModal.vue';
 import { useTestsStore } from '@/stores/UseTestsStore.ts';
 import { useImplementationsStore } from '@/stores/UseImplementationsStore';
+import { usePasswordStore } from '@/stores/UsePasswordStore';
+
 
 export default {
   components: {
@@ -78,11 +80,12 @@ export default {
    setup () {
     const testsStore = useTestsStore();
     const implementationsStore = useImplementationsStore();
+    const passwordStore = usePasswordStore();
 
     implementationsStore.requestImplementationsUpdate();
     implementationsStore.requestTestcasesUpdate();
 
-    return {testsStore, implementationsStore}
+    return {testsStore, implementationsStore, passwordStore}
    },
    created() {
 
@@ -189,7 +192,7 @@ export default {
         this.AddActive(this.testsStore.test.configuration.clients, this.implementationsStore.availableClients[Id]);
       if (this.implementationsStore.availableShapers[Id] !== undefined)
         this.AddActive(this.testsStore.test.configuration.shapers, this.implementationsStore.availableShapers[Id]);
-      if (this.implementationsStore.availableServers[Id] !== undefined)
+      if (this.implementationsStore.availableServconsters[Id] !== undefined)
         this.AddActive(this.testsStore.test.configuration.servers, this.implementationsStore.availableServers[Id]);
       if (this.implementationsStore.availableTestcases[Id] !== undefined)
         this.AddActive(this.testsStore.test.configuration.testcases, this.implementationsStore.availableTestcases[Id]);
@@ -215,6 +218,12 @@ export default {
       this.AddModalVisisble = false;      
     },
     CheckError() {
+      if (!this.passwordStore.password_is_set)
+      {
+        this.errorMessage = "Please fill in and submit your sudo password on the home page"
+        this.showError = true;
+        return true;
+      }
       if (this.testsStore.test.name === "" || !("name" in this.testsStore.test)) {
         this.errorMessage = "Please fill in a name"
         this.showError = true;
