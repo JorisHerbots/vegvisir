@@ -61,7 +61,7 @@
     </div>
 
     <div v-if='ActiveTab === "Logs"'>
-      <ViewLogs></ViewLogs>
+      <ViewLogs :changeToUpdateActive="updateNumberForViewLogs"></ViewLogs>
 
       <!-- <div v-for="(client_item, client_key, client_index) in testsStore.test.configuration.clients" :key="client_key">
         <div v-for="(shaper_item, shaper_key, shaper_index) in testsStore.test.configuration.shapers" :key="shaper_key">
@@ -136,6 +136,7 @@ import TestCaseList from '@/components/TestCaseList.vue';
 import TestConfigurationModal from '@/components/TestConfigurationModal.vue';
 import ViewLogs from '../components/ViewLogs.vue';
 import { useWebSocketStore } from '@/stores/UseWebSocketStore';
+import { ref, watch } from 'vue';
 
 export default {
   components: {
@@ -153,10 +154,38 @@ export default {
     const testsStore = useTestsStore();
     let Tabs = ["Logs", "Configuration", "All log files", "Imagesets"];
     let ActiveTab = "Logs";
+    const updateNumberForViewLogs = ref<Number>(0);
 
-    testsStore.getAllLogFiles(testsStore.test.id);
-    testsStore.requestNecessaryImagesets(testsStore.test.id);
-    return {testsStore, Tabs, ActiveTab}
+
+    if (!("id" in testsStore.test)) {
+      console.log("nooo")
+      let url : URL = new URL(window.location);
+      let parameter : string = url.searchParams.get("id");
+      testsStore.test.id = parameter;
+
+      axios({
+        url: "http://127.0.0.1:5000/GetTests",
+        /*params: deviceID,*/
+        method: "GET"
+      })
+      .then(response => {
+        console.info(response.data)
+        testsStore.tests = response.data;
+        testsStore.test = testsStore.tests[parameter];
+        testsStore.getAllLogFiles(testsStore.test.id);
+        testsStore.requestNecessaryImagesets(testsStore.test.id);
+        updateNumberForViewLogs.value = updateNumberForViewLogs.value + 1;
+   })
+      .catch(error => { 
+        console.log(error)
+      });
+
+    }
+    else {
+      testsStore.getAllLogFiles(testsStore.test.id);
+      testsStore.requestNecessaryImagesets(testsStore.test.id);
+    }
+    return {testsStore, Tabs, ActiveTab, updateNumberForViewLogs}
   },
   data: () => ({
     ActiveTests: [],
@@ -168,11 +197,12 @@ export default {
     TestModalVisible: false,
     ActiveImplementation: {},
     ActiveTestCase: {},
-    AllLogFilesSearch: ""
+    AllLogFilesSearch: "",
     }),
 
    created() {
     axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
+    console.log(this.$route.query.id);
   },
   methods: {
     GoToURL(path) {
