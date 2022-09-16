@@ -29,7 +29,7 @@ web:  $(VENV)/bin/activate install-docker-containers npm-install env-files
 web-dev: $(VENV)/bin/activate install-docker-containers npm-install env-files
 	@echo "Running frontend"
 	@(  source $(VENV)/bin/activate;\
-		cd vegvisirweb; npm run --silent dev 2> '/dev/null' | head -n 4;) &
+		cd vegvisirweb; npm run --silent dev) &
 	@echo "Running backend"
 	@( \
 		source $(VENV)/bin/activate;\
@@ -59,4 +59,5 @@ env-files:
 	@touch client.env
 
 install-docker-containers:
-	@./install_containers.sh > '/dev/null';
+	@echo "building containers, this may take a while on first make"
+	@./install_containers.sh;
