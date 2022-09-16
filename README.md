@@ -1,58 +1,95 @@
-# vegvisir
+# Welcome to Vegvisir!
 
-![draft](imgs/draft.jpg)
+Vegvisir is a network performance testing utility designed for QUIC and HTTP/3, 
 
-- [Implementation Matrix](https://docs.google.com/spreadsheets/d/1w53XAfaft0BckMvXn0oTrg_6QA2nxHa_DKNJEtBHkXo): QUIC implementations and their supported features
+# quick start guide:
 
-## TODO
+This guide should contain all you need to get up and running.
 
-- [ ] Show iperf and own throughput test results, compare with shaper settings, show warning if error is greater than given percentage
-- [ ] Network options:	
-  - [x] ns-3
-    - [x] interop tests
-  - [x] tc-netem
-    - [x] akamai
-    - [x] manual (tc commands)
-  - [ ] Mininet
-  - [ ] realistic
-    - [ ] server ip
-- [ ] fully automate
-- [x] chrome binaries to run client
-  - directory with all clients
-  - use AUR to find way to check for versions
-- [ ] ns3 log if working?
-- [ ] escalate root privileges correctly? 
-- [x] use local domain name instead of IP address
-- [x] version control for servers
-- [x] wipe client cache
-- [ ] dynamic frontend, hide entries from deselected sets
-- [x] no end time for client
-- [x] testcase:
-  - [x] timeout: start timeout thread, busy wait, join on thread
-    - [x] on time, something that checks time until max
-    - [x] on file existence, watcher for file
-- [ ] export gui settings
-- [x] result view tool
-  - ![results ui](imgs/results_ui.jpg)
-  - [x] filter on 'json/qlog', 'pcap', 'other'
-  - [x] send multiple files to viewer
-  - [x] download instead of open
-- [x] tests parameters
-- [x] replace ns3 with tc-netem
-- [x] improve logging.debug prefixes
+## Prerequisites
 
-### Based upon
+- Docker  (tested on version 20.10.18) and Docker Compose (2.10.2)
+	- make sure your user is in the docker usergroup (the output of "groups $USER" should contain docker)
+	- do not use a snap version of docker (we tested this and it does not work, due to snaps sandbox we cannot access /tmp)
+- Ethtool (tested on version 5.19)
+- Python 3, Python 3 PIP and Python 3 virtual environments (tested on version 3.10.7)
+- Node.js (tested on v18.9.0, confirmed not working on v12)
 
-- [Network Simulator for QUIC benchmarking](https://github.com/marten-seemann/quic-network-simulator)
-- [Interop Test Runner](https://github.com/marten-seemann/quic-interop-runner)
-- [Speeder](https://speeder.edm.uhasselt.be/)
+### Arch
+For Arch linux you should be able to just install all the prerequisites using the default package manager (pacman) 
 
-### Datasets
+### Ubuntu 
 
-- [akamai cell emulation](https://github.com/akamai/cell-emulation-util/blob/master/cellular_emulation.sh)
+For Ubuntu we have a script that automatically installs all the prerequisites, this was tested on a clean Ubuntu 22.04.1 LTS install. The "special cases" compared to Arch are the following:
 
-### Commands
+- Install apt version of Docker and Docker Compse (as snap gives issues due to its sandbox)
+- Install a nodejs version that is more recent than the one provided by apt
+- install pyhostman globally for sudo
 
-- install custom containers: `./install_containers.sh`
-- update docker images: `docker images | grep -v ^REPO | sed 's/ \+/:/g' | cut -d: -f1,2 | xargs -L1 docker pull`
-- google chrome: `google-chrome-unstable --origin-to-force-quic-on=193.167.100.100:443 --enable-experimental-web-platform-features --autoplay-policy=no-user-gesture-required --ignore-certificate-errors-spki-list=rVO69QdPatcs3YYnqxO7ccVD8iz1rOp0dSIAt7vNiGc= --log-net-log=/vegvisir/net-log.json https://193.167.100.100:443`
+## Running 
+
+git clone TODOURL
+cd vegvisir
+make 
+
+Please note that the first build can take a while as it automatically installs some included docker images
+
+# Terminology
+Throughout Vegvisir we use the following terms:
+
+- Implementation: a client, shaper or server
+- Client: a HTTP/3 client; for example, native applications or Docker containers
+- Shaper: a network shaper such as tc-netem or [quic-network-simulator](https://github.com/marten-seemann/quic-network-simulator) (based on the ns-3 network simulator)
+- Server: a HTTP/3 server such as the quic version of nginx and aioquic
+- Testcase: a test scenario, for example "open a page with x seconds and close it again after x seconds" 
+- Test: A combination of 1 or more clients, shapers, servers and testcases. When a test runs it automatically tests all the permutations of these 4. 
+
+# Extensible
+Vegvisir is open source and designed to be extensible, it is possible to add your own implementations and testcases. 
+
+# Implementations
+
+Implementations can be native applications such as Google Chrome running on the host or can be docker containers/images that contain the implementation. 
+
+Docker implementations have the advantage that they are easy to re-use and share. For example if you create a new, compatible docker image for a new server you can easily share it with other Vegvisir users. Another power of Vegvisir is the ability to share tests in a reproducible manner.
+
+
+## Your own implementation 
+
+It is possible to create and share your own implementations, these can be novel clients, shapers or servers or you can create add an existing one to Vegvisir. 
+
+### Creating your own implementation
+
+### Sharing your own implementation
+
+
+# Testcases
+
+
+## Your own testcase
+It is possible to create your own testcases, these do require writing python code which allows you to check 
+
+### Creating your own testcase
+
+### Sharing your own testcase 
+
+
+# Development
+
+For development (with verbose output) you can use "make web-dev" instead of "make". 
+
+## Frontend
+The frontend of Vegvisir is made using Vue and using Pinia for stores. 
+It can be found inside the vegvisirweb folder. 
+
+## Backend
+The backend of Vegvisir is made using Python 3 (and Quart for serving the backend).
+It can be found inside the vegvisir folder.
+
+
+# Vegvisir
+A **_vegvísir_** (Icelandic for 'sign post, wayfinder') is an Icelandic magical stave intended to help the bearer find their way through rough weather.
+
+"if this sign is carried, one will never lose one's way in storms or bad weather, even when the way is not known" 
+
+Source: [Wikipedia](https://en.wikipedia.org/wiki/Vegv%C3%ADsir) 
