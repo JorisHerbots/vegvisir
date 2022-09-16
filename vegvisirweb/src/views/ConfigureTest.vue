@@ -22,10 +22,10 @@
     <button @click="RunClicked()" class="absolute bg-transparent mt-4 right-4 z-1 bg-green-500 font-semibold text-white py-2 px-4 border border-transparent rounded">
         Run test
     </button>
-
+<!-- 
     <button @click="ExportClicked()" class="absolute bg-transparent mt-4 right-64 z-1 bg-green-500 font-semibold text-white py-2 px-4 border border-transparent rounded">
         Export
-    </button>
+    </button> -->
     <div id="ImplementationsView" class="m-4">
     <ImplementationList @AddClicked="ShowAddClientScreen('client')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" listname="clients" :listItems="testsStore.test.configuration.clients" :CanBeModified="true"></ImplementationList>
     <ImplementationList @AddClicked="ShowAddClientScreen('shaper')" @CardClicked="ImplementationOptions" @CardRemoveClicked="RemoveActiveImplementation" class="test mr-4" listname="shapers" :listItems="testsStore.test.configuration.shapers" :CanBeModified="true"></ImplementationList>
