@@ -112,6 +112,9 @@ class MessageParser():
         "test_request_necessary_imagesets": "TRN",
         "test_update_necessary_imagesets": "TUN",
         "export_test_reproducable": "ETR",
+        "import_test_reproducable": "ITE",
+        "get_all_importable_tests": "GAI",
+        "update_all_importable_tests": "UAI",
 
         # Imageset related 
         "imagesets_request_available": "IRA",

@@ -22,7 +22,10 @@ export const useWebSocketStore = defineStore('websocket', () => {
       "test_request_necessary_imagesets": "TRN",
       "test_update_necessary_imagesets": "TUN",
       "export_test_reproducable": "ETR",
-  
+      "get_all_importable_tests": "GAI",
+      "import_test_reproducable": "ITE",
+      "update_all_importable_tests": "UAI",
+
       // Imageset related 
       "imagesets_request_available": "IRA",
       "imagesets_request_loaded": "IRL",

@@ -43,6 +43,7 @@ from multiprocessing import Process, Value
 app = Quart(__name__)
 
 IMAGESETS_IMPORT_EXPORT_DIRECTORY = "./imagesets_import_export"
+TESTS_IMPORT_EXPORT_DIRECTORY = "./tests_import_export"
 IMPLEMENTATIONS_JSON = "implementations.json"
 TESTCASES_JSON = "testcases.json"
 
@@ -455,8 +456,18 @@ async def websocket_consumer():
 				await add_message_to_queue(web_socket_queue, "password_set_status", "set")
 			else:
 				await add_message_to_queue(web_socket_queue, "password_set_status", "notset")			
+		
+		if message_type == "import_test_reproducable":
 
+			path = os.path.join(TESTS_IMPORT_EXPORT_DIRECTORY, message) 
 
+			await import_test_reproduceable(path)
+
+		if message_type == "get_all_importable_tests":
+			filenames = await get_filenames_from_directory(TESTS_IMPORT_EXPORT_DIRECTORY)
+			print(filenames)
+
+			await add_message_to_queue(web_socket_queue, "update_all_importable_tests", json.dumps(filenames))
     
 
 def collect_websockets(func):

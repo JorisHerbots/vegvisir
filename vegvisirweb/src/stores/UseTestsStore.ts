@@ -32,9 +32,9 @@ export const useTestsStore = defineStore('tests', () => {
   const changed = ref<boolean>(false);
   const websocketStore = useWebSocketStore();
   const necessary_imagesets = ref<string[]>([]);
+  const importable_test_names = ref<string[]>([]);
   
 
-  
   axios({
     url: "http://127.0.0.1:5000/GetTests",
     /*params: deviceID,*/
@@ -78,6 +78,12 @@ export const useTestsStore = defineStore('tests', () => {
       if (header == websocketStore.message_type_to_header["test_update_necessary_imagesets"]) {
         necessary_imagesets.value = JSON.parse(message)
       }
+
+      if (header == websocketStore.message_type_to_header["update_all_importable_tests"]) {
+        importable_test_names.value = JSON.parse(message);
+        console.log(importable_test_names.value)
+      }
+
   
   
     }.bind(this));
@@ -104,7 +110,14 @@ export const useTestsStore = defineStore('tests', () => {
       websocketStore.sendOnWebSocket(websocketStore.message_type_to_header["test_request_necessary_imagesets"] + " : " + testId.toString())
     }
 
+    function getAllImportableTests() {
+      websocketStore.sendOnWebSocket(websocketStore.message_type_to_header["get_all_importable_tests"] + " : ")
+    }
 
-  return { tests, test, log_files, status, changed, necessary_imagesets, removeTest, getAllLogFiles, getAllLogFilesInFolder, requestRunningTestStatusUpdate, requestNecessaryImagesets}
+    function importTestReproducable(filename : string) {
+      websocketStore.sendOnWebSocket(websocketStore.message_type_to_header["import_test_reproducable"] + " : " + filename)
+    }
+
+  return { tests, test, log_files, status, changed, necessary_imagesets, importable_test_names, removeTest, getAllLogFiles, getAllLogFilesInFolder, requestRunningTestStatusUpdate, requestNecessaryImagesets, getAllImportableTests, importTestReproducable}
 
 })

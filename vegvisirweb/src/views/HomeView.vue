@@ -1,8 +1,9 @@
-<script setup lang="ts">
-</script>
-
 <template>
   <main>
+
+    <ImportTestModal v-if="importModalVisible" @close="importModalVisible = false"></ImportTestModal>
+
+
       <div class="text-center text-5xl font-medium mt-8 mb-32">
         Welcome to Vegvisir!
       </div>
@@ -39,7 +40,7 @@
 
       <div class="text-center text-xl font-medium mt-8 flex-1">
         <div class="text-3xl">Would you like to import and reproduce a test? <br></div>
-        <button @click="" class=" mt-4 mb-8 bbg-transparent hover:bg-teal-500 text-teal-500 font-semibold hover:text-white py-2 px-4 border border-teal-500 hover:border-transparent rounded">
+        <button @click="importModalVisible = true" class=" mt-4 mb-8 bbg-transparent hover:bg-teal-500 text-teal-500 font-semibold hover:text-white py-2 px-4 border border-teal-500 hover:border-transparent rounded">
             Import Test
         </button>
 
@@ -77,17 +78,21 @@
 <script lang="ts">
 import axios from 'axios';
 import { usePasswordStore }  from '@/stores/UsePasswordStore.ts';
+import { ref, watch } from 'vue';
+import ImportTestModal from '@/components/ImportTestModal.vue';
 
 export default {
   components: {
+    ImportTestModal
 },
   props: {
     
   },
   setup() {
     const passwordStore = usePasswordStore();
+    const importModalVisible = ref<Boolean>(false);
 
-    return { passwordStore }
+    return { passwordStore, importModalVisible }
   },
   data: () => ({
     password: String
