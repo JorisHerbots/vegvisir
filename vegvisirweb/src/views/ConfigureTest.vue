@@ -123,10 +123,10 @@ export default {
           method: "POST"
         })   
         .then(response => {
-              console.log(response);
+          this.$router.push({ path: '/view_test', query: {id: response.data} })
         })
         .catch(error => {
-          console.log(error);
+          console.debug(error);
         })
 
       this.showError = false;

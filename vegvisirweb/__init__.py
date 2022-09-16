@@ -202,7 +202,7 @@ async def run_test():
 
 	await add_message_to_queue(web_socket_queue, "add_test", json.dumps(dictionary))
 
-	return ""
+	return id
 
 
 
@@ -273,9 +273,10 @@ async def websocket_consumer():
 				
 				# convert to python dictionary
 				test =  json.loads(test)
-
-				for log_dir in test["log_dirs"]:
-					filenames.extend(await get_filepaths_from_directory(log_dir))
+				
+				if "log_dirs" in test:
+					for log_dir in test["log_dirs"]:
+						filenames.extend(await get_filepaths_from_directory(log_dir))
 			except Exception as e:
 				print(e)
 				print(traceback.format_exc())

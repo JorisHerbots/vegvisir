@@ -59,6 +59,12 @@ export const useTestsStore = defineStore('tests', () => {
       if (header === "ADD" || header === "UPD") {
         let object = JSON.parse(message)
         tests.value[object.id] = object
+        
+        if ("id" in test.value && object.id === test.value.id) {
+          test.value = object;
+          log_files.value = test.log_dirs
+          getAllLogFiles(object.id)
+        }
       }
 
       if (header === "PRO") {

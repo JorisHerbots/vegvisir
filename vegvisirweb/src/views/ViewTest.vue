@@ -61,7 +61,7 @@
     </div>
 
     <div v-if='ActiveTab === "Logs"'>
-      <ViewLogs :changeToUpdateActive="updateNumberForViewLogs"></ViewLogs>
+      <ViewLogs></ViewLogs>
 
       <!-- <div v-for="(client_item, client_key, client_index) in testsStore.test.configuration.clients" :key="client_key">
         <div v-for="(shaper_item, shaper_key, shaper_index) in testsStore.test.configuration.shapers" :key="shaper_key">
@@ -108,7 +108,6 @@
       </ul>
     </div>
 
-
 <!--  
 
   <div class="w-96">
@@ -154,13 +153,13 @@ export default {
     const testsStore = useTestsStore();
     let Tabs = ["Logs", "Configuration", "All log files", "Imagesets"];
     let ActiveTab = "Logs";
-    const updateNumberForViewLogs = ref<Number>(0);
 
-
-    if (!("id" in testsStore.test)) {
-      console.log("nooo")
-      let url : URL = new URL(window.location);
-      let parameter : string = url.searchParams.get("id");
+    let url : URL = new URL(window.location);
+    let parameter : string = url.searchParams.get("id");
+    
+    // If no id in testsStore.test: we reloaded the page
+    // If testsStore.test.id !== parameter, the URL requests a different test than is currently in the testsStore
+    if (!("id" in testsStore.test) || testsStore.test.id !== parameter) {
       testsStore.test.id = parameter;
 
       axios({
@@ -174,7 +173,6 @@ export default {
         testsStore.test = testsStore.tests[parameter];
         testsStore.getAllLogFiles(testsStore.test.id);
         testsStore.requestNecessaryImagesets(testsStore.test.id);
-        updateNumberForViewLogs.value = updateNumberForViewLogs.value + 1;
    })
       .catch(error => { 
         console.log(error)
@@ -185,7 +183,7 @@ export default {
       testsStore.getAllLogFiles(testsStore.test.id);
       testsStore.requestNecessaryImagesets(testsStore.test.id);
     }
-    return {testsStore, Tabs, ActiveTab, updateNumberForViewLogs}
+    return {testsStore, Tabs, ActiveTab}
   },
   data: () => ({
     ActiveTests: [],
@@ -269,7 +267,6 @@ export default {
   computed: {
 
     filteredList() {
-      console.log(this.testsStore.log_files)
       return this.testsStore.log_files.filter(path => {
         return path.toLowerCase().includes(this.AllLogFilesSearch.toLowerCase())
       })
