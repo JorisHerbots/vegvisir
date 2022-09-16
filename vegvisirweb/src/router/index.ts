@@ -41,6 +41,14 @@ const router = createRouter({
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/ConfigureDocker.vue')
+    },
+    {
+      path: '/shutting_down',
+      name: 'shutting_down',
+      // route level code-splitting
+      // this generates a separate chunk (About.[hash].js) for this route
+      // which is lazy-loaded when the route is visited.
+      component: () => import('../views/ShuttingDown.vue')
     }
     //
   ]

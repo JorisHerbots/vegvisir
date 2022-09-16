@@ -77,10 +77,12 @@ export default {
           method: "GET"
         })   
         .then(response => {
-              console.log(response);
+          this.$router.push({ path: '/shutting_down' })
+          this.showShutdown = false
         })
         .catch(error => {
-          console.log(error);
+          this.$router.push({ path: '/shutting_down' })
+          this.showShutdown = false
         }) 
     }
   },
