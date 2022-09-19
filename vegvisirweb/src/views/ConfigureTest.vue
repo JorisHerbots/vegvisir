@@ -229,7 +229,6 @@ export default {
         this.showError = true;
         return true;
       }
-      console.log("euuuh")
       for (let item in this.testsStore.test.configuration) {
         console.log(item)
         if (this.testsStore.test.configuration[item].length == 0)
