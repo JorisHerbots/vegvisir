@@ -3,6 +3,8 @@ PYTHONPATH	:= $(dir $(abspath $(lastword $(MAKEFILE_LIST)))):$(shell echo $$PYTH
 PYTHON	:= PYTHONPATH=$(PYTHONPATH) $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
 
+setup: $(VENV)/bin/activate 
+
 web: $(VENV)/bin/activate
 	( \
 		source $(VENV)/bin/activate; \
