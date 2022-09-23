@@ -158,12 +158,12 @@ class Runner:
 	def _scan_image_repos(self):
 		self._image_sets = []
 		proc = subprocess.run(
-			"docker images | awk '{print $1, $2}'",
+			"docker images | awk '(NR>1) {print $1, $2}'",
 			shell=True,
 			stdout=subprocess.PIPE,
 			stderr=subprocess.STDOUT
 		)
-		local_images = proc.stdout.decode('utf-8').replace(' ', ':').split('\n')[1:]
+		local_images = proc.stdout.decode('utf-8').strip().replace(' ', ':').split('\n')
 		for img in local_images:
 			repo = get_repo_from_image(img)
 			if repo in self._image_repos:
