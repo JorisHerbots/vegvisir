@@ -49,12 +49,7 @@ class Runner:
 	_save_files: bool = False
 	_log_dir: str = ""
 
-	def __init__(
-		self,
-		sudo_password: str = "",
-		debug: bool = False,
-		save_files: bool = False
-	):
+	def __init__(self, sudo_password: str = "", debug: bool = False, save_files: bool = False, implementations_file_path: str = None):
 		self._sudo_password = sudo_password
 		self._debug = debug
 		self._save_files = save_files
@@ -68,6 +63,9 @@ class Runner:
 			console.setLevel(logging.INFO)
 		self._logger.addHandler(console)
 
+		if implementations_file_path:
+			self.load_implementations_from_file(implementations_file_path)
+
 		for t in TESTCASES:
 			tw = TestCaseWrapper()
 			tw.testcase = t()
@@ -79,81 +77,142 @@ class Runner:
 	def set_sudo_password(self, sudo_password: str):
 		self._sudo_password = sudo_password
 
-	def set_implementations_from_file(self, file: str):
-		self._read_implementations_file(file)
-
-	def set_implementations(self, implementations):
-		logging.debug("Vegvisir: Loading implementations:")
-		
-		for name in implementations:
-			attrs = implementations[name]
-
-			active = False
-			if "active" in attrs:
-				active = attrs["active"]
-
-			env = []
-			if "env" in attrs:
-				env = attrs["env"]
-
-			roles = []
-			for role in attrs["role"]:
-				if role == "client":
-					roles.append(Role.CLIENT)
-					client_settings = attrs["client"]
-					impl = None
-					if client_settings["type"] == Type.DOCKER.value:
-						impl = Docker(name, attrs["image"], attrs["url"])
-					elif client_settings["type"] == Type.APPLICATION.value:
-						impl = Application(name, client_settings["command"], attrs["url"])
-						if "setup" in client_settings:
-							for cmd in client_settings["setup"]:
-								scmd = Command()
-								scmd.sudo = cmd["sudo"]
-								scmd.replace_tilde = cmd["replace_tilde"]
-								scmd.command = cmd["command"]
-								impl.setup.append(scmd)
-					impl.active = active
-					impl.env_vars = env
-					impl.role = Role.CLIENT
-					self._clients.append(impl)
-
-				elif role == "server":
-					roles.append(Role.SERVER)
-					impl = Docker(name, attrs["image"], attrs["url"])
-					impl.active = active
-					impl.env_vars = env
-					impl.role = Role.SERVER
-					self._servers.append(impl)
-
-				elif role == "shaper":
-					roles.append(Role.SHAPER)
-					impl = Shaper(name, attrs["image"], attrs["url"])
-					impl.scenarios = []
-					if "scenarios" in attrs:
-						for scenario in  attrs["scenarios"]:
-							scen_attrs = attrs["scenarios"][scenario]
-							scen = Scenario(scenario, scen_attrs["arguments"])
-							if "active" in scen_attrs:
-								scen.active = scen_attrs["active"]
-							impl.scenarios.append(scen)
-					impl.active = active
-					impl.env_vars = env
-					impl.role = Role.SHAPER
-					self._shapers.append(impl)
-
-			logging.debug("Vegvisir: \tloaded %s as %s", name, attrs["role"])
-		self._scan_image_repos()
-
-	def _read_implementations_file(self, file: str):
+	def load_implementations_from_file(self, file: str):
+		"""
+		Load client, shaper and server implementations from JSON file
+		Warning: Calling this function will overwrite current list of implementations!
+		"""
 		self._clients = []
 		self._servers = []
 		self._shapers = []
 
-		with open(file) as f:
-			implementations = json.load(f)
+		try:
+			with open(file) as f:
+				implementations = json.load(f)
+			self._load_implementations_from_json(implementations)
+		except json.JSONDecodeError as e:
+			logging.error(f"Failed to decode provided implementations JSON [{file}] | {e}")
 
-		self.set_implementations(implementations)
+	def _load_implementations_from_json(self, implementations):	
+		CLIENTS_KEY = "clients"
+		SERVERS_KEY = "servers"
+		SHAPERS_KEY = "shapers"
+		logging.debug("Vegvisir: Loading implementations:")
+		
+		if not all(key in implementations for key in [CLIENTS_KEY, SERVERS_KEY, SHAPERS_KEY]):
+			logging.error("Loading implementations halted. One or multiple keys are missing in the provided implementations JSON ('clients', 'servers' and/or 'shapers').")
+			return 
+		
+		# Clients
+		for client, configuration in implementations[CLIENTS_KEY].items():
+			if "image" in configuration and "command" in configuration:
+				logging.error(f"Client [{client}] contains both docker and host setup keys. Ignoring entry.")
+			impl = None
+			if "image" in configuration:
+				impl = Docker(client, configuration["image"])
+			if "command" in configuration:
+				impl = Application(client, configuration["command"])
+				if "setup" in configuration:
+					for index, task in enumerate(configuration["setup"]):
+						if "command" not in task:
+							logging.error(f"Task #{index} of client [{client}] does not contain the 'command' entry. Ignoring entry.")						
+						impl.setup.append(Command(task["command"], task.get("sudo_rights", False)))
+			if not impl:
+				logging.error(f"Client [{client}] does not contain an 'image' or 'command' entry. Ignroring entry.")
+				return
+
+			impl.role = Role.CLIENT
+			for arg in configuration.get("arguments", {}):
+				impl.add_argument(arg, True if configuration["arguments"][arg] else False)
+			self._clients.append(impl)
+
+		# Server
+		for server, configuration in implementations[SERVERS_KEY].items():
+			impl = Docker(server, configuration["image"])
+			for arg in configuration.get("arguments", {}):
+				impl.add_argument(arg, True if configuration["arguments"][arg] else False)
+			impl.role = Role.SERVER
+			self._servers.append(impl)
+
+		# Shapers
+		for shaper, configuration in implementations[SHAPERS_KEY].items():
+			SCENARIOS_KEY = "scenarios"
+			if SCENARIOS_KEY not in configuration:
+				logging.error(f"Shaper [{shaper}] does not contain any scenarios. Ignoring entry.")
+				continue
+
+			impl = Shaper(shaper, configuration["image"])
+			for scenario_name, command in configuration[SCENARIOS_KEY].items():
+				impl.scenarios.append(Scenario(scenario_name, command))
+			for arg in configuration.get("arguments", {}):
+				impl.add_argument(arg, True if configuration["arguments"][arg] else False)
+			impl.role = Role.SHAPER
+			self._shapers.append(impl)
+		
+		print(self._clients)
+		print(self._servers)
+		print(self._shapers)
+		for shaper in self._shapers:
+			print(shaper.scenarios)
+	# 	for name in implementations:
+	# 		attrs = implementations[name]
+
+	# 		active = False
+	# 		if "active" in attrs:
+	# 			active = attrs["active"]
+
+	# 		env = []
+	# 		if "env" in attrs:
+	# 			env = attrs["env"]
+
+	# 		roles = []
+	# 		for role in attrs["role"]:
+	# 			if role == "client":
+	# 				roles.append(Role.CLIENT)
+	# 				client_settings = attrs["client"]
+	# 				impl = None
+	# 				if client_settings["type"] == Type.DOCKER.value:
+	# 					impl = Docker(name, attrs["image"], attrs["url"])
+	# 				elif client_settings["type"] == Type.APPLICATION.value:
+	# 					impl = Application(name, client_settings["command"], attrs["url"])
+	# 					if "setup" in client_settings:
+	# 						for cmd in client_settings["setup"]:
+	# 							scmd = Command()
+	# 							scmd.sudo = cmd["sudo"]
+	# 							scmd.replace_tilde = cmd["replace_tilde"]
+	# 							scmd.command = cmd["command"]
+	# 							impl.setup.append(scmd)
+	# 				impl.active = active
+	# 				impl.env_vars = env
+	# 				impl.role = Role.CLIENT
+	# 				self._clients.append(impl)
+
+	# 			elif role == "server":
+	# 				roles.append(Role.SERVER)
+	# 				impl = Docker(name, attrs["image"], attrs["url"])
+	# 				impl.active = active
+	# 				impl.env_vars = env
+	# 				impl.role = Role.SERVER
+	# 				self._servers.append(impl)
+
+	# 			elif role == "shaper":
+	# 				roles.append(Role.SHAPER)
+	# 				impl = Shaper(name, attrs["image"], attrs["url"])
+	# 				impl.scenarios = []
+	# 				if "scenarios" in attrs:
+	# 					for scenario in  attrs["scenarios"]:
+	# 						scen_attrs = attrs["scenarios"][scenario]
+	# 						scen = Scenario(scenario, scen_attrs["arguments"])
+	# 						if "active" in scen_attrs:
+	# 							scen.active = scen_attrs["active"]
+	# 						impl.scenarios.append(scen)
+	# 				impl.active = active
+	# 				impl.env_vars = env
+	# 				impl.role = Role.SHAPER
+	# 				self._shapers.append(impl)
+
+	# 		logging.debug("Vegvisir: \tloaded %s as %s", name, attrs["role"])
+	# 	self._scan_image_repos()
 
 	def _scan_image_repos(self):
 		self._image_sets = []

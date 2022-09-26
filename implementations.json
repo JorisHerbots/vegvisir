@@ -1,247 +1,119 @@
 {
-	"aioquic": {
-		"image": "aiortc/aioquic-qns",
-		"url": "https://github.com/aiortc/aioquic",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"godash": {
-		"image": "vegvisir-containers/godash:latest",
-		"url": "https://github.com/uccmisl/godash",
-		"role": [
-			"client"
-		],
-		"client": {
-			"type": "docker"
+	"clients": {
+		"godash": {
+			"image": "vegvisir-containers/godash:latest",
+			"arguments": {
+				"ABR": false,
+				"CODEC": false,
+				"INIT_BUFFER": false,
+				"MAX_BUFFER": false,
+				"MAX_HEIGHT": false,
+				"STREAM_DURATION": false,
+				"EXP_RATIO": false,
+				"STREAM_SPEED": false
+			}
 		},
-		"env": [
-			"ABR",
-			"CODEC",
-			"INIT_BUFFER",
-			"MAX_BUFFER",
-			"MAX_HEIGHT",
-			"STREAM_DURATION",
-			"EXP_RATIO",
-			"STREAM_SPEED"
-		]
-	},
-	"qns": {
-		"image": "martenseemann/quic-network-simulator",
-		"url": "https://github.com/marten-seemann/quic-network-simulator",
-		"role": [
-			"shaper"
-		],
-		"active": true,
-		"scenarios": {
-			"simple-p2p": {
-				"arguments": "\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\"",
-				"active": true
-			}
-		}
-	},
-	"tc-netem": {
-		"image": "vegvisir-containers/tc-netem",
-		"url": "",
-		"role": [
-			"shaper"
-		],
-		"active": true,
-		"scenarios": {
-			"simple": {
-				"arguments": "\"simple 15 10\"",
-				"active": true
+
+		"chrome": {
+			"arguments": {
+				"DASH_MANIFEST": true
 			},
-			"akamai cellular loss": {
-				"arguments": "\"akamai_cellular_emulation.sh loss_based median 37\"",
-				"active": false
+			"command": "google-chrome-unstable --origin-to-force-quic-on={origin} --enable-experimental-web-platform-features --log-net-log={client_log_dir}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list={cert_fingerprint} https://{origin}/dashjs-qlog-abr/demo/demo.html?autosave=true&video={DASH_MANIFEST}"
+		},
+
+		"firefox-nightly": {
+			"arguments": {
+				"REQUEST_URLS": true
 			},
-			"akamai cellular experience": {
-				"arguments": "\"akamai_cellular_emulation.sh experience_based fair 37\"",
-				"active": false
-			}
-		}
-	},
-	"chrome": {
-		"url": "https://www.google.com/chrome/",
-		"role": [
-			"client"
-		],
-		"client": {
-			"type": "application",
-			"command": "google-chrome-unstable --origin-to-force-quic-on={origin} --enable-experimental-web-platform-features --log-net-log={client_log_dir}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list={cert_fingerprint} https://{origin}/dashjs-qlog-abr/demo/demo.html?autosave=true&video={request_urls}"
-		}
-	},
-	"firefox-nightly": {
-		"url": "https://www.mozilla.org/en-US/firefox/",
-		"role": [
-			"client"
-		],
-		"client": {
-			"type": "application",
-			"command": "firefox-nightly {request_urls}"
-		}
-	},
-	"chrome_unstable_94.0.4595.0": {
-		"url": "https://www.google.com/chrome/",
-		"role": [
-			"client"
-		],
-		"client": {
-			"type": "application",
-			"command": "./applications/chrome-unstable-94.0.4595.0/chrome --origin-to-force-quic-on={origin} --enable-experimental-web-platform-features --log-net-log={client_log_dir}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list={cert_fingerprint} https://{origin}/dashjs-qlog-abr/demo/demo.html?autosave=true&video={request_urls}",
+			"command": "firefox-nightly {REQUEST_URLS}"
+		},
+
+		"google-chrome-unstable": {
+			"arguments": {
+				"DASH_MANIFEST": true
+			},
+			"command": "./applications/chrome-unstable-94.0.4595.0/chrome --origin-to-force-quic-on={origin} --enable-experimental-web-platform-features --log-net-log={client_log_dir}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list={cert_fingerprint} https://{origin}/dashjs-qlog-abr/demo/demo.html?autosave=true&video={DASH_MANIFEST}",
 			"setup": [
 				{
-					"sudo": true,
-					"replace_tilde": true,
+					"sudo_rights": true,
 					"command": "rm -r ~/.cache/google-chrome-unstable/"
 				},
 				{
-					"sudo": true,
-					"replace_tilde": true,
+					"sudo_rights": true,
 					"command": "rm -r ~/.cache/google-chrome/"
 				},
 				{
-					"sudo": false,
-					"replace_tilde": true,
+					"sudo_rights": false,
 					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences \"{client_log_dir}\""
 				},
 				{
-					"sudo": false,
-					"replace_tilde": true,
+					"sudo_rights": false,
 					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome-unstable/Default/Preferences \"{client_log_dir}\""
 				}
 			]
 		}
 	},
-	"quic-go": {
-		"image": "martenseemann/quic-go-interop:latest",
-		"url": "https://github.com/lucas-clemente/quic-go",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
+
+	"shapers": {
+		"ns3-quic": {
+			"image": "martenseemann/quic-network-simulator",
+			"scenarios": {
+				"simple-p2p": "\"simple-p2p --delay=15ms --bandwidth=10Mbps --queue=25\""
+			}
+		},
+		"tc-netem": {
+			"image": "vegvisir-containers/tc-netem",
+			"scenarios": {
+				"simple": "\"simple {LATENCY} {THROUGHPUT}\"",
+				"simple-15-10": "\"simple 15 10\"",
+				"cellular-loss-median": "\"akamai_cellular_emulation.sh loss_based median\"",
+				"cellular-experience-fair": "\"akamai_cellular_emulation.sh experience_based fair\""
+			}
 		}
 	},
-	"quicly": {
-		"image": "h2oserver/quicly-interop-runner:latest",
-		"url": "https://github.com/h2o/quicly",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"ngtcp2": {
-		"image": "ghcr.io/ngtcp2/ngtcp2-interop:latest",
-		"url": "https://github.com/ngtcp2/ngtcp2",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"quant": {
-		"image": "ntap/quant:interop",
-		"url": "https://github.com/NTAP/quant",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"mvfst": {
-		"image": "lnicco/mvfst-qns:latest",
-		"url": "https://github.com/facebookincubator/mvfst",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"quiche": {
-		"image": "cloudflare/quiche-qns:latest",
-		"url": "https://github.com/cloudflare/quiche",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"kwik": {
-		"image": "peterdoornbosch/kwik_n_flupke-interop",
-		"url": "https://github.com/ptrd/kwik",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"picoquic": {
-		"image": "privateoctopus/picoquic:latest",
-		"url": "https://github.com/private-octopus/picoquic",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"neqo": {
-		"image": "neqoquic/neqo-qns:latest",
-		"url": "https://github.com/mozilla/neqo",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"nginx": {
-		"image": "nginx/nginx-quic-qns:latest",
-		"url": "https://quic.nginx.org/",
-		"role": [
-			"server"
-		]
-	},
-	"msquic": {
-		"image": "mcr.microsoft.com/msquic/qns:latest",
-		"url": "https://github.com/microsoft/msquic",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"xquic": {
-		"image": "kulsk/xquic:latest",
-		"url": "https://github.com/Kulsk/xquic",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
-		}
-	},
-	"lsquic": {
-		"image": "litespeedtech/lsquic-qir:latest",
-		"url": "https://github.com/litespeedtech/lsquic",
-		"role": [
-			"server"
-		],
-		"client": {
-			"type": "docker"
+
+	"servers": {
+		"aioquic": {
+			"image": "aiortc/aioquic-qns"
+		},
+		"quic-go": {
+			"image": "martenseemann/quic-go-interop:latest"
+		},
+		"quicly": {
+			"image": "h2oserver/quicly-interop-runner:latest"
+		},
+		"ngtcp2": {
+			"image": "ghcr.io/ngtcp2/ngtcp2-interop:latest"
+		},
+		"quant": {
+			"image": "ntap/quant:interop"
+		},
+		"mvfst": {
+			"image": "lnicco/mvfst-qns:latest"
+		},
+		"quiche": {
+			"image": "cloudflare/quiche-qns:latest"
+		},
+		"kwik": {
+			"image": "peterdoornbosch/kwik_n_flupke-interop"
+		},
+		"picoquic": {
+			"image": "privateoctopus/picoquic:latest"
+		},
+		"neqo": {
+			"image": "neqoquic/neqo-qns:latest"
+		},
+		"nginx": {
+			"image": "nginx/nginx-quic-qns:latest"
+		},
+		"msquic": {
+			"image": "mcr.microsoft.com/msquic/qns:latest"
+		},
+		"xquic": {
+			"image": "kulsk/xquic:latest"
+		},
+		"lsquic": {
+			"image": "litespeedtech/lsquic-qir:latest"
 		}
 	}
 }
