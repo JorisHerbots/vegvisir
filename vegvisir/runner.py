@@ -237,7 +237,7 @@ class Runner:
 	def run(self) -> int:
 		self._running = True
 		self._start_time = datetime.now()
-		self._log_dir = "logs/{}/{:%Y-%m-%dT%H%M%S}".format(self._test_label,self._start_time)
+		self._log_dir = "logs/{}/{:%Y-%m-%dT_%H-%M-%S}".format(self._test_label,self._start_time)
 		nr_failed = 0
 
 		#enable ipv6 support
