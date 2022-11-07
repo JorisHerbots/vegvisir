@@ -9,6 +9,9 @@ services:
     tty: true
     volumes:
       - $LOG_PATH_SHAPER:/logs/
+    environment:
+      - WAITFORSERVER=$WAITFORSERVER
+      - SCENARIO=$SCENARIO
     env_file: 
       - shaper.env
     cap_add: 
@@ -35,6 +38,12 @@ services:
       - $WWW:/www:ro
       - $CERTS:/certs:ro
       - $LOG_PATH_SERVER:/logs/
+    environment:
+      - ROLE=server
+      - SSLKEYLOGFILE=/logs/keys.log
+      - QLOGDIR=/logs/qlog/
+      - TESTCASE=${TESTCASE_SERVER:http3}
+      - VERSION=$VERSION
     env_file: 
       - server.env
     depends_on:
@@ -59,7 +68,12 @@ services:
       - $CERTS:/certs:ro
       - $LOG_PATH_CLIENT:/logs/
     environment:
+      - ROLE=client
+      - SSLKEYLOGFILE=/logs/keys.log
+      - QLOGDIR=/logs/qlog/
+      - TESTCASE=${TESTCASE_CLIENT:http3}
       - REQUESTS=$REQUESTS
+      - VERSION=$VERSION
     env_file: 
       client.env
     depends_on:

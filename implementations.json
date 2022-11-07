@@ -2,7 +2,7 @@
 	"clients": {
 		"godash": {
 			"image": "vegvisir-containers/godash:latest",
-			"arguments": {
+			"parameters": {
 				"ABR": false,
 				"CODEC": false,
 				"INIT_BUFFER": false,
@@ -15,42 +15,49 @@
 		},
 
 		"chrome": {
-			"arguments": {
+			"parameters": {
 				"DASH_MANIFEST": true
 			},
-			"command": "google-chrome-unstable --origin-to-force-quic-on={origin} --enable-experimental-web-platform-features --log-net-log={client_log_dir}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list={cert_fingerprint} https://{origin}/dashjs-qlog-abr/demo/demo.html?autosave=true&video={DASH_MANIFEST}"
+			"command": "google-chrome-unstable --origin-to-force-quic-on={ORIGIN} --enable-experimental-web-platform-features --log-net-log={CLIENT_LOG_DIR}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list={CERT_FINGERPRINT} https://{ORIGIN}/dashjs-qlog-abr/demo/demo.html?autosave=true&video={DASH_MANIFEST}"
 		},
 
 		"firefox-nightly": {
-			"arguments": {
-				"REQUEST_URLS": true
+			"parameters": {
+				"REQUESTS": true
 			},
-			"command": "firefox-nightly {REQUEST_URLS}"
+			"command": "firefox-nightly {REQUESTS}"
 		},
 
 		"google-chrome-unstable": {
-			"arguments": {
+			"parameters": {
 				"DASH_MANIFEST": true
 			},
-			"command": "./applications/chrome-unstable-94.0.4595.0/chrome --origin-to-force-quic-on={origin} --enable-experimental-web-platform-features --log-net-log={client_log_dir}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list={cert_fingerprint} https://{origin}/dashjs-qlog-abr/demo/demo.html?autosave=true&video={DASH_MANIFEST}",
+			"command": "./applications/chrome-unstable-94.0.4595.0/chrome --origin-to-force-quic-on={ORIGIN} --enable-experimental-web-platform-features --log-net-log={CLIENT_LOG_DIR}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list={CERT_FINGERPRINT} https://{ORIGIN}/dashjs-qlog-abr/demo/demo.html?autosave=true&video={DASH_MANIFEST}",
 			"setup": [
 				{
-					"sudo_rights": true,
+					"root_required": true,
 					"command": "rm -r ~/.cache/google-chrome-unstable/"
 				},
 				{
-					"sudo_rights": true,
+					"root_required": true,
 					"command": "rm -r ~/.cache/google-chrome/"
 				},
 				{
-					"sudo_rights": false,
+					"root_required": false,
 					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences \"{client_log_dir}\""
 				},
 				{
-					"sudo_rights": false,
+					"root_required": false,
 					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome-unstable/Default/Preferences \"{client_log_dir}\""
 				}
 			]
+		},
+
+		"aioquic": {
+			"image": "aiortc/aioquic-qns",
+			"parameters": {
+				"REQUESTS": true
+			}
 		}
 	},
 
@@ -62,9 +69,12 @@
 			}
 		},
 		"tc-netem": {
-			"image": "vegvisir-containers/tc-netem",
+			"image": "tc-netem",
 			"scenarios": {
-				"simple": "\"simple {LATENCY} {THROUGHPUT}\"",
+				"simple": {
+					"command": "\"simple {LATENCY} {THROUGHPUT}\"",
+					"parameters": ["THROUGHPUT", "LATENCY"]
+				},
 				"simple-15-10": "\"simple 15 10\"",
 				"cellular-loss-median": "\"akamai_cellular_emulation.sh loss_based median\"",
 				"cellular-experience-fair": "\"akamai_cellular_emulation.sh experience_based fair\""
@@ -74,7 +84,8 @@
 
 	"servers": {
 		"aioquic": {
-			"image": "aiortc/aioquic-qns"
+			"image": "aiortc/aioquic-qns",
+			"debug": "aioquic-{EXAMPLE}"
 		},
 		"quic-go": {
 			"image": "martenseemann/quic-go-interop:latest"
