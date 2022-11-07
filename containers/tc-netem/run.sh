@@ -16,6 +16,10 @@ if [[ -n "$WAITFORSERVER" ]]; then
   wait-for-it-quic -t 10s $WAITFORSERVER
 fi
 
+echo "Activating sync mechanism with netcat"
+netcat -l 57832
+echo "Netcat done"
+
 echo "Using scenario:" $SCENARIO
 
 SCENARIONAME=$(echo $SCENARIO | cut -d " " -f1)

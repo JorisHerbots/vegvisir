@@ -15,7 +15,7 @@ RUN cd /wait-for-it-quic && go build .
 FROM ubuntu:20.04
 
 RUN apt-get update && \
-	apt-get install -y net-tools iptables iproute2 tcpdump iputils-ping python && \
+	apt-get install -y net-tools iptables iproute2 tcpdump iputils-ping python netcat && \
 	apt-get clean
 
 COPY --from=builder /wait-for-it-quic/wait-for-it-quic /usr/bin
