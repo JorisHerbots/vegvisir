@@ -27,7 +27,7 @@ class VegvisirException(Exception):
 class VegvisirInvalidImplementationConfigurationException(Exception):
 	pass
 
-class VegvisirInvalidTestConfigurationException(Exception):
+class VegvisirInvalidExperimentConfigurationException(Exception):
 	pass
 
 class VegvisirCommandExecutionException(Exception):
@@ -88,6 +88,9 @@ class Runner:
 		self._sudo_password = sudo_password
 		self._debug = debug
 		# self._save_files = save_files
+
+		self._implementations_config_path = None
+		self._implementations_config_path = None
 
 		self._logger = logging.getLogger()
 		self._logger.setLevel(logging.DEBUG)
@@ -312,17 +315,17 @@ class Runner:
 	# 		logging.debug("Vegvisir: \tloaded %s as %s", name, attrs["role"])
 	# 	self._scan_image_repos()
 
-	def load_test_from_file(self, file_path: str) -> None:
+	def load_experiment_from_file(self, file_path: str) -> None:
 		# TODO jherbots save config to somewhere
 		try:
 			with open(file_path) as f:
 				configuration = json.load(f)
-			self._load_and_validate_test_from_json(configuration)
+			self._load_and_validate_experiment_from_json(configuration)
 			return True
 		except json.JSONDecodeError as e:
-			raise VegvisirInvalidTestConfigurationException(f"Failed to decode test configuration JSON [{file_path}] | {e}")
+			raise VegvisirInvalidExperimentConfigurationException(f"Failed to decode experiment configuration JSON [{file_path}] | {e}")
 
-	def _load_and_validate_test_from_json(self, configuration):
+	def _load_and_validate_experiment_from_json(self, configuration):
 		"""
 		Load and validate is a bad smell, but then again why bother :)
 		"""
@@ -331,51 +334,51 @@ class Runner:
 		SHAPERS_KEY = "shapers"
 
 		if not type(configuration) is dict:
-			raise VegvisirInvalidTestConfigurationException("Configuration is not a valid JSON dictionary.")
+			raise VegvisirInvalidExperimentConfigurationException("Configuration is not a valid JSON dictionary.")
 
 		settings = configuration.get("settings", {})
 
 		playground_mode = settings.get("playground", False)  # Todo implement
 		if not playground_mode and not all(key in configuration for key in [CLIENTS_KEY, SERVERS_KEY, SHAPERS_KEY]):
-			raise VegvisirInvalidTestConfigurationException("Configuration requires 'clients', 'servers' en 'shapers' keys to be set.")
+			raise VegvisirInvalidExperimentConfigurationException("Configuration requires 'clients', 'servers' en 'shapers' keys to be set.")
 		if playground_mode and not SERVERS_KEY in configuration:
-			raise VegvisirInvalidTestConfigurationException("Playground mode requires the 'servers' key to be present.")
+			raise VegvisirInvalidExperimentConfigurationException("Playground mode requires the 'servers' key to be present.")
 
 		def _namecheck_dict(impl_configuration: Dict, impl_entry_index: int, debug_str: str, entries: Dict[str, Endpoint | Shaper]):
 			if "name" not in impl_configuration:
-				raise VegvisirInvalidTestConfigurationException(f"{debug_str.capitalize()} entry #{impl_entry_index} does not contain the 'name' key.")
+				raise VegvisirInvalidExperimentConfigurationException(f"{debug_str.capitalize()} entry #{impl_entry_index} does not contain the 'name' key.")
 			if impl_configuration["name"] not in entries:
-				raise VegvisirInvalidTestConfigurationException(f"{debug_str.capitalize()} [{impl_configuration['name']}] is an unknown {debug_str} implementation.")
+				raise VegvisirInvalidExperimentConfigurationException(f"{debug_str.capitalize()} [{impl_configuration['name']}] is an unknown {debug_str} implementation.")
 
 		def _parametercheck_endpoint(endpoint_obj: Endpoint, endpoint_configuration: Dict, debug_str: str):
 			if len(endpoint_obj.parameters._required_params) > 0 and not endpoint_configuration.get("arguments"):
-				raise VegvisirInvalidTestConfigurationException(f"{debug_str.capitalize()} [{endpoint_configuration['name']}] requires an 'arguments' entry.")
+				raise VegvisirInvalidExperimentConfigurationException(f"{debug_str.capitalize()} [{endpoint_configuration['name']}] requires an 'arguments' entry.")
 			valid_input, missing_required_parameters, invalid_parameters = endpoint_obj.parameters.can_input_fit_arguments(endpoint_configuration.get("arguments", {}).keys() if type(endpoint_configuration.get("arguments")) == dict else [])
 			if not valid_input:
-				raise VegvisirInvalidTestConfigurationException(f"{debug_str.capitalize()} [{endpoint_configuration['name']}] is missing required parameters {missing_required_parameters} | The following arguments were unknown and ignored {invalid_parameters}")
+				raise VegvisirInvalidExperimentConfigurationException(f"{debug_str.capitalize()} [{endpoint_configuration['name']}] is missing required parameters {missing_required_parameters} | The following arguments were unknown and ignored {invalid_parameters}")
 
 		def _scenariocheck_shaper(shaper_configuration: Dict, impl_known_scenarios: Dict[str, Scenario]):
 			if shaper_configuration.get("scenario") is None:
-				raise VegvisirInvalidTestConfigurationException(f"Shaper [{shaper_configuration['name']}] does not contain a 'scenario' entry.")
+				raise VegvisirInvalidExperimentConfigurationException(f"Shaper [{shaper_configuration['name']}] does not contain a 'scenario' entry.")
 			if shaper_configuration["scenario"] not in impl_known_scenarios.keys():
-				raise VegvisirInvalidTestConfigurationException(f"Shaper [{shaper_configuration['name']}] scenario [{shaper_configuration['scenario']}] does not exist in the currently loaded implemenation configuration.")
+				raise VegvisirInvalidExperimentConfigurationException(f"Shaper [{shaper_configuration['name']}] scenario [{shaper_configuration['scenario']}] does not exist in the currently loaded implemenation configuration.")
 			
 			if len(impl_known_scenarios[shaper_configuration["scenario"]].parameters._required_params) > 0:
 				if shaper_configuration.get("arguments") is None or type(shaper_configuration["arguments"]) is not dict:
-					raise VegvisirInvalidTestConfigurationException(f"Shaper [{shaper_configuration['name']}] scenario [{shaper_configuration['scenario']}] requires 'arguments' dictionary.")
+					raise VegvisirInvalidExperimentConfigurationException(f"Shaper [{shaper_configuration['name']}] scenario [{shaper_configuration['scenario']}] requires 'arguments' dictionary.")
 				valid_input, missing_required_parameters, invalid_parameters = impl_known_scenarios[shaper_configuration["scenario"]].parameters.can_input_fit_arguments(shaper_configuration["arguments"].keys() if type(shaper_configuration["arguments"]) == dict else [])
 				if not valid_input:
 					if len(invalid_parameters) > 0:
-						raise VegvisirInvalidTestConfigurationException(f"Shaper [{shaper_configuration['name']}] is missing required parameters {missing_required_parameters} | The following arguments were unknown and ignored {invalid_parameters}")
-					raise VegvisirInvalidTestConfigurationException(f"Shaper [{shaper_configuration['name']}] is missing required parameters {missing_required_parameters}")
+						raise VegvisirInvalidExperimentConfigurationException(f"Shaper [{shaper_configuration['name']}] is missing required parameters {missing_required_parameters} | The following arguments were unknown and ignored {invalid_parameters}")
+					raise VegvisirInvalidExperimentConfigurationException(f"Shaper [{shaper_configuration['name']}] is missing required parameters {missing_required_parameters}")
 
 		def _duplicate_check(name: str, log_name: str | None, entries: Set[str], debug_str: str):
 			if log_name is not None:
 				if log_name in entries:
-					raise VegvisirInvalidTestConfigurationException(f"{debug_str.capitalize()} [{name}] its log name [{log_name}] is not unique.")
+					raise VegvisirInvalidExperimentConfigurationException(f"{debug_str.capitalize()} [{name}] its log name [{log_name}] is not unique.")
 			else:
 				if name in entries:
-					raise VegvisirInvalidTestConfigurationException(f"{debug_str.capitalize()} [{name}] duplicate detected. Please provide a 'log_name' to be able to distinguish.")
+					raise VegvisirInvalidExperimentConfigurationException(f"{debug_str.capitalize()} [{name}] duplicate detected. Please provide a 'log_name' to be able to distinguish.")
 
 
 		duplicate_check = set()
@@ -413,29 +416,29 @@ class Runner:
 		else:
 			self.www_path = os.path.join(os.getcwd(), "www")
 		if not os.path.exists(self.www_path):
-			raise VegvisirInvalidTestConfigurationException(f"WWW path does not exist [{self.www_path}]")
+			raise VegvisirInvalidExperimentConfigurationException(f"WWW path does not exist [{self.www_path}]")
 
 		iterations = settings.get("iterations", 1)
 		if type(iterations) is str and not iterations.isdigit():
-			raise VegvisirInvalidTestConfigurationException("Setting 'iterations' must be > 0.")
+			raise VegvisirInvalidExperimentConfigurationException("Setting 'iterations' must be > 0.")
 		try:
 			self.iterations = int(iterations)
 		except ValueError:
-			raise VegvisirInvalidTestConfigurationException("Setting 'iterations' must be > 0.")
+			raise VegvisirInvalidExperimentConfigurationException("Setting 'iterations' must be > 0.")
 		if self.iterations <= 0:
-			raise VegvisirInvalidTestConfigurationException("Setting 'iterations' must be > 0.")
+			raise VegvisirInvalidExperimentConfigurationException("Setting 'iterations' must be > 0.")
 
 		environment = configuration.get("environment")
 		if environment is None:
-			raise VegvisirInvalidTestConfigurationException("No 'environment' key was found.")
+			raise VegvisirInvalidExperimentConfigurationException("No 'environment' key was found.")
 		environment_name = environment.get("name", environments.default_environment)
 		if environment_name not in environments.available_environments.keys():
-			raise VegvisirInvalidTestConfigurationException(f"Environment [{environment_name}] does not exist. Make sure it is correctly loaded in the __init__ file of the environments module.")
+			raise VegvisirInvalidExperimentConfigurationException(f"Environment [{environment_name}] does not exist. Make sure it is correctly loaded in the __init__ file of the environments module.")
 		self.environment = environments.available_environments[environment_name]()
 				
 		environment_sensors = environment.get("sensors")
 		if environment_sensors is None:
-			raise VegvisirInvalidTestConfigurationException("Environment expects the key 'sensors' to be present.")
+			raise VegvisirInvalidExperimentConfigurationException("Environment expects the key 'sensors' to be present.")
 		for index, sensor in enumerate(environment_sensors):
 			if sensor.get("name") is None:
 				raise VegvisirInvalidImplementationConfigurationException(f"Sensor #{index} has no 'name' key.")
