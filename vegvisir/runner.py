@@ -663,7 +663,7 @@ class Runner:
 						except KeyboardInterrupt:
 							self.environment.forcestop_sensors()
 							self.environment.clean_and_reset_sensors()
-							with open(os.join(log_path_permutation, "crashreport.txt", "w")) as fp:
+							with open(os.path.join(log_path_permutation, "crashreport.txt"), "w") as fp:
 								fp.write("Test aborted by user interaction.")
 							logging.info("CTRL-C test interrupted")
 
