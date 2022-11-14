@@ -21,6 +21,9 @@ from vegvisir.environments.base_environment import BaseEnvironment
 
 from .implementation import DockerImage, Parameters, HostCommand, Endpoint, Scenario, Shaper, VegvisirCommandException
 
+class VegvisirException(Exception):
+	pass
+
 class VegvisirInvalidImplementationConfigurationException(Exception):
 	pass
 
@@ -95,6 +98,10 @@ class Runner:
 			console.setLevel(logging.INFO)
 		self._logger.addHandler(console)
 
+		# Explicit check so we don't keep trigger an auth lock
+		if not self._is_sudo_password_valid():
+			raise VegvisirException("Authentication with sudo failed. Provided password is wrong?")
+
 		if implementations_file_path:
 			self.load_implementations_from_file(implementations_file_path)
 
@@ -118,13 +125,34 @@ class Runner:
 			proc = subprocess.Popen(shlex_command, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		
 		proc_input = self._sudo_password.encode() if "sudo" in command else None
-		try:
+		if proc_input is not None:
 			out, err = proc.communicate(input=proc_input)
-		except subprocess.TimeoutExpired:
-			raise VegvisirCommandExecutionException(f"Timeout triggered for command [{command}]")  # Removed timeout TODO needed?
 		return out, err, proc
-		# logging.debug("Vegvisir: append entry to hosts: %s", out.decode('utf-8'))
-	
+
+	def spawn_parallel_subprocess(self, command: str, root_priviliges: bool = False, shell: bool = False) -> subprocess.Popen:
+		shell = shell == True
+		if root_priviliges:
+			# -Skp makes it so sudo reads input from stdin, invalidates the privileges granted after the command is ran and removes the password prompt
+			# Removing the password prompt and invalidating the sessions removes the complexity of having to check for the password prompt, we know it'll always be there
+			command = "sudo -Skp '' " + command
+		debug_command = command
+		command = shlex.split(command) if shell == False else command
+		proc = subprocess.Popen(command, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		if root_priviliges:
+			try:
+				proc.stdin.write(self._sudo_password.encode())
+			except BrokenPipeError:
+				logging.error(f"Pipe broke before we could provide sudo credentials. No sudo available? [{debug_command}]")
+		return proc
+
+	def spawn_blocking_subprocess(self, command: str, root_priviliges: bool = False, shell: bool = False) -> Tuple[subprocess.Popen, str, str]:
+		proc = self.spawn_parallel_subprocess(command, root_priviliges, shell)
+		out, err = proc.communicate()
+		return proc, out.decode("utf-8"), err.decode("utf-8")
+
+	def _is_sudo_password_valid(self):
+		proc, _, _ = self.spawn_blocking_subprocess("which sudo", True, False)
+		return proc.returncode == 0
 
 	def load_implementations_from_file(self, file: str):
 		"""
@@ -445,7 +473,7 @@ class Runner:
 		"""
 		sudo modprobe ip6table_filter
 		"""
-		out, err, _ = self.spawn_subprocess("sudo -S modprobe ip6table_filter")
+		_, out, err = self.spawn_blocking_subprocess("modprobe ip6table_filter", True, False)
 		# ipv6_proc = subprocess.Popen(
 		# 		["sudo", "-S", "modprobe", "ip6table_filter"],
 		# 		shell=False,
@@ -454,7 +482,7 @@ class Runner:
 		# 		stderr=subprocess.STDOUT
 		# 	)
 		# out, err, _ = ipv6_proc.communicate(self._sudo_password.encode())
-		if (out != b'' and not out.startswith(b'[sudo] password for ')) or not err is None:
+		if out != '' or err is not None:
 			logging.debug("Vegvisir: enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
 	def run(self) -> int:
@@ -476,7 +504,7 @@ class Runner:
 
 					# SETUP
 					if client.type == Endpoint.Type.HOST:
-						out, err, _ = self.spawn_subprocess("sudo -S hostman add 193.167.100.100 server4")
+						_, out, err = self.spawn_blocking_subprocess("hostman add 193.167.100.100 server4")
 						logging.debug("Vegvisir: append entry to hosts: %s", out.decode('utf-8').strip())
 						if err is not None and len(err) > 0:
 							logging.debug("Vegvisir: appending entry to hosts file resulted in error: %s", err)
@@ -550,7 +578,7 @@ class Runner:
 							"LOG_PATH_SERVER=\"" + log_path_server + "\" "
 							"LOG_PATH_SHAPER=\"" + log_path_shaper + "\" "
 
-							"REQUESTS=https://server4/vegvisir_dummy.txt "
+							# "REQUESTS=https://server4/vegvisir_dummy.txt "
 						)
 
 						server_params = server.parameters.hydrate_with_arguments(server_config.get("arguments", {}), {"ROLE": "server", "SSLKEYLOGFILE": "/logs/keys.log", "QLOGDIR": "/logs/qlog/", "TESTCASE": self.environment.get_QIR_compatability_testcase(BaseEnvironment.Perspective.SERVER)})
@@ -573,35 +601,35 @@ class Runner:
 							+ " docker compose up -d "
 							+ containers
 						)
-						self.spawn_subprocess(cmd, True)
+						self.spawn_parallel_subprocess(cmd, False, True)
 
 						# Host applications require some packet rerouting to be able to reach docker containers
 						if self._client_endpoints[client_config["name"]].type == Endpoint.Type.HOST:
-							out, err, _ = self.spawn_subprocess("sudo -S ip route del 193.167.100.0/24")
-							logging.debug("Vegvisir: network setup: %s", out.decode("utf-8"))
+							_, out, err = self.spawn_blocking_subprocess("ip route del 193.167.100.0/24", True, False)
+							logging.debug("Vegvisir: network setup: %s", out)
 							if not err is None:
-								logging.debug("Vegvisir: network error: %s", err.decode("utf-8"))
+								logging.debug("Vegvisir: network error: %s", err)
 
-							out, err, _ = self.spawn_subprocess("sudo -S ip route add 193.167.100.0/24 via 193.167.0.2")
-							logging.debug("Vegvisir: network setup: %s", out.decode("utf-8"))
+							_, out, err = self.spawn_blocking_subprocess("ip route add 193.167.100.0/24 via 193.167.0.2", True, False)
+							logging.debug("Vegvisir: network setup: %s", out)
 							if not err is None:
-								logging.debug("Vegvisir: network error: %s", err.decode("utf-8"))
+								logging.debug("Vegvisir: network error: %s", err)
 
-							out, err, _ = self.spawn_subprocess("sudo -S ./veth-checksum.sh")
-							logging.debug("Vegvisir: network setup: %s", out.decode("utf-8"))
+							_, out, err = self.spawn_blocking_subprocess("./veth-checksum.sh", True, False)
+							logging.debug("Vegvisir: network setup: %s", out)
 							if not err is None:
-								logging.debug("Vegvisir: network error: %s", err.decode("utf-8"))
+								logging.debug("Vegvisir: network error: %s", err)
 
 						# Log kernel/net parameters
-						out, err, _ = self.spawn_subprocess("sudo -S ip address")
-						logging.debug("Vegvisir: net log:\n%s", out.decode("utf-8"))
+						_, out, err = self.spawn_blocking_subprocess("ip address", True, False)
+						logging.debug("Vegvisir: net log:\n%s", out)
 						if not err is None:
-							logging.debug("Vegvisir: net log error: %s", err.decode("utf-8"))
+							logging.debug("Vegvisir: net log error: %s", err)
 
-						out, err, _ = self.spawn_subprocess("sudo -S sysctl -a")
-						logging.debug("Vegvisir: kernel log:\n%s", out.decode("utf-8"))
+						_, out, err = self.spawn_blocking_subprocess("sysctl -a", True, False)
+						logging.debug("Vegvisir: kernel log:\n%s", out)
 						if not err is None:
-							logging.debug("Vegvisir: kernel log error: %s", err.decode("utf-8"))
+							logging.debug("Vegvisir: kernel log error: %s", err)
 
 						# Introduce small delay for server and shaper setup
 						sleep(2)
@@ -620,7 +648,7 @@ class Runner:
 								+ " docker compose up --abort-on-container-exit --timeout 1 "
 								+ "client"
 							)
-							_, _, client_proc = self.spawn_subprocess(client_cmd, True)
+							client_proc = self.spawn_parallel_subprocess(client_cmd, False, True)
 
 						# elif client.type == Endpoint.Type.HOST:
 						# 	client_cmd = client.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls, client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
@@ -635,27 +663,30 @@ class Runner:
 						except KeyboardInterrupt:
 							self.environment.forcestop_sensors()
 							self.environment.clean_and_reset_sensors()
+							with open(os.join(log_path_permutation, "crashreport.txt", "w")) as fp:
+								fp.write("Test aborted by user interaction.")
 							logging.info("CTRL-C test interrupted")
 
 						out, err = client_proc.communicate()
 						logging.debug(out.decode("utf-8"))
 						logging.debug(err.decode("utf-8"))
 						client_proc.terminate()
-						proc = subprocess.run(
-							docker_compose_vars + " docker compose logs -t",
-							shell=True,
-							stdout=subprocess.PIPE,
-							stderr=subprocess.STDOUT
-						)
-						logging.debug("Vegvisir: %s", proc.stdout.decode("utf-8"))
-						# logging.debug("Vegvisir: %s", proc.stderr.decode("utf-8"))
+						# proc = subprocess.run(
+						# 	docker_compose_vars + " docker compose logs --timestamps",
+						# 	shell=True,
+						# 	stdout=subprocess.PIPE,
+						# 	stderr=subprocess.STDOUT
+						# )
+						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps", False, True)
+						logging.debug(out)
+						logging.debug(err)
 
-						out ,err, _ = self.spawn_subprocess(docker_compose_vars + " docker compose down", True) # TODO TEMP
-						logging.debug(out.decode("utf-8"))
+						_, out ,err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose down", False, True) # TODO TEMP
+						logging.debug(out)
 
 					# BREAKDOWN
 					if client.type == Endpoint.Type.HOST:
-						out, err, _ = self.spawn_subprocess("sudo -S hostman remove --names=server4")
+						_, out, err = self.spawn_blocking_subprocess("hostman remove --names=server4")
 						logging.debug("Vegvisir: remove entry from hosts: %s", out.decode('utf-8').strip())
 						if err is not None and len(err) > 0:
 							logging.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
