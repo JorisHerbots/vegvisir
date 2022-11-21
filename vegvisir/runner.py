@@ -15,6 +15,7 @@ import re
 import shutil
 from pathlib import Path
 from vegvisir import environments
+from vegvisir.data import ExperimentPaths
 from vegvisir.environments.base_environment import BaseEnvironment
 
 # from vegvisir.environments.base_environment import BaseEnvironment, TimeoutSensor, WebserverBasic
@@ -70,6 +71,8 @@ class Runner:
 
 
 	def __init__(self, sudo_password: str = "", debug: bool = False, save_files: bool = False, implementations_file_path: str = None):
+		self._path_collection = ExperimentPaths()
+		
 		self._client_endpoints: Dict[str, Endpoint] = {}
 		self._server_endpoints: Dict[str, Endpoint] = {}
 		self._shapers: Dict[str, Shaper] = {}
@@ -78,7 +81,6 @@ class Runner:
 		self._server_configurations: List[Dict] = []
 		self._shaper_configurations: List[Dict] = []
 
-		self.log_dir_root = None
 		self.www_path = None
 
 		self.iterations = 1
@@ -88,9 +90,6 @@ class Runner:
 		self._sudo_password = sudo_password
 		self._debug = debug
 		# self._save_files = save_files
-
-		self._implementations_config_path = None
-		self._implementations_config_path = None
 
 		self._logger = logging.getLogger()
 		self._logger.setLevel(logging.DEBUG)
@@ -157,7 +156,7 @@ class Runner:
 		proc, _, _ = self.spawn_blocking_subprocess("which sudo", True, False)
 		return proc.returncode == 0
 
-	def load_implementations_from_file(self, file: str):
+	def load_implementations_from_file(self, implementations_path: str):
 		"""
 		Load client, shaper and server implementations from JSON file
 		Warning: Calling this function will overwrite current list of implementations!
@@ -167,11 +166,12 @@ class Runner:
 		self._shapers = {}
 
 		try:
-			with open(file) as f:
+			with open(implementations_path) as f:
 				implementations = json.load(f)
 			self._load_implementations_from_json(implementations)
+			self._path_collection.implementations_configuration_file_path = implementations_path
 		except json.JSONDecodeError as e:
-			logging.error(f"Failed to decode provided implementations JSON [{file}] | {e}")
+			logging.error(f"Failed to decode provided implementations JSON [{implementations_path}] | {e}")
 
 	# def _check_implementation_existance(self, name: str, implementation_list: list[Implementation]):
 	# 	"""
@@ -321,7 +321,7 @@ class Runner:
 			with open(file_path) as f:
 				configuration = json.load(f)
 			self._load_and_validate_experiment_from_json(configuration)
-			return True
+			self._path_collection.experiment_configuration_file_path = file_path
 		except json.JSONDecodeError as e:
 			raise VegvisirInvalidExperimentConfigurationException(f"Failed to decode experiment configuration JSON [{file_path}] | {e}")
 
@@ -409,7 +409,7 @@ class Runner:
 			log_dir_root = os.path.abspath(os.path.join(settings["log_dir"], "{}/"))
 		else:
 			log_dir_root = os.path.abspath("logs/{}/")
-		self.log_dir_root = log_dir_root.format(settings.get("label", "_unidentified"))
+		self._path_collection.log_path_root = log_dir_root.format(settings.get("label", "_unidentified"))
 
 		if settings.get("www_dir") is not None:
 			self.www_path = os.path.abspath(settings["www_dir"])
@@ -490,9 +490,8 @@ class Runner:
 
 	def run(self) -> int:
 		vegvisir_start_time = datetime.now()
-		log_path_root = os.path.join(self.log_dir_root, "{:%Y-%m-%dT_%H-%M-%S}".format(vegvisir_start_time))
-		print(log_path_root)
-
+		self._path_collection.log_path_date = os.path.join(self._path_collection.log_path_root, "{:%Y-%m-%dT_%H-%M-%S}".format(vegvisir_start_time))
+		
 		nr_failed = 0
 
 		self._enable_ipv6()
@@ -518,17 +517,17 @@ class Runner:
 			
 						# Paths, we create the folders so we can later bind them as docker volumes for direct logging output
 						# Avoids docker "no space left on device" errors
-						log_path_iteration = os.path.join(log_path_root, f"run_{run_number}/") if self.iterations > 1 else log_path_root
-						log_path_permutation = os.path.join(log_path_iteration, f"{client_config.get('log_name', client_config['name'])}__{shaper_config.get('log_name', shaper_config['name'])}__{server_config.get('log_name', server_config['name'])}")
-						log_path_client = os.path.join(log_path_permutation, 'client')
-						log_path_server = os.path.join(log_path_permutation, 'server')
-						log_path_shaper = os.path.join(log_path_permutation, 'shaper')
-						for log_dir in [log_path_client, log_path_server, log_path_shaper]:
+						self._path_collection.log_path_iteration = os.path.join(self._path_collection.log_path_date, f"run_{run_number}/") if self.iterations > 1 else self._path_collection.log_path_date
+						self._path_collection.log_path_permutation = os.path.join(self._path_collection.log_path_iteration, f"{client_config.get('log_name', client_config['name'])}__{shaper_config.get('log_name', shaper_config['name'])}__{server_config.get('log_name', server_config['name'])}")
+						self._path_collection.log_path_client = os.path.join(self._path_collection.log_path_permutation, 'client')
+						self._path_collection.log_path_server = os.path.join(self._path_collection.log_path_permutation, 'server')
+						self._path_collection.log_path_shaper = os.path.join(self._path_collection.log_path_permutation, 'shaper')
+						for log_dir in [self._path_collection.log_path_client, self._path_collection.log_path_server, self._path_collection.log_path_shaper]:
 							pathlib.Path(log_dir).mkdir(parents=True, exist_ok=True)
-						pathlib.Path(os.path.join(log_path_iteration, "client__shaper__server")).touch()
+						pathlib.Path(os.path.join(self._path_collection.log_path_iteration, "client__shaper__server")).touch()
 
 						# We want all output to be saved to file for later evaluation/debugging
-						log_file = os.path.join(log_path_permutation, "output.txt")
+						log_file = os.path.join(self._path_collection.log_path_permutation, "output.txt")
 						log_handler = logging.FileHandler(log_file)
 						log_handler.setLevel(logging.DEBUG)
 						logging.getLogger().addHandler(log_handler)
@@ -577,9 +576,9 @@ class Runner:
 							"WWW=" + self.www_path + " "
 							"DOWNLOADS=" + tempfile.TemporaryDirectory(dir="/tmp", prefix="vegvisir_downloads_").name + " "  # TODO rework this
 
-							"LOG_PATH_CLIENT=\"" + log_path_client + "\" "
-							"LOG_PATH_SERVER=\"" + log_path_server + "\" "
-							"LOG_PATH_SHAPER=\"" + log_path_shaper + "\" "
+							"LOG_PATH_CLIENT=\"" + self._path_collection.log_path_client + "\" "
+							"LOG_PATH_SERVER=\"" + self._path_collection.log_path_server + "\" "
+							"LOG_PATH_SHAPER=\"" + self._path_collection.log_path_shaper + "\" "
 
 							# "REQUESTS=https://server4/vegvisir_dummy.txt "
 						)
@@ -638,7 +637,18 @@ class Runner:
 						sleep(2)
 						
 						# Setup client
-						client_params = client.parameters.hydrate_with_arguments(client_config.get("arguments", {}), {"ROLE": "client", "SSLKEYLOGFILE": "/logs/keys.log", "QLOGDIR": "/logs/qlog/", "TESTCASE": self.environment.get_QIR_compatability_testcase(BaseEnvironment.Perspective.CLIENT)})
+						client_params = client.parameters.hydrate_with_arguments(client_config.get("arguments", {}), {
+							"ROLE": "client",
+							"SSLKEYLOGFILE": "/logs/keys.log",
+							"QLOGDIR": "/logs/qlog/",
+							"TESTCASE": self.environment.get_QIR_compatability_testcase(BaseEnvironment.Perspective.CLIENT),
+							"LOG_PATH_CLIENT": self._path_collection.log_path_client,
+							"LOG_PATH_SERVER": self._path_collection.log_path_server,
+							"LOG_PATH_SHAPER": self._path_collection.log_path_shaper,
+							"WAITFORSERVER": "server4:443",
+							"CERT_FINGERPRINT": cert_fingerprint,
+							"ORIGIN": "server4:443"
+							})
 						with open("client.env", "w") as fp:
 							Parameters.serialize_to_env_file(client_params, fp)
 						
@@ -660,13 +670,13 @@ class Runner:
 						logging.debug("Vegvisir: running client: %s", client_cmd)
 
 						try:
-							self.environment.start_sensors(client_proc)
+							self.environment.start_sensors(client_proc, self._path_collection)
 							self.environment.waitfor_sensors()
 							self.environment.clean_and_reset_sensors()
 						except KeyboardInterrupt:
 							self.environment.forcestop_sensors()
 							self.environment.clean_and_reset_sensors()
-							with open(os.path.join(log_path_permutation, "crashreport.txt"), "w") as fp:
+							with open(os.path.join(self._path_collection.log_path_permutation, "crashreport.txt"), "w") as fp:
 								fp.write("Test aborted by user interaction.")
 							logging.info("CTRL-C test interrupted")
 

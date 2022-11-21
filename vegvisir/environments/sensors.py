@@ -4,15 +4,20 @@ import subprocess
 import threading
 import time
 
+from watchdog import observers
+from watchdog.events import FileSystemEventHandler
+
+from vegvisir.data import ExperimentPaths
 
 class ABCSensor:
 	def __init__(self) -> None:
 		self.thread: threading.Thread = None
 		self.terminate_sensor = False
 
-	def setup(self, client_process: subprocess.Popen, actuator, sync_semaphore: threading.Thread):
-		self.thread = threading.Thread(target=self.thread_target, args=(client_process, actuator, sync_semaphore,))
+	def setup(self, process_to_monitor: subprocess.Popen, actuator, sync_semaphore: threading.Thread, path_collection: ExperimentPaths):
+		self.thread = threading.Thread(target=self.thread_target, args=(process_to_monitor, actuator, sync_semaphore,))
 		self.terminate_sensor = False
+		self.path_collection = path_collection
 
 	def thread_target(self, client_process: subprocess.Popen, actuator, sync_semaphore: threading.Thread):
 		"""
