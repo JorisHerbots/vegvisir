@@ -49,6 +49,8 @@ class TimeoutSensor(ABCSensor):
 			return
 		sync_semaphore.release()
 		logging.info('TimeoutSensor timeout triggered')
+		if client_process is not None:
+			client_process.terminate()
 		if actuator is not None:
 			actuator()
 
