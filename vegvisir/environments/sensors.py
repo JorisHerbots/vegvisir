@@ -39,15 +39,13 @@ class TimeoutSensor(ABCSensor):
 		sensor_start_time = datetime.now()
 		while (datetime.now() - sensor_start_time).seconds < self.timeout_value and not self.terminate_sensor:
 			if client_process is not None and client_process.poll() is not None:
-				logging.info('TimeoutSensor detected client exit before timeout, halting timer.')
+				logging.info(f'TimeoutSensor detected client exit before timeout, halting timer. Ran for {(datetime.now() - sensor_start_time).seconds} seconds.')
 				sync_semaphore.release()
 				return
-			print(self.terminate_sensor)
 			time.sleep(1)
 
-		print("Fuck")
 		if self.terminate_sensor:
-			logging.info("TimeoutSensor stop request handled")
+			logging.info("TimeoutSensor stop requested")
 			return
 		sync_semaphore.release()
 		logging.info('TimeoutSensor timeout triggered')
