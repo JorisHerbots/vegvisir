@@ -1,6 +1,7 @@
 from enum import Enum
+import re
+import sys
 from typing import Dict, List, TextIO, Tuple
-
 # class Role(Enum):
 # 	CLIENT = 1
 # 	SERVER = 2
@@ -165,12 +166,57 @@ class HostCommand:
 		self.requires_root = root_required
 
 	def serialize_command(self, hydrated_parameters: Dict[str, str]):  # TODO reevaluate
+		# try:
+		# 	return self.command.format(**hydrated_parameters)  # TODO catch key errors
+		# except KeyError as e:
+		# 	raise VegvisirCommandException(f"Command [{self.command}] contains an unknown parameter [{e.args[0]}]")
+		# except TypeError:
+		# 	raise VegvisirCommandException(f"Command [{self.command}] serialized with non-dict type input.")
+		return ArgumentTemplate.substitute(self.command, hydrated_parameters)
+
+class ArgumentTemplate:
+	# pattern = re.compile(r"\$(?:(?:{(?P<parameter>(?:[A-Z]+[A-Z0-9]*))})|(?P<escaped>\${(?:[A-Z]+[A-Z0-9]*)}))")
+	pattern = re.compile(r"\$(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})|(?P<escaped>\$)|(?:(?P<invalid>)))")
+
+	def _sub(template: str, hydrated_parameters: Dict[str, str], visited_nodes=[]):
+		def sub_rule(match_object: re.Match):
+			nonlocal visited_nodes
+			if match_object.group("escaped") is not None:
+				return match_object.group("escaped")
+			if match_object.group("parameter") is not None:
+				param = match_object.group("parameter")
+				if param not in hydrated_parameters:
+					raise VegvisirArgumentException(f"Argument [{template}] references unknown parameter [{param}].")
+				if param in visited_nodes:
+					raise VegvisirArgumentException(f"Cycle detected [{'->'.join([f'${{{node}}}' for node in visited_nodes])}->${{{param}}}]")
+				current_cycle_visited_nodes = list(visited_nodes)  # Each branch requires a copy of the list
+				current_cycle_visited_nodes.append(param)
+				collapsed_arg = ArgumentTemplate._sub(hydrated_parameters[param], hydrated_parameters, current_cycle_visited_nodes)
+				hydrated_parameters[param] = collapsed_arg  # Some memoization can't hurt
+				return collapsed_arg
+			if match_object.group("invalid") is not None:
+				debug_template = template
+				if len(template) > 60:
+					debug_template = template[match_object.start()-30:match_object.start()+30]  # Python does not care about slicing out of bounds
+				error = "Invalid parameter syntax:\n"
+				debug_template = debug_template.replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
+				error += f"\t\"{debug_template}\"\n"
+				replace_offset = debug_template.count("\\n", 0, match_object.start()) + debug_template.count("\\t", 0, match_object.start()) + debug_template.count("\\r", 0, match_object.start())
+				error += "\t" + (" " * (match_object.start() + 1 + replace_offset)) + f"^ Starting point of invalid syntax"
+				raise VegvisirArgumentException(error)
+		return ArgumentTemplate.pattern.sub(sub_rule, template)
+
+	def substitute(template: str, hydrated_parameters: Dict[str, str], override_provided_parameters=False):
+		"""
+		Substitute arguments matched by the pattern regex with their respective contents from the uncollapsed hydrated_parameters
+		hydrated_parameters can contain values which themselve reference arguments, postulating the need for recursive substitution and cycle checking
+		This method will collapse and cycle check the provided hydrated_parameters such that the initial provided template can correctly be substituted 
+		"""
 		try:
-			return self.command.format(**hydrated_parameters)  # TODO catch key errors
-		except KeyError as e:
-			raise VegvisirCommandException(f"Command [{self.command}] contains an unknown parameter [{e.args[0]}]")
-		except TypeError:
-			raise VegvisirCommandException(f"Command [{self.command}] serialized with non-dict type input.")
+			return ArgumentTemplate._sub(template, hydrated_parameters if override_provided_parameters else dict(hydrated_parameters), [])
+		except RecursionError:
+			raise VegvisirArgumentException(f"Argument [{template}] too deeply nested. Max recursion depth of {sys.getrecursionlimit()} has been reached.")
+
 
 class Parameters:
 	_vegvisir_provided_params: List[str] = ["ORIGIN", "CLIENT_LOG_DIR", "CERT_FINGERPRINT", "WAITFORSERVER", "SCENARIO", "ROLE", "TESTCASE", "QLOGDIR", "SSLKEYLOGFILE"]
@@ -197,7 +243,7 @@ class Parameters:
 			raise VegvisirParameterException(f"Parameter list contains system parameters, the following parameters {list(forbidden_params)} are not allowed to be user defined.")
 
 	def hydrate_with_arguments(self, user_params: Dict[str, str], vegvisir_params: Dict[str, str] = {}) -> Dict[str, str]:  # TODO jherbots filter out vegvisir args
-		hydrated_args: Dict[str, str] = {}
+		hydrated_params: Dict[str, str] = {}
 		if user_params is None or not type(user_params) is dict:
 			return  {} # TODO potential silent failure?
 
@@ -207,14 +253,18 @@ class Parameters:
 			raise VegvisirArgumentException("Not all required parameters are provided.")
 		
 		for arg in filtered_args:
-			hydrated_args[arg] = user_params[arg]
+			hydrated_params[arg] = user_params[arg]
 
 		# System provided arguments
 		filtered_args = vegvisir_params.keys() & Parameters._vegvisir_provided_params
 		for arg in filtered_args:
-			hydrated_args[arg] = vegvisir_params[arg]
+			hydrated_params[arg] = vegvisir_params[arg]
 
-		return hydrated_args
+		# Collapse params to one level
+		for (param, arg) in hydrated_params.items():
+			hydrated_params[param] = ArgumentTemplate.substitute(hydrated_params[param], hydrated_params, True)
+
+		return hydrated_params
 
 	def hydrate_with_empty_arguments(self) -> Dict[str, str]:
 		empty_user_args: Dict[str, str] = {arg:"" for arg in self.params}
