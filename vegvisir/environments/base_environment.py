@@ -25,28 +25,28 @@ class BaseEnvironment:
 		
 
 	def __init__(self) -> None:
-		self._QIR_compatability_testcase_client:str = ""  # Undefined QIR behaviour
-		self._QIR_compatability_testcase_server:str = ""  # Undefined QIR behaviour
+		self._QIR_compatibility_testcase_client:str = ""  # Undefined QIR behavior
+		self._QIR_compatibility_testcase_server:str = ""  # Undefined QIR behavior
 		self.scenario:str = ""
 		self.sensors:List[sensors.ABCSensor] = []
 		self.sync_semaphore = None
 
-	def get_QIR_compatability_testcase(self, perspective: Perspective) -> str:
+	def get_QIR_compatibility_testcase(self, perspective: Perspective) -> str:
 		if perspective == BaseEnvironment.Perspective.CLIENT:
-			return self._QIR_compatability_testcase_client
+			return self._QIR_compatibility_testcase_client
 		elif perspective == BaseEnvironment.Perspective.SERVER:
-			return self._QIR_compatability_testcase_server
+			return self._QIR_compatibility_testcase_server
 		return None
 
-	def set_QIR_compatability_testcase(self, testcase: str | Tuple[str, Perspective]) -> None:
+	def set_QIR_compatibility_testcase(self, testcase: str | Tuple[str, Perspective]) -> None:
 		testcase, perspective = testcase if type(testcase) is tuple else (testcase, None)		
 		if perspective == BaseEnvironment.Perspective.CLIENT:
-			self._QIR_compatability_testcase_client = testcase
+			self._QIR_compatibility_testcase_client = testcase
 		elif perspective == BaseEnvironment.Perspective.SERVER:
-			self._QIR_compatability_testcase_client = testcase
+			self._QIR_compatibility_testcase_client = testcase
 		else:
-			self._QIR_compatability_testcase_client = testcase
-			self._QIR_compatability_testcase_server = testcase
+			self._QIR_compatibility_testcase_client = testcase
+			self._QIR_compatibility_testcase_server = testcase
 
 	def generate_cert_chain(self, directory: str, length: int = 1):
 		cmd = "./certs.sh " + directory + " " + str(length)

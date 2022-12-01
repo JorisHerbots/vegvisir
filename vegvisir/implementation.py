@@ -209,7 +209,7 @@ class ArgumentTemplate:
 	def substitute(template: str, hydrated_parameters: Dict[str, str], override_provided_parameters=False):
 		"""
 		Substitute arguments matched by the pattern regex with their respective contents from the uncollapsed hydrated_parameters
-		hydrated_parameters can contain values which themselve reference arguments, postulating the need for recursive substitution and cycle checking
+		hydrated_parameters can contain values which themselves reference arguments, postulating the need for recursive substitution and cycle checking
 		This method will collapse and cycle check the provided hydrated_parameters such that the initial provided template can correctly be substituted 
 		"""
 		try:

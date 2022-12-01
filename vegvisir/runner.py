@@ -131,24 +131,24 @@ class Runner:
 			out, err = proc.communicate(input=proc_input)
 		return out, err, proc
 
-	def spawn_parallel_subprocess(self, command: str, root_priviliges: bool = False, shell: bool = False) -> subprocess.Popen:
+	def spawn_parallel_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> subprocess.Popen:
 		shell = shell == True
-		if root_priviliges:
+		if root_privileges:
 			# -Skp makes it so sudo reads input from stdin, invalidates the privileges granted after the command is ran and removes the password prompt
 			# Removing the password prompt and invalidating the sessions removes the complexity of having to check for the password prompt, we know it'll always be there
 			command = "sudo -Skp '' " + command
 		debug_command = command
 		command = shlex.split(command) if shell == False else command
 		proc = subprocess.Popen(command, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		if root_priviliges:
+		if root_privileges:
 			try:
 				proc.stdin.write(self._sudo_password.encode())
 			except BrokenPipeError:
 				logging.error(f"Pipe broke before we could provide sudo credentials. No sudo available? [{debug_command}]")
 		return proc
 
-	def spawn_blocking_subprocess(self, command: str, root_priviliges: bool = False, shell: bool = False) -> Tuple[subprocess.Popen, str, str]:
-		proc = self.spawn_parallel_subprocess(command, root_priviliges, shell)
+	def spawn_blocking_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> Tuple[subprocess.Popen, str, str]:
+		proc = self.spawn_parallel_subprocess(command, root_privileges, shell)
 		out, err = proc.communicate()
 		return proc, out.decode("utf-8"), err.decode("utf-8")
 
@@ -361,7 +361,7 @@ class Runner:
 			if shaper_configuration.get("scenario") is None:
 				raise VegvisirInvalidExperimentConfigurationException(f"Shaper [{shaper_configuration['name']}] does not contain a 'scenario' entry.")
 			if shaper_configuration["scenario"] not in impl_known_scenarios.keys():
-				raise VegvisirInvalidExperimentConfigurationException(f"Shaper [{shaper_configuration['name']}] scenario [{shaper_configuration['scenario']}] does not exist in the currently loaded implemenation configuration.")
+				raise VegvisirInvalidExperimentConfigurationException(f"Shaper [{shaper_configuration['name']}] scenario [{shaper_configuration['scenario']}] does not exist in the currently loaded implementation configuration.")
 			
 			if len(impl_known_scenarios[shaper_configuration["scenario"]].parameters._required_params) > 0:
 				if shaper_configuration.get("arguments") is None or type(shaper_configuration["arguments"]) is not dict:
@@ -450,7 +450,7 @@ class Runner:
 				del sensor_arguments["name"]
 				self.environment.add_sensor(environments.available_sensors[sensor["name"]](**sensor_arguments))
 			except TypeError as e:
-				raise VegvisirInvalidImplementationConfigurationException(f"Sensor [{sensor['name']}] can not be initialised with the provided arguments. Make sure all required initialisation parameters are provided [f{e}]")
+				raise VegvisirInvalidImplementationConfigurationException(f"Sensor [{sensor['name']}] can not be initialized with the provided arguments. Make sure all required initialization parameters are provided [f{e}]")
 	
 	# def _scan_image_repos(self):
 	# 	self._image_sets = []
@@ -583,7 +583,7 @@ class Runner:
 							# "REQUESTS=https://server4/vegvisir_dummy.txt "
 						)
 
-						server_params = server.parameters.hydrate_with_arguments(server_config.get("arguments", {}), {"ROLE": "server", "SSLKEYLOGFILE": "/logs/keys.log", "QLOGDIR": "/logs/qlog/", "TESTCASE": self.environment.get_QIR_compatability_testcase(BaseEnvironment.Perspective.SERVER)})
+						server_params = server.parameters.hydrate_with_arguments(server_config.get("arguments", {}), {"ROLE": "server", "SSLKEYLOGFILE": "/logs/keys.log", "QLOGDIR": "/logs/qlog/", "TESTCASE": self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER)})
 						# TODO serialize command
 						shaper_params = shaper.scenarios[shaper_config["scenario"]].parameters.hydrate_with_arguments(shaper_config.get("arguments", {}), {"WAITFORSERVER": "server:443", "SCENARIO": shaper.scenarios[shaper_config["scenario"]].command})
 						
@@ -641,7 +641,7 @@ class Runner:
 							"ROLE": "client",
 							"SSLKEYLOGFILE": "/logs/keys.log",
 							"QLOGDIR": "/logs/qlog/",
-							"TESTCASE": self.environment.get_QIR_compatability_testcase(BaseEnvironment.Perspective.CLIENT),
+							"TESTCASE": self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.CLIENT),
 							"LOG_PATH_CLIENT": self._path_collection.log_path_client,
 							"LOG_PATH_SERVER": self._path_collection.log_path_server,
 							"LOG_PATH_SHAPER": self._path_collection.log_path_shaper,
@@ -663,10 +663,9 @@ class Runner:
 							)
 							client_proc = self.spawn_parallel_subprocess(client_cmd, False, True)
 
-						# elif client.type == Endpoint.Type.HOST:
-						# 	client_cmd = client.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls, client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
-						# 	logging.debug("Vegvisir: running client: %s", client_cmd)
-						# 	self.spawn_subprocess(client_cmd)
+						elif client.type == Endpoint.Type.HOST:
+							client_cmd = client.command.serialize_command(client_params)
+							client_proc = self.spawn_parallel_subprocess(client_cmd)
 						logging.debug("Vegvisir: running client: %s", client_cmd)
 
 						try:
