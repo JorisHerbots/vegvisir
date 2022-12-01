@@ -606,8 +606,9 @@ class Runner:
 							+ " docker compose up -d "
 							+ containers
 						)
-						self.spawn_parallel_subprocess(cmd, False, True)
-
+						# self.spawn_parallel_subprocess(cmd, False, True)
+						self.spawn_blocking_subprocess(cmd, False, True) # TODO Test out if this truly fixes the RNETLINK error? This call might be too slow
+						
 						# Host applications require some packet rerouting to be able to reach docker containers
 						if self._client_endpoints[client_config["name"]].type == Endpoint.Type.HOST:
 							logging.debug("Detected local client, rerouting localhost traffic to 193.167.100.0/24 via 193.167.0.2")
