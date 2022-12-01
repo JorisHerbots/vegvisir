@@ -1,7 +1,10 @@
+from dataclasses import fields
 from enum import Enum
 import re
 import sys
 from typing import Dict, List, TextIO, Tuple
+
+from vegvisir.data import VegvisirArguments
 # class Role(Enum):
 # 	CLIENT = 1
 # 	SERVER = 2
@@ -219,7 +222,8 @@ class ArgumentTemplate:
 
 
 class Parameters:
-	_vegvisir_provided_params: List[str] = ["ORIGIN", "CLIENT_LOG_DIR", "CERT_FINGERPRINT", "WAITFORSERVER", "SCENARIO", "ROLE", "TESTCASE", "QLOGDIR", "SSLKEYLOGFILE"]
+	# _vegvisir_provided_params: List[str] = ["ORIGIN", "LOG_PATH_CLIENT", "LOG_PATH_SERVER", "LOG_PATH_SHAPER", "CERT_FINGERPRINT", "WAITFORSERVER", "SCENARIO", "ROLE", "TESTCASE", "QLOGDIR", "SSLKEYLOGFILE"]
+	_vegvisir_provided_params: List[str] = [field.name for field in fields(VegvisirArguments)]
 
 	def __init__(self, parameters: Dict[str, bool] | None = None) -> None:
 		self.params: List[str] = []

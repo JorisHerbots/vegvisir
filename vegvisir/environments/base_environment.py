@@ -6,6 +6,7 @@ import subprocess
 import threading
 import time
 from typing import Tuple
+from vegvisir.data import ExperimentPaths
 from vegvisir.environments import sensors
 
 class VegvisirEnvironmentException(Exception):
@@ -68,7 +69,7 @@ class BaseEnvironment:
 		sensor.sensor_actuator = self.forcestop_sensors
 		self.sensors.append(sensor)
 
-	def start_sensors(self, process_to_monitor = None) -> None:
+	def start_sensors(self, process_to_monitor = None, path_collection: ExperimentPaths = ExperimentPaths()) -> None:
 		if len(self.sensors) == 0:
 			raise VegvisirEnvironmentException("Environment sensorlist empty. Can't comply with start request.")
 
@@ -80,7 +81,7 @@ class BaseEnvironment:
 		self.sync_semaphore = threading.Semaphore(0)
 
 		for sensor in self.sensors:
-			sensor.setup(process_to_monitor , self.forcestop_sensors, self.sync_semaphore)
+			sensor.setup(process_to_monitor, self.forcestop_sensors, self.sync_semaphore, path_collection)
 			sensor.thread.start()
 
 	def forcestop_sensors(self) -> None:

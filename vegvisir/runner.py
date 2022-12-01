@@ -1,4 +1,5 @@
 from curses.ascii import isdigit
+import dataclasses
 from datetime import datetime
 from distutils.command.config import config
 import logging
@@ -15,7 +16,7 @@ import re
 import shutil
 from pathlib import Path
 from vegvisir import environments
-from vegvisir.data import ExperimentPaths
+from vegvisir.data import ExperimentPaths, VegvisirArguments
 from vegvisir.environments.base_environment import BaseEnvironment
 
 # from vegvisir.environments.base_environment import BaseEnvironment, TimeoutSensor, WebserverBasic
@@ -360,6 +361,7 @@ class Runner:
 			if not valid_input:
 				raise VegvisirInvalidExperimentConfigurationException(f"{debug_str.capitalize()} [{endpoint_configuration['name']}] is missing required parameters {missing_required_parameters} | The following arguments were unknown and ignored {invalid_parameters}")
 
+
 		def _scenariocheck_shaper(shaper_configuration: Dict, impl_known_scenarios: Dict[str, Scenario]):
 			if shaper_configuration.get("scenario") is None:
 				raise VegvisirInvalidExperimentConfigurationException(f"Shaper [{shaper_configuration['name']}] does not contain a 'scenario' entry.")
@@ -527,48 +529,35 @@ class Runner:
 						self._path_collection.log_path_shaper = os.path.join(self._path_collection.log_path_permutation, 'shaper')
 						for log_dir in [self._path_collection.log_path_client, self._path_collection.log_path_server, self._path_collection.log_path_shaper]:
 							pathlib.Path(log_dir).mkdir(parents=True, exist_ok=True)
-						pathlib.Path(os.path.join(self._path_collection.log_path_iteration, "client__shaper__server")).touch()
+						pathlib.Path(os.path.join(self._path_collection.log_path_iteration, "client__shaper__server")).touch()						
 
 						# We want all output to be saved to file for later evaluation/debugging
 						log_file = os.path.join(self._path_collection.log_path_permutation, "output.txt")
 						log_handler = logging.FileHandler(log_file)
 						log_handler.setLevel(logging.DEBUG)
 						logging.getLogger().addHandler(log_handler)
-						logging.info("Test output")
-						logging.warning("Test warning")
-						
+
+						vegvisirBaseArguments = VegvisirArguments()
+						vegvisirBaseArguments.LOG_PATH_CLIENT = self._path_collection.log_path_client
+						vegvisirBaseArguments.LOG_PATH_SERVER = self._path_collection.log_path_server
+						vegvisirBaseArguments.LOG_PATH_SHAPER = self._path_collection.log_path_shaper
 
 						client_image = client.image.full if client.type == Endpoint.Type.DOCKER else "none"  # Docker compose v2 requires an image name, can't default to blank string
 
 						cert_path = tempfile.TemporaryDirectory(dir="/tmp", prefix="vegvisir_certs_")
-						self.environment.generate_cert_chain(cert_path.name)
+						vegvisirBaseArguments.CERT_FINGERPRINT = self.environment.generate_cert_chain(cert_path.name)
 
-						requests = client_config.get("REQUESTS", client_config.get("REQUEST_URLS", ""))
+						# TODO pick a better/cleaner spot to do this
+						vegvisirBaseArguments.ORIGIN = "server4"
+						vegvisirBaseArguments.ORIGIN_IPV4 = "server4"
+						vegvisirBaseArguments.ORIGIN_IPV6 = "server6" # TODO hostman this
+						vegvisirBaseArguments.WAITFORSERVER = "server4:443"
+						vegvisirBaseArguments.SSLKEYLOGFILE = "/logs/keys.log"
+						vegvisirBaseArguments.QLOGDIR = "/logs/qlog/"
+						vegvisirBaseArguments.SCENARIO = shaper_config["scenario"]
 
-						# params = (
-						# 	"WAITFORSERVER=server:443 "
-
-						# 	"CLIENT=" + client_image + " "
-						# 	"SERVER=" + server.name + " "
-						# 	"SHAPER=" + shaper.name + " "
-							
-						# 	"TESTCASE_CLIENT=" + hardcoded_environment.QIR_compatability_testcase(Environment.Perspective.CLIENT) + " "
-						# 	"REQUESTS=\"" + requests + "\"" + " "  # TODO jherbots better compatability check here
-
-						# 	"DOWNLOADS=" + tempfile.TemporaryDirectory(dir="/tmp", prefix="vegvisir_downloads_").name + " "  # TODO rework this
-						# 	"TESTCASE_SERVER=" + hardcoded_environment.QIR_compatability_testcase(Environment.Perspective.SERVER) + " "
-						# 	"WWW=" + self.www_path + " "
-						# 	"CERTS=" + cert_path.name + " "
-
-						# 	"SCENARIO=" + shaper.scenarios[shaper_config["scenario"]].command + " "  # TODO parse this with args
-
-						# 	"LOG_PATH_CLIENT=\"" + log_path_client + "\" "
-						# 	"LOG_PATH_SERVER=\"" + log_path_shaper + "\" "
-						# 	"LOG_PATH_SHAPER=\"" + log_path_server + "\" "
-						# )
-						# params = (
-
-						# )
+						vegvisirServerArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="server", TESTCASE=self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER))
+						vegvisirShaperArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="shaper", TESTCASE=self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER))
 
 						docker_compose_vars = (
 							"CLIENT=" + client_image + " "
@@ -582,13 +571,13 @@ class Runner:
 							"LOG_PATH_CLIENT=\"" + self._path_collection.log_path_client + "\" "
 							"LOG_PATH_SERVER=\"" + self._path_collection.log_path_server + "\" "
 							"LOG_PATH_SHAPER=\"" + self._path_collection.log_path_shaper + "\" "
-
-							# "REQUESTS=https://server4/vegvisir_dummy.txt "
 						)
 
-						server_params = server.parameters.hydrate_with_arguments(server_config.get("arguments", {}), {"ROLE": "server", "SSLKEYLOGFILE": "/logs/keys.log", "QLOGDIR": "/logs/qlog/", "TESTCASE": self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER)})
-						# TODO serialize command
-						shaper_params = shaper.scenarios[shaper_config["scenario"]].parameters.hydrate_with_arguments(shaper_config.get("arguments", {}), {"WAITFORSERVER": "server:443", "SCENARIO": shaper.scenarios[shaper_config["scenario"]].command})
+						
+						# server_params = server.parameters.hydrate_with_arguments(server_config.get("arguments", {}), {"ROLE": "server", "SSLKEYLOGFILE": "/logs/keys.log", "QLOGDIR": "/logs/qlog/", "TESTCASE": self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER)})
+						server_params = server.parameters.hydrate_with_arguments(server_config.get("arguments", {}), vegvisirServerArguments.dict())
+						# shaper_params = shaper.scenarios[shaper_config["scenario"]].parameters.hydrate_with_arguments(shaper_config.get("arguments", {}), {"WAITFORSERVER": "server:443", "SCENARIO": shaper.scenarios[shaper_config["scenario"]].command})
+						shaper_params = shaper.scenarios[shaper_config["scenario"]].parameters.hydrate_with_arguments(shaper_config.get("arguments", {}), vegvisirShaperArguments.dict())
 						
 						with open("server.env", "w") as fp:
 							Parameters.serialize_to_env_file(server_params, fp)
@@ -641,20 +630,8 @@ class Runner:
 						sleep(2)
 						
 						# Setup client
-						client_params = client.parameters.hydrate_with_arguments(client_config.get("arguments", {}), {
-							"ROLE": "client",
-							"SSLKEYLOGFILE": "/logs/keys.log",
-							"QLOGDIR": "/logs/qlog/",
-							"TESTCASE": self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.CLIENT),
-							"LOG_PATH_CLIENT": self._path_collection.log_path_client,
-							"LOG_PATH_SERVER": self._path_collection.log_path_server,
-							"LOG_PATH_SHAPER": self._path_collection.log_path_shaper,
-							"WAITFORSERVER": "server4:443",
-							"CERT_FINGERPRINT": cert_fingerprint,
-							"ORIGIN": "server4:443"
-							})
-						with open("client.env", "w") as fp:
-							Parameters.serialize_to_env_file(client_params, fp)
+						vegvisirClientArguments = dataclasses.replace(vegvisirBaseArguments, ROLE = "client", TESTCASE = self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.CLIENT))
+						client_params = client.parameters.hydrate_with_arguments(client_config.get("arguments", {}), vegvisirClientArguments.dict())
 						
 						client_cmd = ""
 						client_proc = None
