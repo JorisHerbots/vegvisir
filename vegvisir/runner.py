@@ -499,21 +499,27 @@ class Runner:
 		for shaper_config in self._shaper_configurations:
 			for server_config in self._server_configurations:
 				for client_config in self._client_configurations:
-					print(f'Running {client_config["name"]} over {shaper_config["name"]} against {server_config["name"]}')
+					logging.info(f'Running {client_config["name"]} over {shaper_config["name"]} against {server_config["name"]}')
 					shaper = self._shapers[shaper_config["name"]]
 					server = self._server_endpoints[server_config["name"]]
 					client = self._client_endpoints[client_config["name"]]
 
 					# SETUP
 					if client.type == Endpoint.Type.HOST:
-						_, out, err = self.spawn_blocking_subprocess("hostman add 193.167.100.100 server4")
-						logging.debug("Vegvisir: append entry to hosts: %s", out.decode('utf-8').strip())
+						_, out, err = self.spawn_blocking_subprocess("hostman add 193.167.100.100 server4", True, False)
+						logging.debug("Vegvisir: append entry to hosts: %s", out.strip())
 						if err is not None and len(err) > 0:
 							logging.debug("Vegvisir: appending entry to hosts file resulted in error: %s", err)
 
 					for run_number in range(0,self.iterations):
 						# self._run_individual_test()
 						start_time = datetime.now()
+						
+						# We want all output to be saved to file for later evaluation/debugging
+						log_file = os.path.join(self._path_collection.log_path_permutation, "output.txt")
+						log_handler = logging.FileHandler(log_file)
+						log_handler.setLevel(logging.DEBUG)
+						logging.getLogger().addHandler(log_handler)
 			
 						# Paths, we create the folders so we can later bind them as docker volumes for direct logging output
 						# Avoids docker "no space left on device" errors
