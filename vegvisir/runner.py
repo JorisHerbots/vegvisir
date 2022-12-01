@@ -34,6 +34,9 @@ class VegvisirInvalidExperimentConfigurationException(Exception):
 class VegvisirCommandExecutionException(Exception):
 	pass
 
+class VegvisirRunFailedException(Exception):
+	pass
+
 class LogFileFormatter(logging.Formatter):
 	def format(self, record):
 		msg = super(LogFileFormatter, self).format(record)
@@ -150,7 +153,7 @@ class Runner:
 	def spawn_blocking_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> Tuple[subprocess.Popen, str, str]:
 		proc = self.spawn_parallel_subprocess(command, root_privileges, shell)
 		out, err = proc.communicate()
-		return proc, out.decode("utf-8"), err.decode("utf-8")
+		return proc, out.decode("utf-8").strip(), err.decode("utf-8").strip()
 
 	def _is_sudo_password_valid(self):
 		proc, _, _ = self.spawn_blocking_subprocess("which sudo", True, False)
@@ -515,12 +518,6 @@ class Runner:
 						# self._run_individual_test()
 						start_time = datetime.now()
 						
-						# We want all output to be saved to file for later evaluation/debugging
-						log_file = os.path.join(self._path_collection.log_path_permutation, "output.txt")
-						log_handler = logging.FileHandler(log_file)
-						log_handler.setLevel(logging.DEBUG)
-						logging.getLogger().addHandler(log_handler)
-			
 						# Paths, we create the folders so we can later bind them as docker volumes for direct logging output
 						# Avoids docker "no space left on device" errors
 						self._path_collection.log_path_iteration = os.path.join(self._path_collection.log_path_date, f"run_{run_number}/") if self.iterations > 1 else self._path_collection.log_path_date
@@ -613,20 +610,20 @@ class Runner:
 
 						# Host applications require some packet rerouting to be able to reach docker containers
 						if self._client_endpoints[client_config["name"]].type == Endpoint.Type.HOST:
+							logging.debug("Detected local client, rerouting localhost traffic to 193.167.100.0/24 via 193.167.0.2")
 							_, out, err = self.spawn_blocking_subprocess("ip route del 193.167.100.0/24", True, False)
-							logging.debug("Vegvisir: network setup: %s", out)
-							if not err is None:
-								logging.debug("Vegvisir: network error: %s", err)
+							if err is not None and len(err) > 0:
+								raise VegvisirRunFailedException(f"Failed to remove route to 193.167.100.0/24 | STDOUT [{out}] | STDERR [{err}]")
+							logging.debug("Removed docker compose route to 193.167.100.0/24")
 
 							_, out, err = self.spawn_blocking_subprocess("ip route add 193.167.100.0/24 via 193.167.0.2", True, False)
-							logging.debug("Vegvisir: network setup: %s", out)
-							if not err is None:
-								logging.debug("Vegvisir: network error: %s", err)
+							if err is not None and len(err) > 0:
+								raise VegvisirRunFailedException(f"Failed to reroute 193.167.100.0/24 via 193.167.0.2 | STDOUT [{out}] | STDERR [{err}]")
+							logging.debug("Rerouted 193.167.100.0/24 via 193.167.0.2")
 
 							_, out, err = self.spawn_blocking_subprocess("./veth-checksum.sh", True, False)
-							logging.debug("Vegvisir: network setup: %s", out)
-							if not err is None:
-								logging.debug("Vegvisir: network error: %s", err)
+							if err is not None and len(err) > 0:
+								raise VegvisirRunFailedException(f"Virtual ethernet device checksum failed | STDOUT [{out}] | STDERR [{err}]")								
 
 						# Log kernel/net parameters
 						_, out, err = self.spawn_blocking_subprocess("ip address", True, False)
