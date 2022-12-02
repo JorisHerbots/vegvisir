@@ -174,27 +174,32 @@ class HostCommand:
 		# except KeyError as e:
 		# 	raise VegvisirCommandException(f"Command [{self.command}] contains an unknown parameter [{e.args[0]}]")
 		# except TypeError:
-		# 	raise VegvisirCommandException(f"Command [{self.command}] serialized with non-dict type input.")
-		return ArgumentTemplate.substitute(self.command, hydrated_parameters)
+		# 	raise VegvisirCommandException(f"Command [{self.command}] serialized with non-dict type input.") 
+		
+		# Assume the hydrated_parameters have already been substituted, this implies that escaped parts have already been replaced
+		# Doing the substitution with infinite depth again will detect false cycles, we must limit it the substitution process to one cycle 
+		return ArgumentTemplate.substitute(self.command, hydrated_parameters, max_depth=1)
 
 class ArgumentTemplate:
 	# pattern = re.compile(r"\$(?:(?:{(?P<parameter>(?:[A-Z]+[A-Z0-9]*))})|(?P<escaped>\${(?:[A-Z]+[A-Z0-9]*)}))")
-	pattern = re.compile(r"\$(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})|(?P<escaped>\$)|(?:(?P<invalid>)))")
+	pattern = re.compile(r"\!(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})|(?P<escaped>\!)|(?:(?P<invalid>)))")
 
-	def _sub(template: str, hydrated_parameters: Dict[str, str], visited_nodes=[]):
+	def _sub(template: str, hydrated_parameters: Dict[str, str], visited_nodes=[], max_depth=0):
 		def sub_rule(match_object: re.Match):
 			nonlocal visited_nodes
 			if match_object.group("escaped") is not None:
 				return match_object.group("escaped")
 			if match_object.group("parameter") is not None:
 				param = match_object.group("parameter")
+				if max_depth > 0 and len(visited_nodes) >= max_depth:
+					return f"!{{{param}}}"
 				if param not in hydrated_parameters:
 					raise VegvisirArgumentException(f"Argument [{template}] references unknown parameter [{param}].")
 				if param in visited_nodes:
-					raise VegvisirArgumentException(f"Cycle detected [{'->'.join([f'${{{node}}}' for node in visited_nodes])}->${{{param}}}]")
+					raise VegvisirArgumentException(f"Cycle detected [{'->'.join([f'!{{{node}}}' for node in visited_nodes])}->!{{{param}}}]")
 				current_cycle_visited_nodes = list(visited_nodes)  # Each branch requires a copy of the list
 				current_cycle_visited_nodes.append(param)
-				collapsed_arg = ArgumentTemplate._sub(hydrated_parameters[param], hydrated_parameters, current_cycle_visited_nodes)
+				collapsed_arg = ArgumentTemplate._sub(hydrated_parameters[param], hydrated_parameters, current_cycle_visited_nodes, max_depth)
 				hydrated_parameters[param] = collapsed_arg  # Some memoization can't hurt
 				return collapsed_arg
 			if match_object.group("invalid") is not None:
@@ -209,14 +214,14 @@ class ArgumentTemplate:
 				raise VegvisirArgumentException(error)
 		return ArgumentTemplate.pattern.sub(sub_rule, template)
 
-	def substitute(template: str, hydrated_parameters: Dict[str, str], override_provided_parameters=False):
+	def substitute(template: str, hydrated_parameters: Dict[str, str], override_provided_parameters=False, max_depth=0):
 		"""
 		Substitute arguments matched by the pattern regex with their respective contents from the uncollapsed hydrated_parameters
 		hydrated_parameters can contain values which themselves reference arguments, postulating the need for recursive substitution and cycle checking
 		This method will collapse and cycle check the provided hydrated_parameters such that the initial provided template can correctly be substituted 
 		"""
 		try:
-			return ArgumentTemplate._sub(template, hydrated_parameters if override_provided_parameters else dict(hydrated_parameters), [])
+			return ArgumentTemplate._sub(template, hydrated_parameters if override_provided_parameters else dict(hydrated_parameters), [], max_depth)
 		except RecursionError:
 			raise VegvisirArgumentException(f"Argument [{template}] too deeply nested. Max recursion depth of {sys.getrecursionlimit()} has been reached.")
 
@@ -265,10 +270,11 @@ class Parameters:
 			hydrated_params[arg] = vegvisir_params[arg]
 
 		# Collapse params to one level
+		substituted_hydrated_params = {}
 		for (param, arg) in hydrated_params.items():
-			hydrated_params[param] = ArgumentTemplate.substitute(hydrated_params[param], hydrated_params, True)
+			substituted_hydrated_params[param] = ArgumentTemplate.substitute(hydrated_params[param], hydrated_params, True)
 
-		return hydrated_params
+		return substituted_hydrated_params
 
 	def hydrate_with_empty_arguments(self) -> Dict[str, str]:
 		empty_user_args: Dict[str, str] = {arg:"" for arg in self.params}
@@ -346,7 +352,8 @@ class Endpoint:
 		self.image = program if type(program) is DockerImage else None
 		self.command = program if type(program) is HostCommand else None
 		self.parameters: Parameters = params
-		self.setup: List[HostCommand] = []
+		self.construct: List[HostCommand] = []
+		self.destruct: List[HostCommand] = []
 		
 	def __repr__(self) -> str:
 		return f"Endpoint<{self.name}, {self.type.name}, {self.image if self.image is not None else self.command}>"
