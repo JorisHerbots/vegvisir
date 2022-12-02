@@ -551,13 +551,14 @@ class Runner:
 						vegvisirBaseArguments.ORIGIN = "server4"
 						vegvisirBaseArguments.ORIGIN_IPV4 = "server4"
 						vegvisirBaseArguments.ORIGIN_IPV6 = "server6" # TODO hostman this
+						vegvisirBaseArguments.ORIGIN_PORT = "443"
 						vegvisirBaseArguments.WAITFORSERVER = "server4:443"
 						vegvisirBaseArguments.SSLKEYLOGFILE = "/logs/keys.log"
 						vegvisirBaseArguments.QLOGDIR = "/logs/qlog/"
-						vegvisirBaseArguments.SCENARIO = shaper_config["scenario"]
+						vegvisirBaseArguments.SCENARIO = shaper.scenarios[shaper_config["scenario"]].command
 
 						vegvisirServerArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="server", TESTCASE=self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER))
-						vegvisirShaperArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="shaper", TESTCASE=self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER))
+						vegvisirShaperArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="shaper", WAITFORSERVER="server:443")  # Important: Shaper uses server instead of server4
 
 						docker_compose_vars = (
 							"CLIENT=" + client_image + " "
