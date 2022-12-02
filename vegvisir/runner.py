@@ -646,6 +646,14 @@ class Runner:
 							client_proc = self.spawn_parallel_subprocess(client_cmd, False, True)
 
 						elif client.type == Endpoint.Type.HOST:
+							for constructor in client.construct:
+								constructor_command = constructor.serialize_command(client_params)
+								logging.debug(f"Issuing client construct command [{constructor_command}]")
+								_, out, err = self.spawn_blocking_subprocess(constructor_command, constructor.requires_root, True)
+								if out is not None and len(out) > 0:
+									logging.debug(f"Construct command STDOUT:\n{out}")
+								if err is not None and len(err) > 0:
+									logging.debug(f"Construct command STDERR:\n{err}")
 							client_cmd = client.command.serialize_command(client_params)
 							client_proc = self.spawn_parallel_subprocess(client_cmd)
 						logging.debug("Vegvisir: running client: %s", client_cmd)
@@ -680,8 +688,17 @@ class Runner:
 
 					# BREAKDOWN
 					if client.type == Endpoint.Type.HOST:
-						_, out, err = self.spawn_blocking_subprocess("hostman remove --names=server4")
-						logging.debug("Vegvisir: remove entry from hosts: %s", out.decode('utf-8').strip())
+						for destructor in client.destruct:
+								destructor_command = destructor.serialize_command(client_params)
+								logging.debug(f"Issuing client destruct command [{destructor_command}]")
+								_, out, err = self.spawn_blocking_subprocess(destructor_command, destructor.requires_root, True)
+								if out is not None and len(out) > 0:
+									logging.debug(f"Destruct command STDOUT:\n{out}")
+								if err is not None and len(err) > 0:
+									logging.debug(f"Destruct command STDERR:\n{err}")
+
+						_, out, err = self.spawn_blocking_subprocess("hostman remove --names=server4", True, False)
+						logging.debug("Vegvisir: remove entry from hosts: %s", out.strip())
 						if err is not None and len(err) > 0:
 							logging.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
 
