@@ -493,6 +493,12 @@ class Runner:
 		if out != '' or err is not None:
 			logging.debug("Vegvisir: enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
+	def print_debug_information(self, command: str) -> None:
+		_, out, err = self.spawn_blocking_subprocess(command, True, False)
+		logging.debug(f"Command [{command}]:\n{out}")
+		if err is not None and len(err) > 0:
+			logging.warning(f"Command [{command}] returned stderr output:\n{err}")
+
 	def run(self) -> int:
 		vegvisir_start_time = datetime.now()
 		self._path_collection.log_path_date = os.path.join(self._path_collection.log_path_root, "{:%Y-%m-%dT_%H-%M-%S}".format(vegvisir_start_time))
@@ -617,19 +623,10 @@ class Runner:
 								raise VegvisirRunFailedException(f"Virtual ethernet device checksum failed | STDOUT [{out}] | STDERR [{err}]")								
 
 						# Log kernel/net parameters
-						_, out, err = self.spawn_blocking_subprocess("ip address", True, False)
-						logging.debug("Vegvisir: net log:\n%s", out)
-						if not err is None:
-							logging.debug("Vegvisir: net log error: %s", err)
+						self.print_debug_information("ip address")
+						self.print_debug_information("ip route list")
+						self.print_debug_information("sysctl -a")
 
-						_, out, err = self.spawn_blocking_subprocess("sysctl -a", True, False)
-						logging.debug("Vegvisir: kernel log:\n%s", out)
-						if not err is None:
-							logging.debug("Vegvisir: kernel log error: %s", err)
-
-						# Introduce small delay for server and shaper setup
-						sleep(2)
-						
 						# Setup client
 						vegvisirClientArguments = dataclasses.replace(vegvisirBaseArguments, ROLE = "client", TESTCASE = self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.CLIENT))
 						client_params = client.parameters.hydrate_with_arguments(client_config.get("arguments", {}), vegvisirClientArguments.dict())
