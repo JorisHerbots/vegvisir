@@ -58,8 +58,6 @@ services:
       - $DOWNLOADS:/downloads:delegated
       - $CERTS:/certs:ro
       - $LOG_PATH_CLIENT:/logs/
-    environment:
-      - REQUESTS=$REQUESTS
     env_file: 
       client.env
     depends_on:
