@@ -649,6 +649,8 @@ class Runner:
 						self.print_debug_information("ip address")
 						self.print_debug_information("ip route list")
 						self.print_debug_information("sysctl -a")
+						self.print_debug_information("docker version")
+						self.print_debug_information("docker compose version")
 
 						# Setup client
 						vegvisirClientArguments = dataclasses.replace(vegvisirBaseArguments, ROLE = "client", TESTCASE = self.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.CLIENT))
