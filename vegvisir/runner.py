@@ -21,7 +21,7 @@ from vegvisir.environments.base_environment import BaseEnvironment
 
 # from vegvisir.environments.base_environment import BaseEnvironment, TimeoutSensor, WebserverBasic
 
-from .implementation import DockerImage, Parameters, HostCommand, Endpoint, Scenario, Shaper, VegvisirCommandException
+from .implementation import DockerImage, Parameters, HostCommand, Endpoint, Scenario, Shaper, VegvisirArgumentException, VegvisirCommandException
 
 class VegvisirException(Exception):
 	pass
@@ -215,13 +215,22 @@ class Runner:
 						impl.command.serialize_command(parameters.hydrate_with_empty_arguments())
 					except VegvisirCommandException as e:
 						raise VegvisirInvalidImplementationConfigurationException(f"Client [{client}] command contains unknown parameters, dry run failed => {e}")
-				if "setup" in configuration:
+				def _load_and_dryrun_setup_command(setup_type: str, collection: List[HostCommand]):
+					if setup_type not in configuration:
+						return
 					if implementation_type == Endpoint.Type.DOCKER:
-						raise VegvisirInvalidImplementationConfigurationException(f"Client [{client}] represents a containerized configuration, these can not contain a 'setup' key.")
-					for index, task in enumerate(configuration["setup"]):
+						raise VegvisirInvalidImplementationConfigurationException(f"Client [{client}] represents a containerized configuration, these can not contain a '{setup_type}' key.")
+					for index, task in enumerate(configuration[setup_type]):
 						if "command" not in task:
-							raise VegvisirInvalidImplementationConfigurationException(f"Setup task #{index} of client [{client}] does not contain the 'command' entry.")
-						impl.setup.append(HostCommand(task["command"], task.get("root_required", False)))
+							raise VegvisirInvalidImplementationConfigurationException(f"{setup_type.capitalize()} task #{index} of client [{client}] does not contain the 'command' entry.")
+						setup_command = HostCommand(task["command"], task.get("root_required", False))
+						try:
+							setup_command.serialize_command(parameters.hydrate_with_empty_arguments())
+						except VegvisirCommandException as e:
+							raise VegvisirInvalidImplementationConfigurationException(f"Client [{client}] {setup_type} command [{setup_command.command}] contains unknown parameters, dry run failed => {e}")
+						collection.append(setup_command)
+				_load_and_dryrun_setup_command("construct", impl.construct)
+				_load_and_dryrun_setup_command("destruct", impl.destruct)
 			
 			if not impl:
 				raise VegvisirInvalidImplementationConfigurationException(f"Client [{client}] does not contain an 'image' or 'command' entry.")
@@ -385,13 +394,27 @@ class Runner:
 				if name in entries:
 					raise VegvisirInvalidExperimentConfigurationException(f"{debug_str.capitalize()} [{name}] duplicate detected. Please provide a 'log_name' to be able to distinguish.")
 
+		vegvisirDummyArguments = VegvisirArguments().dummy()
+		def _validate_command_with_real_parameters(client_endpoint: Endpoint, client_unhydrated_parameters: Dict[str, str]) -> None:
+			if client_endpoint.type == Endpoint.Type.DOCKER:
+				return
 
+			try:
+				commands = [client_endpoint.command] + client_endpoint.construct + client_endpoint.destruct
+				hydrated_parameters = client_endpoint.parameters.hydrate_with_arguments(client_unhydrated_parameters, vegvisirDummyArguments)
+				print(hydrated_parameters)
+				for cmd in commands:
+					cmd.serialize_command(hydrated_parameters)
+			except VegvisirArgumentException as e:
+				raise VegvisirInvalidExperimentConfigurationException(f"Client [{client_endpoint.name}] contains a command [{cmd.command}] that fails to serialize: {e}")
+		
 		duplicate_check = set()
 		for index, client in enumerate(configuration[CLIENTS_KEY]):
 			_namecheck_dict(client, index, "client", self._client_endpoints)
 			_duplicate_check(client["name"], client.get("log_name"), duplicate_check, "client")
 			duplicate_check.add(client["log_name"] if client.get("log_name") is not None else client["name"])
 			_parametercheck_endpoint(self._client_endpoints[client["name"]], client, "client")
+			_validate_command_with_real_parameters(self._client_endpoints[client["name"]], client.get("arguments", {}))
 			self._client_configurations.append(client)
 
 		duplicate_check = set()

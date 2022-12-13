@@ -46,6 +46,7 @@ class VegvisirArguments:
     ORIGIN: str | None = None
     ORIGIN_IPV4: str | None = None
     ORIGIN_IPV6: str | None = None
+    ORIGIN_PORT: str | None = None
 
     CERT_FINGERPRINT: str | None = None
     QLOGDIR : str | None = None
@@ -57,3 +58,6 @@ class VegvisirArguments:
 
     def dict(self) -> Dict[str, str]:
         return {key: value for key, value in dataclasses.asdict(self).items() if value is not None}
+    
+    def dummy(self) -> Dict[str, str]:
+        return {key: "dummyData" for key in dataclasses.asdict(self)}
