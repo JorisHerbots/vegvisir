@@ -637,6 +637,9 @@ class Runner:
 						client_cmd = ""
 						client_proc = None
 						if client.type == Endpoint.Type.DOCKER:
+							with open("client.env", "w") as fp:
+								Parameters.serialize_to_env_file(client_params, fp)
+							
 							# params += " ".join(client.additional_envs())
 							client_cmd = (
 								docker_compose_vars
