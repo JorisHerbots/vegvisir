@@ -692,21 +692,26 @@ class Runner:
 								fp.write("Test aborted by user interaction.")
 							logging.info("CTRL-C test interrupted")
 
-						out, err = client_proc.communicate()
-						logging.debug(out.decode("utf-8"))
-						logging.debug(err.decode("utf-8"))
-						client_proc.terminate()
+						client_proc.terminate() # TODO redundant?
+						# out, err = client_proc.communicate()
+						# logging.debug(out.decode("utf-8"))
+						# logging.debug(err.decode("utf-8"))
 						# proc = subprocess.run(
 						# 	docker_compose_vars + " docker compose logs --timestamps",
 						# 	shell=True,
 						# 	stdout=subprocess.PIPE,
 						# 	stderr=subprocess.STDOUT
 						# )
+						# TODO jherbots remove after container spindown bug has been fixed
+						# print(f"{datetime.now()} PRE LOGS")
 						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps", False, True)
 						logging.debug(out)
 						logging.debug(err)
+						# print(f"{datetime.now()} POST LOGS")
+						# print(f"{datetime.now()} PRE DOWN")
 
 						_, out ,err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose down", False, True) # TODO TEMP
+						# print(f"{datetime.now()} POST DOWN")
 						logging.debug(out)
 
 					# BREAKDOWN
