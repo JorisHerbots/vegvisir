@@ -8,9 +8,10 @@ Configuration structures are defined using the [Concise Data Definition Language
 
 **Nice to knows**
 
+- Booting Vegvisir: `python -m vegvisir implementations.json experiment.json`
 - Log paths have no trailing slashes
-- Variable syntax: !{VAR}
-  - Regex: !{[A-Z0-9_-]+}
+- Variable syntax: `!{VAR}`
+  - Regex: `!{[A-Z0-9_-]+}`
 - Vegvisir requires two files to boot and to run experiments; Configuration files are (for now) passed as arguments to the python script
   1. An *implementations* file
   2. An *experiment* file
@@ -35,31 +36,31 @@ ImplementationName = text .regex "TODO no spaces or special chars"
 
 ```
 ClientImplementation = {
-  ClientType
-  ? parameters: Parameter
-  ? construct : [* CDCommand] ; Commands executed before "command" if the implementation represents a host command
-  ? destruct : [* CDCommand] ; Commands executed before "command" if the implementation represents a host command
+  ClientType,
+  ? parameters: Parameter,
+  ? construct : [* CDCommand], ; Commands executed before "command" if the implementation represents a host command
+  ? destruct : [* CDCommand], ; Commands executed before "command" if the implementation represents a host command
 }
 ```
 
 ```
 ClientType = (
-  image: text ; repo/name:tag //
-  command: text ; host command
+  image: text, ; repo/name:tag //
+  command: text, ; host command
 )
 ```
 
 ```
 ServerImplementation = {
-  ? image: text ; repo/name:tag
-  ? parameters: Parameter
+  ? image: text, ; repo/name:tag
+  ? parameters: Parameter,
 }
 ```
 
 ```
 ShaperImplementation = {
-  ? image: text ; repo/name:tag
-  ? parameters: Parameter
+  ? image: text, ; repo/name:tag
+  ? parameters: Parameter,
 }
 ```
 
@@ -72,8 +73,8 @@ ParameterKey = text .regex "\!(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})"
 
 ```
 CDCommand = {
-  ? root_required: bool .default false
-  command: text
+  ? root_required: bool .default false,
+  command: text,
 }
 ```
 
@@ -82,37 +83,37 @@ Contains a single (repeatable) experiment
 
 ```
 Experiment = {
-  clients: [ClientExperiment]
-  servers: [ServerExperiment]
-  shapers: [ShaperExperiment]
-  environment : Environment
-  settings: Settings
+  clients: [ClientExperiment],
+  servers: [ServerExperiment],
+  shapers: [ShaperExperiment],
+  environment : Environment,
+  settings: Settings,
 }
 ```
 
 ```
 CLientExperiment = {
-  name: text ; must match one of the names from implementations
-  ? log_name : text ; Name used for logging, if the same client is used for multiple experiment permutation (e.g., other arguments), a unique log_name must be provided for all entries
-  ? arguments : Arguments
+  name: text, ; must match one of the names from implementations
+  ? log_name : text, ; Name used for logging, if the same client is used for multiple experiment permutation (e.g., other arguments), a unique log_name must be provided for all entries
+  ? arguments : Arguments,
 }
 ```
 
 ```
 Arguments = {
-  * (text .regex "\!(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})") => text ; Matches a parameter of the respective implementation configuration
+  * (text .regex "\!(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})") => text, ; Matches a parameter of the respective implementation configuration
 }
 ```
 
 ```
 Environment = {
-  name: DefaultEnvironments
-  ? sensors : [SensorConfiguration]
+  name: DefaultEnvironments,
+  ? sensors : [SensorConfiguration],
 }
 ```
 
 ```
-DefaultEnvironments = "webserver-basic" ; Currently only 1 available
+DefaultEnvironments = "webserver-basic", ; Currently only 1 available
 ```
 
 ```
@@ -120,7 +121,7 @@ SensorConfiguration = {
   name: AvailableSensors
   * SensorKey => any
 }
-SensorKey = text ; Parameter as defined in the sensor python code
+SensorKey = text, ; Parameter as defined in the sensor python code
 ```
 
 ```
@@ -129,11 +130,11 @@ AvailableSensors = "timeout" / "file-watchdog"
 
 ```
 Settings = {
-  label: text .regex "TODO (no spaces or weird folder breaking names)" ; label in the logging output folder
-  ? description : text ; Currently unused, but optional to describe the setup in the configuration file
-  ? playground : bool .default false ; Currently unused, coming soon
-  ? www_dir : text .default "./www" ; Web root path
-  ? iterations: int .default 1 ; The number of times the complete permutation needs to be repeated
+  label: text .regex "TODO (no spaces or weird folder breaking names)", ; label in the logging output folder
+  ? description : text, ; Currently unused, but optional to describe the setup in the configuration file
+  ? playground : bool .default false, ; Currently unused, coming soon
+  ? www_dir : text .default "./www", ; Web root path
+  ? iterations: int .default 1, ; The number of times the complete permutation needs to be repeated
 }
 ```
 
