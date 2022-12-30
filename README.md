@@ -2,9 +2,17 @@
   <img src="imgs/vegvisir_banner_large_whitefont.png" height="250px"/>
 </p>
 
+Welcome to Vegvisir, an open-source testing framework for QUIC developers and researchers.
+
+Vegvisir's primary goal is to orchestrate client and server communication over various simulated network conditions to collect logs about your experiments and, subsequentially, help you get insights into your applications' behavior. Simulating allows you to identify and resolve issues that may only occur under specific network conditions, improving the reliability and performance of your application. The codebase uses existing network simulation tools; it was tested with tc-netem and NS3 but should also work with other similar simulation tools. While initially intended only to be used for QUIC-based network applications, the experiments you define for Vegvisir can also use other transport-layer protocols.
+
+Vegvisir can capture any logs/output produced from experiments. By default, compatible QUIC-based applications/implementations will create qlogs, and the network simulations will create pcaps.
+With visualization tools such as qvis and wireshark, you can quickly analyze these logs and gain a deeper understanding of what's happening under the hood of your application.
+Whether you're a developer looking to improve the performance of your software or a researcher studying network behavior, Vegvisir is a powerful tool in your toolkit.
 
 # Minimal readme version
-Configuration structures are defined using the [Concise Data Definition Language](https://www.rfc-editor.org/rfc/rfc8610).
+Configuration structures are defined using the [Concise Data Definition Language](https://www.rfc-editor.org/rfc/rfc8610).\
+Vegvisir is **Linux only**.
 
 **Nice to knows**
 
@@ -15,6 +23,13 @@ Configuration structures are defined using the [Concise Data Definition Language
 - Vegvisir requires two files to boot and to run experiments; Configuration files are (for now) passed as arguments to the python script
   1. An *implementations* file
   2. An *experiment* file
+- Wrongly entering your sudo password too many times can trigger a lock, use `faillock` to resolve this issue if you still have access to the system
+
+**Required installs**
+- ethtool (https://packages.ubuntu.com/search?keywords=ethtool) (https://archlinux.org/packages/extra/x86_64/ethtool/)
+- docker
+- docker compose (Vegvisir uses V2)
+- Python >= 3.7
 
 # Implementations
 Contains a list of all implementations and their configurations.
@@ -66,7 +81,7 @@ ShaperImplementation = {
 
 ```
 Parameter = {
-  * ParameterKey => text
+  * ParameterKey => bool
 }
 ParameterKey = text .regex "\!(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})"
 ```
