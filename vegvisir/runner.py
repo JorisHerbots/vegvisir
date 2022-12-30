@@ -522,7 +522,7 @@ class Runner:
 		if err is not None and len(err) > 0:
 			logging.warning(f"Command [{command}] returned stderr output:\n{err}")
 
-	def run(self) -> int:
+	def run(self):
 		vegvisir_start_time = datetime.now()
 		self._path_collection.log_path_date = os.path.join(self._path_collection.log_path_root, "{:%Y-%m-%dT_%H-%M-%S}".format(vegvisir_start_time))
 		
@@ -530,9 +530,12 @@ class Runner:
 
 		self._enable_ipv6()
 
+		experiment_permutation_total = len(self._shaper_configurations) * len(self._server_configurations) * len(self._client_configurations) * self.iterations
+		experiment_permutation_counter = 0
 		for shaper_config in self._shaper_configurations:
 			for server_config in self._server_configurations:
 				for client_config in self._client_configurations:
+					yield client_config["name"], shaper_config["name"], server_config["name"], experiment_permutation_counter, experiment_permutation_total
 					logging.info(f'Running {client_config["name"]} over {shaper_config["name"]} against {server_config["name"]}')
 					shaper = self._shapers[shaper_config["name"]]
 					server = self._server_endpoints[server_config["name"]]
@@ -732,6 +735,8 @@ class Runner:
 						if err is not None and len(err) > 0:
 							logging.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
 
+
+					experiment_permutation_counter += 1
 
 					# TODO PLACE CORRECTLY
 					logging.getLogger().removeHandler(log_handler)
