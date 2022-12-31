@@ -526,8 +526,25 @@ class Runner:
 
 	def run(self):
 		vegvisir_start_time = datetime.now()
+
+		# Root path for logs needs to be known and exist for metadata copies
 		self._path_collection.log_path_date = os.path.join(self._path_collection.log_path_root, "{:%Y-%m-%dT_%H-%M-%S}".format(vegvisir_start_time))
+		pathlib.Path(self._path_collection.log_path_date).mkdir(parents=True, exist_ok=True)
 		
+		# Copy the implementations and experiment configurations for reproducibility purposes
+		# For now, assume json files
+		implementations_destination = os.path.join(self._path_collection.log_path_date, "implementations.json")
+		experiment_destination = os.path.join(self._path_collection.log_path_date, "experiment.json")
+		try:
+			shutil.copy2(self._path_collection.implementations_configuration_file_path, implementations_destination) 
+		except IOError as e:
+			logging.warning(f"Could not copy over implementations configuration to root of experiment logs: {implementations_destination} | {e}")
+		try:
+			shutil.copy2(self._path_collection.experiment_configuration_file_path, experiment_destination) 
+		except IOError as e:
+			logging.warning(f"Could not copy over experiment configuration to root of experiment logs: {experiment_destination} | {e}")
+
+
 		nr_failed = 0
 
 		self._enable_ipv6()
