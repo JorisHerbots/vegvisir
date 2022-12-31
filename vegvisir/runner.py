@@ -2,6 +2,8 @@ from curses.ascii import isdigit
 import dataclasses
 from datetime import datetime
 from distutils.command.config import config
+import getpass
+import grp
 import logging
 import os
 import pathlib
@@ -738,6 +740,19 @@ class Runner:
 						if err is not None and len(err) > 0:
 							logging.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
 
+					# Change ownership of docker output to running user
+					try:
+						real_username = getpass.getuser()
+						real_primary_groupname = grp.getgrgid(os.getgid()).gr_name
+						chown_to = f"{real_username}:{real_primary_groupname}"
+						_, out, err = self.spawn_blocking_subprocess(f"chown -R {chown_to} {self._path_collection.log_path_permutation}", True, False)
+						if len(err) > 0:
+							raise VegvisirException(err)
+						logging.debug(f"Changed ownership of output logs to {chown_to} | {self._path_collection.log_path_permutation}")
+					except (KeyError, TypeError):
+						logging.warning(f"Could not change log output ownership @ {self._path_collection.log_path_permutation}, groupname might not be found?")
+					except VegvisirException as e:
+						logging.warning(f"Could not change log output ownership [{e}] @ {self._path_collection.log_path_permutation}")
 
 					experiment_permutation_counter += 1
 
