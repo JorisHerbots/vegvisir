@@ -698,9 +698,12 @@ class Runner:
 							logging.info("CTRL-C test interrupted")
 
 						client_proc.terminate() # TODO redundant?
-						# out, err = client_proc.communicate()
-						# logging.debug(out.decode("utf-8"))
-						# logging.debug(err.decode("utf-8"))
+						if client.type == Endpoint.Type.HOST:
+							# Doing this for docker will nullify the sensor system
+							# Docker client logs are retrieved with "docker compose logs"
+							out, err = client_proc.communicate()
+							logging.debug(out.decode("utf-8"))
+							logging.debug(err.decode("utf-8"))
 						# proc = subprocess.run(
 						# 	docker_compose_vars + " docker compose logs --timestamps",
 						# 	shell=True,
