@@ -1,7 +1,5 @@
-from curses.ascii import isdigit
 import dataclasses
 from datetime import datetime
-from distutils.command.config import config
 import getpass
 import grp
 import logging
@@ -10,18 +8,14 @@ import pathlib
 import shlex
 import sys
 import subprocess
-from time import time, sleep
 from typing import Dict, List, Set, Tuple
 import json
 import tempfile
 import re
 import shutil
-from pathlib import Path
 from vegvisir import environments
 from vegvisir.data import ExperimentPaths, VegvisirArguments
 from vegvisir.environments.base_environment import BaseEnvironment
-
-# from vegvisir.environments.base_environment import BaseEnvironment, TimeoutSensor, WebserverBasic
 
 from .implementation import DockerImage, Parameters, HostCommand, Endpoint, Scenario, Shaper, VegvisirArgumentException, VegvisirCommandException
 
@@ -47,35 +41,6 @@ class LogFileFormatter(logging.Formatter):
 		return re.compile(r"\x1B[@-_][0-?]*[ -/]*[@-~]").sub("", msg)
 
 class Runner:
-	# _start_time: datetime = 0
-	# _end_time: datetime = 0
-	# _running: bool = False
-	# _test_label: str = ""
-	# _test_repetitions: int = 1
-	# _curr_repetition: int = 1
-
-	# _image_repos: List[str] = ["vegvisir"]
-	# _image_sets: List[str] = []
-
-	# _clients: dict[str, Implementation] = {}
-	# _servers: dict[str, Implementation] = {}
-	# _shapers: dict[str, Shaper] = {}
-	# _tests: List[TestCaseWrapper] = []
-
-	# _clients_active: List[Implementation] = []
-	# _servers_active: List[Implementation] = []
-	# _shapers_active: List[Shaper] = []
-	# _tests_active: List[TestCase] = []
-
-	# _sudo_password: str = ""
-
-	# _logger: logging.Logger = None
-	# _debug: bool = False
-	# _save_files: bool = False
-	# _log_dir: str = ""
-
-
-
 	def __init__(self, sudo_password: str = "", debug: bool = False, save_files: bool = False, implementations_file_path: str = None):
 		self._path_collection = ExperimentPaths()
 		
@@ -95,7 +60,6 @@ class Runner:
 
 		self._sudo_password = sudo_password
 		self._debug = debug
-		# self._save_files = save_files
 
 		self._logger = logging.getLogger()
 		self._logger.setLevel(logging.DEBUG)
@@ -112,12 +76,6 @@ class Runner:
 
 		if implementations_file_path:
 			self.load_implementations_from_file(implementations_file_path)
-
-		# TODO jherbots redo namings here, leave for now
-		# for t in TESTCASES:
-			# tw = TestCaseWrapper()
-			# tw.testcase = t()
-			# self._tests.append(tw)
 
 	def logger(self):
 		return self._logger
@@ -178,17 +136,6 @@ class Runner:
 			self._path_collection.implementations_configuration_file_path = implementations_path
 		except json.JSONDecodeError as e:
 			logging.error(f"Failed to decode provided implementations JSON [{implementations_path}] | {e}")
-
-	# def _check_implementation_existance(self, name: str, implementation_list: list[Implementation]):
-	# 	"""
-	# 	O(n)
-	# 	TODO jherbots Needed? 
-	# 	"""
-	# 	for impl in implementation_list:
-	# 		if impl.name == name:
-	# 			print(name)
-	# 			return True
-	# 	return False
 
 	def _load_implementations_from_json(self, implementations):
 		"""
@@ -264,74 +211,8 @@ class Runner:
 				else:
 					raise VegvisirInvalidImplementationConfigurationException(f"Shaper [{shaper}] scenario [{scenario}] is not a string or does not contain a 'command' and 'parameters' key. Ignoring scenario entry.")
 			self._shapers[shaper] = impl
-		
-		# print(self._client_endpoints)
-		# print(self._server_endpoints)
-		# print(self._shapers)
-		# for shaper in self._shapers.values():
-			# print(shaper.scenarios)
-	# 	for name in implementations:
-	# 		attrs = implementations[name]
-
-	# 		active = False
-	# 		if "active" in attrs:
-	# 			active = attrs["active"]
-
-	# 		env = []
-	# 		if "env" in attrs:
-	# 			env = attrs["env"]
-
-	# 		roles = []
-	# 		for role in attrs["role"]:
-	# 			if role == "client":
-	# 				roles.append(Role.CLIENT)
-	# 				client_settings = attrs["client"]
-	# 				impl = None
-	# 				if client_settings["type"] == Type.DOCKER.value:
-	# 					impl = Docker(name, attrs["image"], attrs["url"])
-	# 				elif client_settings["type"] == Type.APPLICATION.value:
-	# 					impl = Application(name, client_settings["command"], attrs["url"])
-	# 					if "setup" in client_settings:
-	# 						for cmd in client_settings["setup"]:
-	# 							scmd = Command()
-	# 							scmd.sudo = cmd["sudo"]
-	# 							scmd.replace_tilde = cmd["replace_tilde"]
-	# 							scmd.command = cmd["command"]
-	# 							impl.setup.append(scmd)
-	# 				impl.active = active
-	# 				impl.env_vars = env
-	# 				impl.role = Role.CLIENT
-	# 				self._clients.append(impl)
-
-	# 			elif role == "server":
-	# 				roles.append(Role.SERVER)
-	# 				impl = Docker(name, attrs["image"], attrs["url"])
-	# 				impl.active = active
-	# 				impl.env_vars = env
-	# 				impl.role = Role.SERVER
-	# 				self._servers.append(impl)
-
-	# 			elif role == "shaper":
-	# 				roles.append(Role.SHAPER)
-	# 				impl = Shaper(name, attrs["image"], attrs["url"])
-	# 				impl.scenarios = []
-	# 				if "scenarios" in attrs:
-	# 					for scenario in  attrs["scenarios"]:
-	# 						scen_attrs = attrs["scenarios"][scenario]
-	# 						scen = Scenario(scenario, scen_attrs["arguments"])
-	# 						if "active" in scen_attrs:
-	# 							scen.active = scen_attrs["active"]
-	# 						impl.scenarios.append(scen)
-	# 				impl.active = active
-	# 				impl.env_vars = env
-	# 				impl.role = Role.SHAPER
-	# 				self._shapers.append(impl)
-
-	# 		logging.debug("Vegvisir: \tloaded %s as %s", name, attrs["role"])
-	# 	self._scan_image_repos()
 
 	def load_experiment_from_file(self, file_path: str) -> None:
-		# TODO jherbots save config to somewhere
 		try:
 			with open(file_path) as f:
 				configuration = json.load(f)
@@ -507,14 +388,6 @@ class Runner:
 		sudo modprobe ip6table_filter
 		"""
 		_, out, err = self.spawn_blocking_subprocess("modprobe ip6table_filter", True, False)
-		# ipv6_proc = subprocess.Popen(
-		# 		["sudo", "-S", "modprobe", "ip6table_filter"],
-		# 		shell=False,
-		# 		stdin=subprocess.PIPE,
-		# 		stdout=subprocess.PIPE,
-		# 		stderr=subprocess.STDOUT
-		# 	)
-		# out, err, _ = ipv6_proc.communicate(self._sudo_password.encode())
 		if out != '' or err is not None:
 			logging.debug("Vegvisir: enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
@@ -543,9 +416,6 @@ class Runner:
 			shutil.copy2(self._path_collection.experiment_configuration_file_path, experiment_destination) 
 		except IOError as e:
 			logging.warning(f"Could not copy over experiment configuration to root of experiment logs: {experiment_destination} | {e}")
-
-
-		nr_failed = 0
 
 		self._enable_ipv6()
 
@@ -723,22 +593,12 @@ class Runner:
 							out, err = client_proc.communicate()
 							logging.debug(out.decode("utf-8"))
 							logging.debug(err.decode("utf-8"))
-						# proc = subprocess.run(
-						# 	docker_compose_vars + " docker compose logs --timestamps",
-						# 	shell=True,
-						# 	stdout=subprocess.PIPE,
-						# 	stderr=subprocess.STDOUT
-						# )
-						# TODO jherbots remove after container spindown bug has been fixed
-						# print(f"{datetime.now()} PRE LOGS")
+
 						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps", False, True)
 						logging.debug(out)
 						logging.debug(err)
-						# print(f"{datetime.now()} POST LOGS")
-						# print(f"{datetime.now()} PRE DOWN")
 
 						_, out ,err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose down", False, True) # TODO TEMP
-						# print(f"{datetime.now()} POST DOWN")
 						logging.debug(out)
 
 					# BREAKDOWN
@@ -776,392 +636,6 @@ class Runner:
 					# TODO PLACE CORRECTLY
 					logging.getLogger().removeHandler(log_handler)
 					log_handler.close()  # TODO jherbots clean this and replace with nicer handler
-
-		# self._clients_active = list((x for x in list(self._clients.values()) if x.active))
-		# self._servers_active = list((x for x in list(self._servers.values()) if x.active))
-		# self._shapers_active = list((x for x in list(self._shapers.values()) if x.active))
-		# self._tests_active = list((x for x in self._tests if x.active))
-
-		# for x in self._shapers_active + self._servers_active + self._shapers_active:
-		# 	x.status = RunStatus.WAITING
-		# 	if hasattr(x, 'scenarios'):
-		# 		for y in x.scenarios:
-		# 			y.status = RunStatus.WAITING
-		# print(self._clients_active)
-		# print(self._servers_active)
-		# print(self._shapers_active)
-
-	# 	for shaper in self._shapers_active:
-	# 		shaper.status = RunStatus.RUNNING
-	# 		for scenario in list((x for x in shaper.scenarios if x.active)):
-	# 			scenario.status = RunStatus.RUNNING
-	# 			shaper_images = list((x for x in shaper.images if x.active))
-	# 			for shaper_image in shaper_images:
-	# 				shaper.curr_image = shaper_image
-	# 				for server in self._servers_active:
-	# 					server.status = RunStatus.RUNNING
-	# 					server_images = list((x for x in server.images if x.active))
-	# 					for server_image in server_images:
-	# 						server.curr_image = server_image
-	# 						for client in self._clients_active:
-	# 							client.status = RunStatus.RUNNING
-
-	# 							if client.type == Type.APPLICATION:
-	# 								#TODO create backup using -b and reset to backup instead of removing entry later
-	# 								hosts_proc = subprocess.Popen(
-	# 										["sudo", "-S", "hostman", "add", "193.167.100.100", "server4"],
-	# 										shell=False,
-	# 										stdin=subprocess.PIPE,
-	# 										stdout=subprocess.PIPE,
-	# 										stderr=subprocess.STDOUT
-	# 									)
-	# 								out, err, _ = hosts_proc.communicate(self._sudo_password.encode())
-	# 								logging.debug("Vegvisir: append entry to hosts: %s", out.decode('utf-8'))
-	# 								if not err is None:
-	# 									logging.debug("Vegvisir: appending entry to hosts file resulted in error: %s", err)
-
-	# 							for test in self._tests_active:
-	# 								test.status = RunStatus.RUNNING
-
-	# 								testcase = test.testcase
-	# 								testcase.scenario = scenario
-
-	# 								if client.type == Type.DOCKER:
-	# 									client_images = list((x for x in client.images if x.active))
-	# 									for client_image in client_images:
-	# 										client.curr_image = client_image
-	# 										logging.debug("Vegvisir: running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s (%s)",
-	# 										shaper.name, shaper_image.url, scenario.arguments,
-	# 										server.name, server_image.url,
-	# 										client.name, client_image.url
-	# 										)
-
-	# 										self._curr_repetition = 1
-	# 										for _ in range(self._test_repetitions):
-	# 											result = self._run_test(shaper, server, client, testcase)
-	# 											logging.debug("Vegvisir: \telapsed time since start of test: %s", str(result.end_time - result.start_time))
-	# 											self._curr_repetition += 1
-										
-	# 								else:
-	# 									logging.debug("Vegvisir: running with shaper %s (%s) (scenario: %s), server %s (%s), and client %s",
-	# 									shaper.name, shaper_image.url, scenario.arguments,
-	# 									server.name, server_image.url,
-	# 									client.name
-	# 									)
-
-	# 									self._curr_repetition = 1
-	# 									for _ in range(self._test_repetitions):
-	# 										result = self._run_test(shaper, server, client, testcase)
-	# 										logging.debug("Vegvisir: \telapsed time since start of test: %s", str(result.end_time - result.start_time))
-	# 										self._curr_repetition += 1
-	# 								test.status = RunStatus.DONE
-	# 							client.status = RunStatus.DONE
-
-	# 							if client.type == Type.APPLICATION:
-	# 								hosts_proc = subprocess.Popen(
-	# 										["sudo", "-S", "hostman", "remove", "--names=server4"],
-	# 										shell=False,
-	# 										stdin=subprocess.PIPE,
-	# 										stdout=subprocess.PIPE,
-	# 										stderr=subprocess.STDOUT
-	# 									)
-	# 								out, err, _ = hosts_proc.communicate(self._sudo_password.encode())
-	# 								logging.debug("Vegvisir: remove entry from hosts: %s", out.decode('utf-8'))
-	# 								if not err is None:
-	# 									logging.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
-	# 					server.status = RunStatus.DONE
-	# 			scenario.status = RunStatus.DONE
-	# 		shaper.status = RunStatus.DONE
-
-	# 	self._end_time = datetime.now()
-	# 	logging.info("elapsed time since start of run: %s", str(self._end_time - self._start_time))
-	# 	self._running = False
-	# 	return nr_failed
-
-	# def _run_test(
-	# 	self,
-	# 	shaper: Implementation,
-	# 	server: Implementation, 
-	# 	client: Implementation,
-	# 	testcase: TestCase
-	# 	) -> TestResult:
-	# 	result = TestResult()
-	# 	result.start_time = datetime.now()
-
-	# 	sim_log_dir = tempfile.TemporaryDirectory(dir="/tmp", prefix="logs_sim_")
-	# 	server_log_dir = tempfile.TemporaryDirectory(dir="/tmp", prefix="logs_server_")
-	# 	client_log_dir = tempfile.TemporaryDirectory(dir="/tmp", prefix="logs_client_")
-	# 	log_file = tempfile.NamedTemporaryFile(dir="/tmp", prefix="output_log_")
-	# 	log_handler = logging.FileHandler(log_file.name)
-	# 	log_handler.setLevel(logging.DEBUG)
-
-	# 	log_dir = os.getcwd() + "/" + self._log_dir + "/"
-	# 	log_dir = log_dir + server.curr_image.repo + "_" + server.curr_image.name + "_" + server.curr_image.tag + "_"
-	# 	if client.type == Type.DOCKER:
-	# 		log_dir = log_dir + client.curr_image.repo + "_" + client.curr_image.name + "_" + client.curr_image.tag
-	# 	else:
-	# 		log_dir = log_dir + client.name 
-	# 	log_dir = log_dir + "/" + shaper.curr_image.name + "_" + testcase.scenario.name + "/" + testcase.name
-	# 	if self._test_repetitions > 1:
-	# 		log_dir += '_run_' + str(self._curr_repetition)
-
-	# 	client_log_dir_local = log_dir + '/client'
-	# 	server_log_dir_local = log_dir + '/server'
-	# 	shaper_log_dir_local = log_dir + '/shaper'
-	# 	pathlib.Path(client_log_dir_local).mkdir(parents=True, exist_ok=True)
-	# 	pathlib.Path(server_log_dir_local).mkdir(parents=True, exist_ok=True)
-	# 	pathlib.Path(shaper_log_dir_local).mkdir(parents=True, exist_ok=True)
-
-	# 	print(client_log_dir_local)
-
-	# 	formatter = LogFileFormatter("%(asctime)s %(message)s")
-	# 	log_handler.setFormatter(formatter)
-	# 	logging.getLogger().addHandler(log_handler)
-
-	# 	client_image = "none"
-	# 	if hasattr(client,"curr_image"):
-	# 		client_image = client.curr_image.url
-
-	# 	params = (
-	# 		"WAITFORSERVER=server:443 "
-
-	# 		#"CLIENT=" + client.image + " "
-	# 		"TESTCASE_CLIENT=" + testcase.testname(Perspective.CLIENT) + " "
-	# 		"REQUESTS=\"" + testcase.request_urls + "\"" + " "
-
-	# 		"DOWNLOADS=" + testcase.download_dir() + " "
-	# 		"SERVER=" + server.curr_image.url + " "
-	# 		"TESTCASE_SERVER=" + testcase.testname(Perspective.SERVER) + " "
-	# 		"WWW=" + testcase.www_dir() + " "
-	# 		"CERTS=" + testcase.certs_dir() + " "
-
-	# 		"SHAPER=" + shaper.curr_image.url + " "
-	# 		"SCENARIO=" + testcase.scenario.arguments + " "
-
-	# 		"SERVER_LOGS=" + "/logs" + " "
-	# 		"CLIENT_LOGS=" + "/logs" + " "
-
-	# 		"CLIENT=" + client_image + " "	# required for compose v2
-
-	# 		"CLIENT_LOG_DIR=\"" + client_log_dir_local + "\" "
-	# 		"SERVER_LOG_DIR=\"" + server_log_dir_local + "\" "
-	# 		"SHAPER_LOG_DIR=\"" + shaper_log_dir_local + "\" "
-	# 	)
-	# 	params += " ".join(testcase.additional_envs())
-	# 	params += " ".join(shaper.additional_envs())
-	# 	params += " ".join(server.additional_envs())
-	# 	containers = "sim server " + " ".join(testcase.additional_containers())
-
-	# 	cmd = (
-	# 		params
-	# 		+ " docker-compose up -d "
-	# 		+ containers
-	# 	)
-
-	# 	result.status = Status.FAILED
-	# 	try:
-	# 		# Setup client
-	# 		if client.type == Type.APPLICATION:
-	# 			for setup_cmd in client.setup:
-	# 				out = ""
-	# 				setup_cmd.command_formatted = setup_cmd.command.format(client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
-	# 				logging.debug("Vegvisir: setup command: %s", setup_cmd.command_formatted)
-	# 				if setup_cmd.replace_tilde:
-	# 					setup_cmd.command_formatted = setup_cmd.command_formatted.replace("~", str(Path.home()))
-	# 				if setup_cmd.sudo:
-	# 					net_proc = subprocess.Popen(
-	# 					["sudo", "-S"] + setup_cmd.command_formatted.split(" "),
-	# 					shell=False,
-	# 					stdin=subprocess.PIPE,
-	# 					stdout=subprocess.PIPE,
-	# 					stderr=subprocess.STDOUT
-	# 				)
-	# 					o, e = net_proc.communicate(self._sudo_password.encode())
-	# 					out += str(o) + "\n" + str(e)
-	# 				else:
-	# 					proc = subprocess.run(
-	# 						setup_cmd.command_formatted,
-	# 						shell=True,
-	# 						stdout=subprocess.PIPE,
-	# 						stderr=subprocess.STDOUT
-	# 					)
-	# 					out += proc.stdout.decode("utf-8")
-	# 				logging.debug("Vegvisir: client setup: %s\n%s", setup_cmd.command_formatted, out)
-
-	# 		# Setup server and network
-	# 		#TODO exit on error
-	# 		logging.debug("Vegvisir: running command: %s", cmd)
-	# 		proc = subprocess.run(
-	# 			cmd,
-	# 			shell=True,
-	# 			stdout=subprocess.PIPE,
-	# 			stderr=subprocess.STDOUT
-	# 		)
-			
-	# 		if client.type == Type.APPLICATION:
-	# 			net_proc = subprocess.Popen(
-	# 				["sudo", "-S", "ip", "route", "del", "193.167.100.0/24"],
-	# 				shell=False,
-	# 				stdin=subprocess.PIPE,
-	# 				stdout=subprocess.PIPE,
-	# 				stderr=subprocess.STDOUT
-	# 			)
-	# 			out, err, _ = net_proc.communicate(self._sudo_password.encode())
-	# 			logging.debug("Vegvisir: network setup: %s", out.decode("utf-8"))
-	# 			if not err is None:
-	# 				logging.debug("Vegvisir: network error: %s", err.decode("utf-8"))
-	# 			net_proc = subprocess.Popen(
-	# 				["sudo", "-S", "ip", "route", "add", "193.167.100.0/24", "via", "193.167.0.2"],
-	# 				shell=False,
-	# 				stdin=subprocess.PIPE,
-	# 				stdout=subprocess.PIPE,
-	# 				stderr=subprocess.STDOUT
-	# 			)
-	# 			out, err, _ = net_proc.communicate(self._sudo_password.encode())
-	# 			logging.debug("Vegvisir: network setup: %s", out.decode("utf-8"))
-	# 			if not err is None:
-	# 				logging.debug("Vegvisir: network error: %s", err.decode("utf-8"))
-	# 			net_proc = subprocess.Popen(
-	# 				["sudo", "-S", "./veth-checksum.sh"],
-	# 				shell=False,
-	# 				stdin=subprocess.PIPE,
-	# 				stdout=subprocess.PIPE,
-	# 				stderr=subprocess.STDOUT
-	# 			)
-	# 			out, err, _ = net_proc.communicate(self._sudo_password.encode())
-	# 			logging.debug("Vegvisir: network setup: %s", out.decode("utf-8"))
-	# 			if not err is None:
-	# 				logging.debug("Vegvisir: network error: %s", err.decode("utf-8"))
-
-	# 		# Log kernel/net parameters
-	# 		net_proc = subprocess.Popen(
-	# 			["sudo", "-S", "ip", "a"],
-	# 			shell=False,
-	# 			stdin=subprocess.PIPE,
-	# 			stdout=subprocess.PIPE,
-	# 			stderr=subprocess.STDOUT
-	# 		)
-	# 		out, err, _ = net_proc.communicate(self._sudo_password.encode())
-	# 		logging.debug("Vegvisir: net log:\n%s", out.decode("utf-8"))
-	# 		if not err is None:
-	# 			logging.debug("Vegvisir: net log error: %s", err.decode("utf-8"))
-
-	# 		kernel_proc = subprocess.Popen(
-	# 			["sudo", "-S", "sysctl", "-a"],
-	# 			shell=False,
-	# 			stdin=subprocess.PIPE,
-	# 			stdout=subprocess.PIPE,
-	# 			stderr=subprocess.STDOUT
-	# 		)
-	# 		out, err, _ = kernel_proc.communicate(self._sudo_password.encode())
-	# 		logging.debug("Vegvisir: kernel log:\n%s", out.decode("utf-8"))
-	# 		if not err is None:
-	# 			logging.debug("Vegvisir: kernel log error: %s", err.decode("utf-8"))
-
-	# 		# Wait for server and shaper to be ready
-	# 		sleep(2)
-			
-	# 		# Setup client
-	# 		client_cmd = ""
-	# 		client_proc = None
-	# 		if client.type == Type.DOCKER:
-	# 			params += " ".join(client.additional_envs())
-	# 			client_cmd = (
-	# 				params
-	# 				+ " docker-compose up --abort-on-container-exit --timeout 1 "
-	# 				+ "client"
-	# 			)
-	# 			client_proc = subprocess.Popen(
-	# 				client_cmd,
-	# 				shell=True,
-	# 				stdout=subprocess.PIPE,
-	# 				stderr=subprocess.STDOUT
-	# 			)
-
-	# 		elif client.type == Type.APPLICATION:
-	# 			client_cmd = client.command.format(origin=testcase.origin, cert_fingerprint=testcase.cert_fingerprint, request_urls=testcase.request_urls, client_log_dir=client_log_dir_local, server_log_dir=server_log_dir_local, shaper_log_dir=shaper_log_dir_local)
-	# 			logging.debug("Vegvisir: running client: %s", client_cmd)
-	# 			client_proc = subprocess.Popen(
-	# 				client_cmd.split(' '),
-	# 				shell=False,
-	# 				stdout=subprocess.PIPE,
-	# 				stderr=subprocess.STDOUT,
-	# 			)
-	# 		logging.debug("Vegvisir: running client: %s", client_cmd)
-
-	# 		try:
-	# 			if isinstance(testcase.testend, TestEndUntilDownload):
-	# 				testcase.testend.setup(client_proc, log_dir + '/client', testcase.file_to_find, testcase.timeout_time)
-	# 			elif isinstance(testcase.testend, TestEndTimeout):
-	# 				testcase.testend.setup(client_proc, testcase.timeout_time)
-	# 			else:
-	# 				testcase.testend.setup(client_proc)
-	# 			testcase.testend.wait_for_end()
-	# 		except KeyboardInterrupt as e:
-	# 			logging.debug("Vegvisir: manual interrupt")
-	# 		# Wait for tests
-	# 		# try:
-	# 		# 	#TODO use threading instead? wait for events? how to do infinite sleep?
-	# 		# 	time.sleep(testcase.timeout) #TODO get from testcase
-	# 		# 	raise subprocess.TimeoutExpired(cmd, testcase.timeout, proc.stdout, proc.stderr)
-	# 		# except KeyboardInterrupt as e:
-	# 		# 	logging.debug("Vegvisir: manual interrupt")
-	# 		client_proc_stdout, _ = client_proc.communicate()
-	# 		if client_proc_stdout != None:
-	# 			logging.debug("Vegvisir: client: %s", client_proc_stdout.decode("utf-8"))
-	# 		logging.debug("Vegvisir: proc: %s", proc.stdout.decode("utf-8"))
-	# 		proc = subprocess.run(
-	# 			params + " docker-compose logs -t",
-	# 			shell=True,
-	# 			stdout=subprocess.PIPE,
-	# 			stderr=subprocess.STDOUT
-	# 		)
-	# 		logging.debug("Vegvisir: %s", proc.stdout.decode("utf-8"))
-	# 		result.status = Status.SUCCES
-	# 	except subprocess.TimeoutExpired as e:
-	# 		logging.debug("Vegvisir: subprocess timeout: %s", e.stdout.decode("utf-8"))
-	# 	except Exception as e:
-	# 		logging.debug("Vegvisir: subprocess error: %s", str(e))
-
-	# 	# self._copy_logs("sim", sim_log_dir, params)
-	# 	# if client.type == Type.DOCKER:
-	# 		# self._copy_logs("client", client_log_dir, params)
-	# 	# self._copy_logs("server", server_log_dir, params)
-
-	# 	# save logs
-	# 	logging.getLogger().removeHandler(log_handler)
-	# 	log_handler.close()
-	# 	if result.status == Status.FAILED or result.status == Status.SUCCES:
-	# 		# shutil.copytree(server_log_dir.name, server_log_dir_local, dirs_exist_ok=True)
-	# 		# shutil.copytree(client_log_dir.name, client_log_dir_local, dirs_exist_ok=True)
-	# 		# shutil.copytree(sim_log_dir.name, shaper_log_dir_local, dirs_exist_ok=True)
-	# 		shutil.copyfile(log_file.name, log_dir + "/output.txt")
-	# 		if self._save_files: #and result.status == Status.FAILED:
-	# 			#shutil.copytree(testcase.www_dir(), log_dir + "/www", dirs_exist_ok=True)
-	# 			try:
-	# 				shutil.copytree(testcase.download_dir(), log_dir + "/downloads", dirs_exist_ok=True)
-	# 			except Exception as exception:
-	# 				logging.info("Could not copy downloaded files: %s", exception)
-
-	# 	server_log_dir.cleanup()
-	# 	client_log_dir.cleanup()
-	# 	sim_log_dir.cleanup()
-
-	# 	try:
-	# 		logging.debug("Vegvisir: shutting down containers")
-	# 		proc = subprocess.run(
-	# 			params + " docker-compose down",
-	# 			shell=True,
-	# 			stdout=subprocess.PIPE,
-	# 			stderr=subprocess.STDOUT
-	# 		)
-	# 		logging.debug("Vegvisir: shut down successful: %s", proc.stdout.decode("utf-8"))
-	# 	except Exception as e:
-	# 		logging.debug("Vegvisir: subprocess error while shutting down: %s", str(e))
-
-	# 	result.end_time = datetime.now()
-	# 	return result
-
 
 	def _copy_logs(self, container: str, dir: tempfile.TemporaryDirectory, params: str):
 		r = subprocess.run(
