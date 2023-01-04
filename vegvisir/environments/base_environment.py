@@ -98,13 +98,13 @@ class BaseEnvironment:
 			sensor.terminate_sensor = True
 
 
-	def pre_run_hook(self):  # TODO jherbots pass through paths
+	def pre_run_hook(self, paths: ExperimentPaths):
 		"""
 		Called right after initial setup is completed (i.e., logging directories, ...) and before client, shaper and server are spun up
 		"""
 		pass
 
-	def post_run_hook(self):  # TODO jherbots pass through paths
+	def post_run_hook(self, paths: ExperimentPaths):
 		"""
 		Called after run has completed and everything is cleaned up
 		"""

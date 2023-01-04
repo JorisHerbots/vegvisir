@@ -5,9 +5,12 @@ import grp
 import logging
 import os
 import pathlib
+import queue
 import shlex
 import sys
 import subprocess
+import threading
+import time
 from typing import Dict, List, Set, Tuple
 import json
 import tempfile
@@ -57,6 +60,10 @@ class Runner:
 		self.iterations = 1
 
 		self.environment: BaseEnvironment = None
+		self.hook_processor_count = 4
+		self.hook_processors: List[threading.Thread] = []
+		self.hook_processor_request_stop: bool = False
+		self.hook_processor_queue: queue.Queue = queue.Queue()  # contains tuples (method pointer, path dataclass)
 
 		self._sudo_password = sudo_password
 		self._debug = debug
@@ -339,6 +346,16 @@ class Runner:
 		if self.iterations <= 0:
 			raise VegvisirInvalidExperimentConfigurationException("Setting 'iterations' must be > 0.")
 
+		hook_processors = settings.get("hook_processors", 4)
+		if type(hook_processors) is str and not hook_processors.isdigit():
+			raise VegvisirInvalidExperimentConfigurationException("Setting 'hook_processors' must be > 0.")
+		try:
+			self.hook_processor_count = int(hook_processors)
+		except ValueError:
+			raise VegvisirInvalidExperimentConfigurationException("Setting 'hook_processors' must be > 0.")
+		if self.hook_processor_count <= 0:
+			raise VegvisirInvalidExperimentConfigurationException("Setting 'hook_processors' must be > 0.")
+
 		environment = configuration.get("environment")
 		if environment is None:
 			raise VegvisirInvalidExperimentConfigurationException("No 'environment' key was found.")
@@ -383,6 +400,15 @@ class Runner:
 	# 				if hasattr(x, 'image_name') and x.image_name == tag:
 	# 					x.images.append(Image(img))
 
+	def _hook_processor(self):
+		while not self.hook_processor_request_stop:
+			try:
+				task, experiment_paths = self.hook_processor_queue.get(timeout=5)
+				task(experiment_paths)
+			except queue.Empty:
+				pass  # We can ignore this one
+
+
 	def _enable_ipv6(self):
 		"""
 		sudo modprobe ip6table_filter
@@ -416,6 +442,11 @@ class Runner:
 			shutil.copy2(self._path_collection.experiment_configuration_file_path, experiment_destination) 
 		except IOError as e:
 			logging.warning(f"Could not copy over experiment configuration to root of experiment logs: {experiment_destination} | {e}")
+
+		for _ in range(max(1, self.hook_processor_count)):
+			processor = threading.Thread(target=self._hook_processor)
+			processor.start()
+			self.hook_processors.append(processor)
 
 		self._enable_ipv6()
 
@@ -457,6 +488,9 @@ class Runner:
 						log_handler = logging.FileHandler(log_file)
 						log_handler.setLevel(logging.DEBUG)
 						logging.getLogger().addHandler(log_handler)
+
+						path_collection_copy = dataclasses.replace(self._path_collection)
+						self.hook_processor_queue.put((self.environment.pre_run_hook, path_collection_copy))  # Queue is infinite, should not block
 
 						vegvisirBaseArguments = VegvisirArguments()
 						vegvisirBaseArguments.LOG_PATH_CLIENT = self._path_collection.log_path_client
@@ -631,11 +665,35 @@ class Runner:
 					except VegvisirException as e:
 						logging.warning(f"Could not change log output ownership [{e}] @ {self._path_collection.log_path_permutation}")
 
+					self.hook_processor_queue.put((self.environment.post_run_hook, path_collection_copy))  # Queue is infinite, should not block
+
 					experiment_permutation_counter += 1
 
 					# TODO PLACE CORRECTLY
 					logging.getLogger().removeHandler(log_handler)
 					log_handler.close()  # TODO jherbots clean this and replace with nicer handler
+		
+		yield None, None, None, None, None
+
+		# Halt the hook processors
+		wait_for_hook_processors_counter = 0
+		while True:
+			if self.hook_processor_queue.qsize() == 0:
+				self.hook_processor_request_stop = True
+			states = [t.is_alive() for t in self.hook_processors]
+			time.sleep(5)
+			if not any(states):
+				for t in self.hook_processors:
+					t.join()
+				break
+			if wait_for_hook_processors_counter % 2 == 0:
+				hooks_todo = self.hook_processor_queue.qsize()
+				if hooks_todo > 0:
+					print(f"Vegvisir is waiting for all hooks to process, approximately {self.hook_processor_queue.qsize()} request(s) still in queue.")
+				else:
+					print(f"Vegvisir is waiting for {sum(states)} hook processor(s) to stop. If this message persists, perform CTRL + C")
+			wait_for_hook_processors_counter += 1
+
 
 	def _copy_logs(self, container: str, dir: tempfile.TemporaryDirectory, params: str):
 		r = subprocess.run(

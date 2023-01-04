@@ -151,12 +151,17 @@ def generate_progress_bar():
             "    ",
     )
 
+    postfix_info_string = f" Total elapsed time {datetime.now() - tui_start_timestamp}"
+
+    if not all([tui_client_name, tui_shaper_name, tui_server_name]):
+        # Happens when no experiment is being run
+        return loading_chars[tui_tick_counter % len(loading_chars)] + " Vegvisir is cleaning up -" + postfix_info_string
+        
     prefix_info_string = (
         f"[{tui_client_name}]{packet_char[tui_tick_counter % len(packet_char)]}"
         f"[{tui_shaper_name}]{packet_char2[tui_tick_counter % len(packet_char2)]}"
         f"[{tui_server_name}] "
     )
-    postfix_info_string = f" Total ellapsed time {datetime.now() - tui_start_timestamp}"
     if tui_progress_total > 1:
         progress = tui_progress_current / tui_progress_total
         infix_info_string = f"{math.floor(progress * 100)}%"
@@ -224,4 +229,4 @@ def main():
         sys.exit(1)
 
     destruct_tui()
-    print(f"Vegvisir run finished. Total ellapsed time {datetime.now()-tui_start_timestamp}")
+    print(f"Vegvisir run finished. Total elapsed time {datetime.now()-tui_start_timestamp}")
