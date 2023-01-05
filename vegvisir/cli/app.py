@@ -178,6 +178,7 @@ def tui_render_tick():
             flush_print((
                 f"{control_sequences['SAVE_CURSOR']}"
                 f"{control_sequences['SET_CURSOR_POSITION'].format(row=tui_lines, column=0)}"
+                f"{control_sequences['ERASE_TO_RIGHT']}"
                 f"{generate_progress_bar()}"
                 f"{control_sequences['RESTORE_CURSOR']}"
             ))
