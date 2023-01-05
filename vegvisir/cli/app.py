@@ -219,11 +219,16 @@ def main():
         destruct_tui()
         sys.exit(1)
     except runner.VegvisirInvalidExperimentConfigurationException as e:
-        logging.error("Vegvisir test configuration contains incorrect data, halting execution")
+        logging.error("Vegvisir experiment configuration contains incorrect data, halting execution")
         logging.error(e)
         destruct_tui()
         sys.exit(1)
-    except runner.VegvisirException as e:
+    except runner.VegvisirArgumentException as e:
+        logging.error("Vegvisir implementations or experiment configuration contains a wrongfully configured argument, halting execution")
+        logging.error(e)
+        destruct_tui()
+        sys.exit(1)
+    except (runner.VegvisirException, Exception) as e:  # Exception allows for clean shutdowns of the GUI
         logging.error("Generic Vegvisir error encountered, halting exception.")
         logging.error(e)
         destruct_tui()
