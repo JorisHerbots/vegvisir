@@ -140,7 +140,7 @@ SensorKey = text, ; Parameter as defined in the sensor python code
 ```
 
 ```
-AvailableSensors = "timeout" / "file-watchdog"
+AvailableSensors = "timeout" / "browser-file-watchdog"
 ```
 
 ```

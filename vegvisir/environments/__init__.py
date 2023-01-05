@@ -7,5 +7,5 @@ available_environments = {
 
 available_sensors = {
     "timeout": sensors.TimeoutSensor,
-    "file-watchdog": sensors.FileWatchdogSensor
+    "browser-file-watchdog": sensors.BrowserDownloadWatchdogSensor
 }

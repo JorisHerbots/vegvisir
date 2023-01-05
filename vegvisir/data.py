@@ -16,6 +16,8 @@ class ExperimentPaths:
     log_path_server: str | None = None
     log_path_shaper: str | None = None
 
+    download_path_client: str | None = None
+
     implementations_configuration_file_path: str | None = None
     experiment_configuration_file_path: str | None = None
 
@@ -42,6 +44,7 @@ class VegvisirArguments:
     LOG_PATH_CLIENT: str | None = None
     LOG_PATH_SERVER: str | None = None
     LOG_PATH_SHAPER: str | None = None
+    DOWNLOAD_PATH_CLIENT: str | None = None
 
     ORIGIN: str | None = None
     ORIGIN_IPV4: str | None = None

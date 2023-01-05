@@ -479,7 +479,8 @@ class Runner:
 						self._path_collection.log_path_client = os.path.join(self._path_collection.log_path_permutation, 'client')
 						self._path_collection.log_path_server = os.path.join(self._path_collection.log_path_permutation, 'server')
 						self._path_collection.log_path_shaper = os.path.join(self._path_collection.log_path_permutation, 'shaper')
-						for log_dir in [self._path_collection.log_path_client, self._path_collection.log_path_server, self._path_collection.log_path_shaper]:
+						self._path_collection.download_path_client = os.path.join(self._path_collection.log_path_permutation, 'downloads')
+						for log_dir in [self._path_collection.log_path_client, self._path_collection.log_path_server, self._path_collection.log_path_shaper, self._path_collection.download_path_client]:
 							pathlib.Path(log_dir).mkdir(parents=True, exist_ok=True)
 						pathlib.Path(os.path.join(self._path_collection.log_path_iteration, "client__shaper__server")).touch()						
 
@@ -496,6 +497,7 @@ class Runner:
 						vegvisirBaseArguments.LOG_PATH_CLIENT = self._path_collection.log_path_client
 						vegvisirBaseArguments.LOG_PATH_SERVER = self._path_collection.log_path_server
 						vegvisirBaseArguments.LOG_PATH_SHAPER = self._path_collection.log_path_shaper
+						vegvisirBaseArguments.DOWNLOAD_PATH_CLIENT = self._path_collection.download_path_client
 
 						client_image = client.image.full if client.type == Endpoint.Type.DOCKER else "none"  # Docker compose v2 requires an image name, can't default to blank string
 
@@ -522,7 +524,7 @@ class Runner:
 
 							"CERTS=" + cert_path.name + " "
 							"WWW=" + self.www_path + " "
-							"DOWNLOADS=" + tempfile.TemporaryDirectory(dir="/tmp", prefix="vegvisir_downloads_").name + " "  # TODO rework this
+							"DOWNLOAD_PATH_CLIENT=\"" + self._path_collection.download_path_client + "\" "
 
 							"LOG_PATH_CLIENT=\"" + self._path_collection.log_path_client + "\" "
 							"LOG_PATH_SERVER=\"" + self._path_collection.log_path_server + "\" "
