@@ -3,11 +3,14 @@ from datetime import datetime
 from getpass import getpass
 import logging
 import math
+import random
 import shutil
 import signal
 import sys
 import threading
 import time
+
+import colour
 
 from .. import runner
 
@@ -41,6 +44,9 @@ control_sequences = {
     "SET_CURSOR_POSITION": "\x1B[{row};{column}H",
     "SHIFT_CURSOR_UP": "\x1B[{lines}A",
     "ERASE_TO_RIGHT": "\x1B[0K",
+    "ERASE_ALL": "\x1B[2J",
+    "COLOR": "\x1B[38;2;{r};{g};{b}m",
+    "CLEAR_COLOR": "\x1B[0m",
 }
 tui_columns, tui_lines = shutil.get_terminal_size()
 tui_tick_counter = 0  # Used and controlled by tui animations
@@ -61,6 +67,7 @@ def construct_tui():
         f"{control_sequences['SET_SCROLL_REGION'].format(top=1, bottom=tui_lines-1)}"
         f"{control_sequences['RESTORE_CURSOR']}"
         f"{control_sequences['SHIFT_CURSOR_UP'].format(lines=1)}"
+        f"{control_sequences['ERASE_TO_RIGHT']}"
     ))
 
 def destruct_tui():
@@ -88,12 +95,37 @@ def calculate_and_set_screen_size(signal_number, stack_frame):
     tui_columns, tui_lines = shutil.get_terminal_size()
     construct_tui()
 
-# flush_print((
-#     f"{control_sequences['SAVE_CURSOR']}"
-#     f"{control_sequences['SET_CURSOR_POSITION'].format(row=tui_lines, column=0)}"
-#     "I am a cool string :)"
-#     f"{control_sequences['RESTORE_CURSOR']}"
-# ))
+def generate_banner(fancy_print=True):
+    version = "V2.0.0-dev"  # TODO jherbots fill in with version number from better location 
+    banner_width = 38  # characters
+    pre_padding = math.floor(banner_width * 3 / 4) - math.floor(len(version)/2)
+    version_string = " " * pre_padding + version + " " * (banner_width - pre_padding - len(version)) + "\n"
+    
+    banner = (
+        " __     __               _     _      " + "\n"
+        " \ \   / /__  __ ___   _(_)___(_)_ __ " + "\n"
+        "  \ \ / / _ \/ _` \ \ / / / __| | '__|" + "\n"
+        "   \ V /  __/ (_| |\ V /| \__ \ | |   " + "\n"
+        "    \_/ \___|\__, | \_/ |_|___/_|_|   " + "\n"
+        "             |___/                    " + "\n"
+        f"{version_string}" + "\n"
+    )
+
+    if not fancy_print:
+        return banner
+
+    gradients = [
+        ("#f43b47", "#453a94"),
+        ("#9796f0", "#fbc7d4"),
+        ("#C33764", "#1D2671"),
+    ]
+    gradient_pick = random.choice(gradients)
+    banner_split = banner.splitlines()
+    fancy_banner = ""
+    for line, color in zip(banner_split, colour.Color(gradient_pick[0]).range_to(gradient_pick[1], len(banner_split))):
+        fancy_banner += (f"{control_sequences['COLOR'].format(r=math.floor(color.red * 255), g=math.floor(color.green * 255), b=math.floor(color.blue * 255))}{line}\n")
+    fancy_banner += control_sequences["CLEAR_COLOR"]
+    return fancy_banner
 
 def generate_progress_bar():
     loading_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
@@ -188,10 +220,6 @@ def tui_render_tick():
             tui_tick_counter = 0
         time.sleep(tui_tick_delta_sec)
 
-construct_tui()
-signal.signal(signal.SIGWINCH, calculate_and_set_screen_size)
-signal.signal(signal.SIGINT, sigint_handler)
-
 def main():
     global tui_start_timestamp, tui_client_name, tui_shaper_name, tui_server_name, tui_progress_current, tui_progress_total, tui_threads_run
 
@@ -205,6 +233,15 @@ def main():
     implementations_path = vegvisir_arguments.implementations_path
     experiment_path = vegvisir_arguments.experiment_path
 
+    flush_print((
+        f"{control_sequences['ERASE_ALL']}"
+        f"{control_sequences['SET_CURSOR_POSITION'].format(column=1, row=1)}"
+    ))
+    construct_tui()
+    signal.signal(signal.SIGWINCH, calculate_and_set_screen_size)
+    signal.signal(signal.SIGINT, sigint_handler)
+    print(generate_banner())
+    
     sudo_pass = getpass("Enter password to run sudo commands: ")
     
     tui_start_timestamp = datetime.now()
