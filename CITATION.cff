@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Herbots"
+  given-names: "Joris"
+  orcid: "https://orcid.org/TODO"
+- family-names: "Vandersanden"
+  given-names: "Mike"
+  orcid: "https://orcid.org/0000-0003-0552-3794"
+- family-names: "Van Bylen"
+  given-names: "Olaf"
+  orcid: "https://orcid.org/TODO"
+title: "Vegvisir"
+version: v2
+doi: #TODO
+date-released: 2023-01-XX
+url: "https://github.com/JorisHerbots/vegvisir"
