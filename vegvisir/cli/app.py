@@ -1,3 +1,4 @@
+import argparse
 from datetime import datetime
 from getpass import getpass
 import logging
@@ -193,13 +194,17 @@ signal.signal(signal.SIGINT, sigint_handler)
 
 def main():
     global tui_start_timestamp, tui_client_name, tui_shaper_name, tui_server_name, tui_progress_current, tui_progress_total, tui_threads_run
-    
-    # TODO jherbots: temporary file loading mechanism
-    implementations_path = sys.argv[1] if len(sys.argv) >= 2 else "implementations.json"
-    experiment_path = sys.argv[2] if len(sys.argv) >= 3 else  "experiment.json"
 
-    print(f"Using implementations file: {implementations_path}")
-    print(f"Using experiment file: {experiment_path}")
+    argument_parser = argparse.ArgumentParser(prog="vegvisir", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
+    argument_parser.add_argument("-i", "--implementations", dest="implementations_path", metavar="implementations.json", default="./implementations.json")
+    argument_parser.add_argument("-e", "--experiment", dest="experiment_path", metavar="experiment.json", default="./experiment.json")
+    argument_parser.add_argument("-v", "--verbose", action="count", default=0)
+    argument_parser.add_argument("--version", action="version", version="TODO")
+    vegvisir_arguments = argument_parser.parse_args()
+
+    implementations_path = vegvisir_arguments.implementations_path
+    experiment_path = vegvisir_arguments.experiment_path
+
     sudo_pass = getpass("Enter password to run sudo commands: ")
     
     tui_start_timestamp = datetime.now()
