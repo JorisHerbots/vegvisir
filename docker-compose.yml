@@ -55,7 +55,7 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - $DOWNLOADS:/downloads:delegated
+      - $DOWNLOAD_PATH_CLIENT:/downloads:delegated
       - $CERTS:/certs:ro
       - $LOG_PATH_CLIENT:/logs/
     env_file: 
