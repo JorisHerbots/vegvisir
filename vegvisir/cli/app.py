@@ -219,18 +219,11 @@ def tui_render_tick():
             tui_tick_counter = 0
         time.sleep(tui_tick_delta_sec)
 
-def main():
+def run(vegvisir_arguments):
     global tui_start_timestamp, tui_client_name, tui_shaper_name, tui_server_name, tui_progress_current, tui_progress_total, tui_threads_run
 
-    argument_parser = argparse.ArgumentParser(prog="vegvisir", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
-    argument_parser.add_argument("-i", "--implementations", dest="implementations_path", metavar="implementations.json", default="./implementations.json")
-    argument_parser.add_argument("-e", "--experiment", dest="experiment_path", metavar="experiment.json", default="./experiment.json")
-    argument_parser.add_argument("-v", "--verbose", action="count", default=0)
-    argument_parser.add_argument("--version", action="version", version="TODO")
-    vegvisir_arguments = argument_parser.parse_args()
-
-    implementations_path = vegvisir_arguments.implementations_path
-    experiment_path = vegvisir_arguments.experiment_path
+    implementations_path = vegvisir_arguments.implementations
+    experiment_path = vegvisir_arguments.experiment
 
     flush_print((
         f"{control_sequences['ERASE_ALL']}"
@@ -277,3 +270,47 @@ def main():
 
     destruct_tui()
     print(f"Vegvisir run finished. Total elapsed time {datetime.now()-tui_start_timestamp}")
+
+
+class SubcommandHelpFormatter(argparse.RawDescriptionHelpFormatter):
+    # https://stackoverflow.com/a/13429281
+    # Removes the metavar help line for an overall cleaner experience
+    def _format_action(self, action):
+        parts = super(argparse.RawDescriptionHelpFormatter, self)._format_action(action)
+        if action.nargs == argparse.PARSER:
+            parts = "\n".join(parts.split("\n")[1:])
+        return parts
+
+
+def main():
+    argument_parser = argparse.ArgumentParser(prog="vegvisir", description=generate_banner(), formatter_class=SubcommandHelpFormatter)
+    argument_parser.add_argument("-V", "--version", action="version", version=f"Vegvisir V{vegvisir_version}")
+    argument_subparsers = argument_parser.add_subparsers(title="Commands", metavar="[COMMAND]", dest="command")
+
+    experiment_parser = argument_subparsers.add_parser("run", aliases=["r"], help="Run an experiment using Vegvisir", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
+    experiment_parser.add_argument("-i", "--implementations",  dest="implementations", metavar="[IMPLEMENTATIONS FILE]", help="Defaults to ./implementations.json", default="./implementations.json")
+    experiment_parser.add_argument("-v", "--verbose", action="store_true", help="Enable additional debug logs to be printed to the commandline")
+    experiment_parser.add_argument("-q", "--quiet", action="store_true", help="Only print critical warnings and errors. Logs will still be saved to the log directory.")
+    experiment_parser.add_argument("experiment", metavar="[EXPERIMENT FILE]", default="./experiment.json")
+
+    freeze_parser = argument_subparsers.add_parser("freeze", aliases=["f"], help="Freeze a set of docker images defined in the provided implementations file using docker save", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
+    freeze_parser.add_argument("-i", "--implementations",  dest="implementations", metavar="[IMPLEMENTATIONS FILE]", help="Defaults to ./implementations.json", default="./implementations.json")
+    freeze_parser.add_argument("out", metavar="OUT", help="Filename for the frozen archive")
+
+    share_parser = argument_subparsers.add_parser("share", aliases=["s"], help="Generate a compressed file containing the results of an experiment", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
+    share_parser.add_argument("experiment", metavar="[EXPERIMENT FILE]", default="./experiment.json")
+
+    vegvisir_arguments = argument_parser.parse_args()
+
+    command_to_callback_map = {
+        "r": run,
+        "f": lambda _: None,
+        "s": lambda _: None,
+        "run": run,
+        "freeze": lambda _: None,
+        "share": lambda _: None,
+    }
+
+    command_callback = command_to_callback_map.get(vegvisir_arguments.command, None)
+    if command_callback:
+        command_callback(vegvisir_arguments)
