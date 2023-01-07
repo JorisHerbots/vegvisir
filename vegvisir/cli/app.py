@@ -12,7 +12,7 @@ import time
 
 import colour
 
-from .. import runner
+from .. import runner, __version__ as vegvisir_version
 
 # Globals
 '''
@@ -96,10 +96,9 @@ def calculate_and_set_screen_size(signal_number, stack_frame):
     construct_tui()
 
 def generate_banner(fancy_print=True):
-    version = "V2.0.0-dev"  # TODO jherbots fill in with version number from better location 
     banner_width = 38  # characters
-    pre_padding = math.floor(banner_width * 3 / 4) - math.floor(len(version)/2)
-    version_string = " " * pre_padding + version + " " * (banner_width - pre_padding - len(version)) + "\n"
+    pre_padding = math.floor(banner_width * 3 / 4) - math.floor(len(vegvisir_version)/2)
+    version_string = " " * pre_padding + vegvisir_version + " " * (banner_width - pre_padding - len(vegvisir_version)) + "\n"
     
     banner = (
         " __     __               _     _      " + "\n"
