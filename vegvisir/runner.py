@@ -292,7 +292,6 @@ class Runner:
 			try:
 				commands = [client_endpoint.command] + client_endpoint.construct + client_endpoint.destruct
 				hydrated_parameters = client_endpoint.parameters.hydrate_with_arguments(client_unhydrated_parameters, vegvisirDummyArguments)
-				print(hydrated_parameters)
 				for cmd in commands:
 					cmd.serialize_command(hydrated_parameters)
 			except VegvisirArgumentException as e:
