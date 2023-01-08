@@ -12,7 +12,9 @@ import time
 
 import colour
 
-from .. import runner, __version__ as vegvisir_version
+from vegvisir.configuration import Configuration
+
+from .. import runner, exceptions, __version__ as vegvisir_version
 
 # Globals
 '''
@@ -241,28 +243,29 @@ def run(vegvisir_arguments):
     tui_thread.start()
     
     try:
-        r = runner.Runner(sudo_password=sudo_pass, debug=True, implementations_file_path=implementations_path)
-        r.load_experiment_from_file(experiment_path)
+        configuration = Configuration(implementations_path, experiment_path)
+        r = runner.Experiment(sudo_password=sudo_pass, configuration_object=configuration)
+        # r.load_experiment_from_file(experiment_path)
         # r.load_experiment_from_file("test_run2.json")
         # r.load_experiment_from_file("test_run.json")
         for experiment in r.run():
             tui_client_name, tui_shaper_name, tui_server_name, tui_progress_current, tui_progress_total = experiment
-    except runner.VegvisirInvalidImplementationConfigurationException as e:
+    except exceptions.VegvisirInvalidImplementationConfigurationException as e:
         logging.error("Vegvisir implementations configuration contains incorrect data, halting execution")
         logging.error(e)
         destruct_tui()
         sys.exit(1)
-    except runner.VegvisirInvalidExperimentConfigurationException as e:
+    except exceptions.VegvisirInvalidExperimentConfigurationException as e:
         logging.error("Vegvisir experiment configuration contains incorrect data, halting execution")
         logging.error(e)
         destruct_tui()
         sys.exit(1)
-    except runner.VegvisirArgumentException as e:
+    except exceptions.VegvisirArgumentException as e:
         logging.error("Vegvisir implementations or experiment configuration contains a wrongfully configured argument, halting execution")
         logging.error(e)
         destruct_tui()
         sys.exit(1)
-    except (runner.VegvisirException, Exception) as e:  # Exception allows for clean shutdowns of the GUI
+    except (exceptions.VegvisirException, Exception) as e:  # Exception allows for clean shutdowns of the GUI
         logging.error("Generic Vegvisir error encountered, halting exception.")
         logging.error(e)
         destruct_tui()

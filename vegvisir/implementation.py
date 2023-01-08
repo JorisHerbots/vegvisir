@@ -5,6 +5,7 @@ import sys
 from typing import Dict, List, TextIO, Tuple
 
 from vegvisir.data import VegvisirArguments
+from vegvisir.exceptions import VegvisirArgumentException, VegvisirParameterException
 # class Role(Enum):
 # 	CLIENT = 1
 # 	SERVER = 2
@@ -152,16 +153,6 @@ from vegvisir.data import VegvisirArguments
 
 
 ################## NEW #################
-
-class VegvisirParameterException(Exception):
-	pass
-
-class VegvisirArgumentException(Exception):
-	pass
-
-class VegvisirCommandException(Exception):
-	pass
-
 
 class HostCommand:
 	def __init__(self, command: str, root_required: bool = False) -> None:
