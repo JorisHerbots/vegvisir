@@ -10,7 +10,7 @@ from vegvisir.implementation import DockerImage, Endpoint, HostCommand, Paramete
 
 
 class Configuration:
-	def __init__(self, implementations_path: str = None, experiment_path: str = None) -> None:
+	def __init__(self, implementations_path: str | None = None, experiment_path: str | None = None) -> None:
 		
 		self._implementations_configuration_loaded = False
 		self._experiment_configuration_loaded = False
@@ -84,7 +84,8 @@ class Configuration:
 
 	@property
 	def path_collection(self):
-		# Contents of _path_collection are based on the loaded configurations, it's important to check for None values 
+		self._validate_and_raise_load(self._implementations_configuration_loaded, "path_collection", "implementations")
+		self._validate_and_raise_load(self._experiment_configuration_loaded, "path_collection", "experiment")
 		return self._path_collection
 
 	def _validate_and_raise_load(self, config_bool: bool, getter: str, required_config_name: str):
@@ -110,7 +111,7 @@ class Configuration:
 			self._load_implementations_from_dict(implementations)
 			self._path_collection.implementations_configuration_file_path = implementations_path
 		except FileNotFoundError as e:
-			raise VegvisirException(f"Implementations file [{implementations_path}] not found | {e}")
+			raise VegvisirConfigurationException(f"Implementations file [{implementations_path}] not found | {e}")
 		except json.JSONDecodeError as e:
 			raise VegvisirInvalidImplementationConfigurationException(f"Failed to decode provided implementations JSON [{implementations_path}] | {e}")
 
@@ -120,7 +121,7 @@ class Configuration:
 		If truly loaded via json.load, duplicates will be automatically be eliminated
 		"""
 		if self._implementations_configuration_loaded:
-			raise VegvisirException("Configuration objects can not reload configurations. Create a new configuration object for multiple configurations.")
+			raise VegvisirConfigurationException("Configuration objects can not reload configurations. Create a new configuration object for multiple configurations.")
 		self._implementations_configuration_loaded = True
 
 		CLIENTS_KEY = "clients"
@@ -200,7 +201,7 @@ class Configuration:
 			self._load_and_validate_experiment_from_dict(configuration)
 			self._path_collection.experiment_configuration_file_path = experiment_path
 		except FileNotFoundError as e:
-			raise VegvisirException(f"Implementations file [{experiment_path}] not found | {e}")
+			raise VegvisirConfigurationException(f"Implementations file [{experiment_path}] not found | {e}")
 		except json.JSONDecodeError as e:
 			raise VegvisirInvalidExperimentConfigurationException(f"Failed to decode experiment configuration JSON [{experiment_path}] | {e}")
 
@@ -208,8 +209,10 @@ class Configuration:
 		"""
 		Load and validate is a bad smell, but then again why bother :)
 		"""
+		if not self._implementations_configuration_loaded:
+			raise VegvisirConfigurationException("Configuration objects can not load experiment configurations without implementations being loaded first.")
 		if self._experiment_configuration_loaded:
-			raise VegvisirException("Configuration objects can not reload configurations. Create a new configuration object for multiple configurations.")
+			raise VegvisirConfigurationException("Configuration objects can not reload configurations. Create a new configuration object for multiple configurations.")
 		self._experiment_configuration_loaded = True
 
 		CLIENTS_KEY = "clients"

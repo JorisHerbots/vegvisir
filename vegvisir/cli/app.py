@@ -250,6 +250,11 @@ def run(vegvisir_arguments):
         # r.load_experiment_from_file("test_run.json")
         for experiment in r.run():
             tui_client_name, tui_shaper_name, tui_server_name, tui_progress_current, tui_progress_total = experiment
+    except exceptions.VegvisirConfigurationException as e:
+        logging.error("Vegvisir generic configuration error, halting execution")
+        logging.error(e)
+        destruct_tui()
+        sys.exit(1)
     except exceptions.VegvisirInvalidImplementationConfigurationException as e:
         logging.error("Vegvisir implementations configuration contains incorrect data, halting execution")
         logging.error(e)
@@ -267,7 +272,7 @@ def run(vegvisir_arguments):
         sys.exit(1)
     except (exceptions.VegvisirException, Exception) as e:  # Exception allows for clean shutdowns of the GUI
         logging.error("Generic Vegvisir error encountered, halting exception.")
-        logging.error(e)
+        logging.exception(e)
         destruct_tui()
         sys.exit(1)
 
