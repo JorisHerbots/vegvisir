@@ -1,17 +1,36 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: "If you use Vegvisir in your research, please cite it as below."
 authors:
 - family-names: "Herbots"
   given-names: "Joris"
-  orcid: "https://orcid.org/TODO"
+  orcid: "https://orcid.org/0000-0002-8987-0824"
 - family-names: "Vandersanden"
   given-names: "Mike"
   orcid: "https://orcid.org/0000-0003-0552-3794"
-- family-names: "Van Bylen"
-  given-names: "Olaf"
-  orcid: "https://orcid.org/TODO"
 title: "Vegvisir"
-version: v2
+version: v2.0.0.dev1
 doi: #TODO
-date-released: 2023-01-XX
+date-released: 2023-01-27 # TODO
 url: "https://github.com/JorisHerbots/vegvisir"
+preferred-citation:
+  type: conference-paper
+  authors:
+  - family-names: "Herbots"
+    given-names: "Joris"
+    orcid: "https://orcid.org/0000-0002-8987-0824"
+  - family-names: "Vandersanden"
+    given-names: "Mike"
+    orcid: "https://orcid.org/0000-0003-0552-3794"
+  - family-names: "Quax"
+    given-names: "Peter"
+    orcid: "https://orcid.org/0000-0003-4811-0578"
+  - family-names: "Lamotte"
+    given-names: "Wim"
+    orcid: "https://orcid.org/0000-0003-1888-6383"
+  conference:
+    name: "todo"
+    city: "todo"
+    date-start: "todo"
+  title: "Vegvisir" # TODO conference paper name
+  year: 2023
+  month: "tbd" # TODO
