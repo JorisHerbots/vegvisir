@@ -346,7 +346,13 @@ class Experiment:
 							logging.debug(out.decode("utf-8"))
 							logging.debug(err.decode("utf-8"))
 
-						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps", False, True)
+						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps server", False, True)
+						logging.debug(out)
+						logging.debug(err)
+						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps sim", False, True)
+						logging.debug(out)
+						logging.debug(err)
+						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps client", False, True)
 						logging.debug(out)
 						logging.debug(err)
 
