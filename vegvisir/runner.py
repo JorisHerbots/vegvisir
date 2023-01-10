@@ -228,10 +228,10 @@ class Experiment:
 						vegvisirBaseArguments.WAITFORSERVER = "server4:443"
 						vegvisirBaseArguments.SSLKEYLOGFILE = "/logs/keys.log"
 						vegvisirBaseArguments.QLOGDIR = "/logs/qlog/"
-						vegvisirBaseArguments.SCENARIO = shaper.scenarios[shaper_config["scenario"]].command
+						# vegvisirBaseArguments.SCENARIO = shaper.scenarios[shaper_config["scenario"]].command  # TODO jherbots Check if client and server need this?
 
 						vegvisirServerArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="server", TESTCASE=self.configuration.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER))
-						vegvisirShaperArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="shaper", WAITFORSERVER="server:443")  # Important: Shaper uses server instead of server4
+						vegvisirShaperArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="shaper", SCENARIO = shaper.scenarios[shaper_config["scenario"]].command, WAITFORSERVER="server:443")  # Important edgecase! Shaper uses server instead of server4
 
 						docker_compose_vars = (
 							"CLIENT=" + client_image + " "
