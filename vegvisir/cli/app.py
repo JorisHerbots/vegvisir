@@ -305,20 +305,23 @@ def main():
     freeze_parser.add_argument("-i", "--implementations",  dest="implementations", metavar="[IMPLEMENTATIONS FILE]", help="Defaults to ./implementations.json", default="./implementations.json")
     freeze_parser.add_argument("out", metavar="OUT", help="Filename for the frozen archive")
 
-    share_parser = argument_subparsers.add_parser("share", aliases=["s"], help="Generate a compressed file containing the results of an experiment", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
-    share_parser.add_argument("experiment", metavar="[EXPERIMENT FILE]", default="./experiment.json")
+    # Future work
+    # share_parser = argument_subparsers.add_parser("share", aliases=["s"], help="Generate a compressed file containing the results of an experiment", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
+    # share_parser.add_argument("experiment", metavar="[EXPERIMENT FILE]", default="./experiment.json")
 
     vegvisir_arguments = argument_parser.parse_args()
 
     command_to_callback_map = {
         "r": run,
         "f": lambda _: None,
-        "s": lambda _: None,
+        # "s": lambda _: None,  # Future work
         "run": run,
         "freeze": lambda _: None,
-        "share": lambda _: None,
+        # "share": lambda _: None,  # Future work
     }
 
     command_callback = command_to_callback_map.get(vegvisir_arguments.command, None)
     if command_callback:
         command_callback(vegvisir_arguments)
+    else:
+        argument_parser.print_help()
