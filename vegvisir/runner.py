@@ -32,9 +32,9 @@ class Experiment:
 	def __init__(self, sudo_password: str, configuration_object: Configuration):
 		self.configuration = configuration_object
 
-		self.hook_processors: List[threading.Thread] = []
-		self.hook_processor_request_stop: bool = False
-		self.hook_processor_queue: queue.Queue = queue.Queue()  # contains tuples (method pointer, path dataclass)
+		self.post_hook_processors: List[threading.Thread] = []
+		self.post_hook_processor_request_stop: bool = False
+		self.post_hook_processor_queue: queue.Queue = queue.Queue()  # contains tuples (method pointer, path dataclass)
 
 		self._sudo_password = sudo_password
 		# self._debug = debug
@@ -115,10 +115,10 @@ class Experiment:
 	# 				if hasattr(x, 'image_name') and x.image_name == tag:
 	# 					x.images.append(Image(img))
 
-	def _hook_processor(self):
-		while not self.hook_processor_request_stop:
+	def _post_hook_processor(self):
+		while not self.post_hook_processor_request_stop:
 			try:
-				task, experiment_paths = self.hook_processor_queue.get(timeout=5)
+				task, experiment_paths = self.post_hook_processor_queue.get(timeout=5)
 				task(experiment_paths)
 			except queue.Empty:
 				pass  # We can ignore this one
@@ -159,9 +159,9 @@ class Experiment:
 			logging.warning(f"Could not copy over experiment configuration to root of experiment logs: {experiment_destination} | {e}")
 
 		for _ in range(max(1, self.configuration.hook_processor_count)):
-			processor = threading.Thread(target=self._hook_processor)
+			processor = threading.Thread(target=self._post_hook_processor)
 			processor.start()
-			self.hook_processors.append(processor)
+			self.post_hook_processors.append(processor)
 
 		self._enable_ipv6()
 
@@ -206,7 +206,13 @@ class Experiment:
 						logging.getLogger().addHandler(log_handler)
 
 						path_collection_copy = dataclasses.replace(self.configuration.path_collection)
-						self.hook_processor_queue.put((self.configuration.environment.pre_run_hook, path_collection_copy))  # Queue is infinite, should not block
+
+						logging.debug("Calling environment pre_hook")
+						pre_hook_start = datetime.now()
+						self.configuration.environment.pre_run_hook(path_collection_copy)
+						pre_hook_total = datetime.now() - pre_hook_start
+						if pre_hook_total.total_seconds() > 5:
+							logging.debug(f"Pre-hook took {datetime.now() - pre_hook_start} to complete.")
 
 						vegvisirBaseArguments = VegvisirArguments()
 						vegvisirBaseArguments.LOG_PATH_CLIENT = self.configuration.path_collection.log_path_client
@@ -388,7 +394,7 @@ class Experiment:
 					except VegvisirException as e:
 						logging.warning(f"Could not change log output ownership [{e}] @ {self.configuration.path_collection.log_path_permutation}")
 
-					self.hook_processor_queue.put((self.configuration.environment.post_run_hook, path_collection_copy))  # Queue is infinite, should not block
+					self.post_hook_processor_queue.put((self.configuration.environment.post_run_hook, path_collection_copy))  # Queue is infinite, should not block
 
 					experiment_permutation_counter += 1
 
@@ -401,18 +407,18 @@ class Experiment:
 		# Halt the hook processors
 		wait_for_hook_processors_counter = 0
 		while True:
-			if self.hook_processor_queue.qsize() == 0:
-				self.hook_processor_request_stop = True
-			states = [t.is_alive() for t in self.hook_processors]
+			if self.post_hook_processor_queue.qsize() == 0:
+				self.post_hook_processor_request_stop = True
+			states = [t.is_alive() for t in self.post_hook_processors]
 			time.sleep(5)
 			if not any(states):
-				for t in self.hook_processors:
+				for t in self.post_hook_processors:
 					t.join()
 				break
 			if wait_for_hook_processors_counter % 2 == 0:
-				hooks_todo = self.hook_processor_queue.qsize()
+				hooks_todo = self.post_hook_processor_queue.qsize()
 				if hooks_todo > 0:
-					print(f"Vegvisir is waiting for all hooks to process, approximately {self.hook_processor_queue.qsize()} request(s) still in queue.")
+					print(f"Vegvisir is waiting for all hooks to process, approximately {self.post_hook_processor_queue.qsize()} request(s) still in queue.")
 				else:
 					print(f"Vegvisir is waiting for {sum(states)} hook processor(s) to stop. If this message persists, perform CTRL + C")
 			wait_for_hook_processors_counter += 1
