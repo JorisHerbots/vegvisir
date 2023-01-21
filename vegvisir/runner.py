@@ -32,7 +32,6 @@ class Experiment:
 	def __init__(self, sudo_password: str, configuration_object: Configuration):
 		self.configuration = configuration_object
 
-		self.hook_processor_count = 4
 		self.hook_processors: List[threading.Thread] = []
 		self.hook_processor_request_stop: bool = False
 		self.hook_processor_queue: queue.Queue = queue.Queue()  # contains tuples (method pointer, path dataclass)
@@ -159,7 +158,7 @@ class Experiment:
 		except IOError as e:
 			logging.warning(f"Could not copy over experiment configuration to root of experiment logs: {experiment_destination} | {e}")
 
-		for _ in range(max(1, self.hook_processor_count)):
+		for _ in range(max(1, self.configuration.hook_processor_count)):
 			processor = threading.Thread(target=self._hook_processor)
 			processor.start()
 			self.hook_processors.append(processor)
