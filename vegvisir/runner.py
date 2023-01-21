@@ -119,7 +119,10 @@ class Experiment:
 		while not self.post_hook_processor_request_stop:
 			try:
 				task, experiment_paths = self.post_hook_processor_queue.get(timeout=5)
-				task(experiment_paths)
+				try:
+					task(experiment_paths)
+				except Exception as e:
+					logging.error(f"Post-hook encountered an exception | {e}")
 			except queue.Empty:
 				pass  # We can ignore this one
 
@@ -209,10 +212,13 @@ class Experiment:
 
 						logging.debug("Calling environment pre_hook")
 						pre_hook_start = datetime.now()
-						self.configuration.environment.pre_run_hook(path_collection_copy)
-						pre_hook_total = datetime.now() - pre_hook_start
-						if pre_hook_total.total_seconds() > 5:
-							logging.debug(f"Pre-hook took {datetime.now() - pre_hook_start} to complete.")
+						try:
+							self.configuration.environment.pre_run_hook(path_collection_copy)
+							pre_hook_total = datetime.now() - pre_hook_start
+							if pre_hook_total.total_seconds() > 5:
+								logging.debug(f"Pre-hook took {datetime.now() - pre_hook_start} to complete.")
+						except Exception as e:
+							logging.error(f"Pre-hook encountered an exception | {e}")
 
 						vegvisirBaseArguments = VegvisirArguments()
 						vegvisirBaseArguments.LOG_PATH_CLIENT = self.configuration.path_collection.log_path_client
