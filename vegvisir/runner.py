@@ -15,6 +15,7 @@ from typing import List, Tuple
 import tempfile
 import re
 import shutil
+from vegvisir.hostinterface import HostInterface
 from vegvisir.configuration import Configuration
 from vegvisir.data import VegvisirArguments
 from vegvisir.environments.base_environment import BaseEnvironment
@@ -36,7 +37,8 @@ class Experiment:
 		self.post_hook_processor_request_stop: bool = False
 		self.post_hook_processor_queue: queue.Queue = queue.Queue()  # contains tuples (method pointer, path dataclass)
 
-		self._sudo_password = sudo_password
+		# self._sudo_password = sudo_password
+		self.host_interface = HostInterface(sudo_password)
 		# self._debug = debug
 
 		self._logger = logging.getLogger()
@@ -49,51 +51,51 @@ class Experiment:
 		self._logger.addHandler(console)
 
 		# Explicit check so we don't keep trigger an auth lock
-		if not self._is_sudo_password_valid():
+		if not self.host_interface._is_sudo_password_valid():
 			raise VegvisirException("Authentication with sudo failed. Provided password is wrong?")
 
 	def logger(self):
 		return self._logger
 
-	def set_sudo_password(self, sudo_password: str):
-		self._sudo_password = sudo_password
+	# def set_sudo_password(self, sudo_password: str):
+	# 	self._sudo_password = sudo_password
 
-	def spawn_subprocess(self, command: str, shell: bool = False) -> Tuple[str, str]:
-		if shell:
-			proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		else:
-			shlex_command = shlex.split(command)
-			proc = subprocess.Popen(shlex_command, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	# def spawn_subprocess(self, command: str, shell: bool = False) -> Tuple[str, str]:
+	# 	if shell:
+	# 		proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	# 	else:
+	# 		shlex_command = shlex.split(command)
+	# 		proc = subprocess.Popen(shlex_command, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		
-		proc_input = self._sudo_password.encode() if "sudo" in command else None
-		if proc_input is not None:
-			out, err = proc.communicate(input=proc_input)
-		return out, err, proc
+	# 	proc_input = self._sudo_password.encode() if "sudo" in command else None
+	# 	if proc_input is not None:
+	# 		out, err = proc.communicate(input=proc_input)
+	# 	return out, err, proc
 
-	def spawn_parallel_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> subprocess.Popen:
-		shell = shell == True
-		if root_privileges:
-			# -Skp makes it so sudo reads input from stdin, invalidates the privileges granted after the command is ran and removes the password prompt
-			# Removing the password prompt and invalidating the sessions removes the complexity of having to check for the password prompt, we know it'll always be there
-			command = "sudo -Skp '' " + command
-		debug_command = command
-		command = shlex.split(command) if shell == False else command
-		proc = subprocess.Popen(command, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		if root_privileges:
-			try:
-				proc.stdin.write(self._sudo_password.encode())
-			except BrokenPipeError:
-				logging.error(f"Pipe broke before we could provide sudo credentials. No sudo available? [{debug_command}]")
-		return proc
+	# def spawn_parallel_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> subprocess.Popen:
+	# 	shell = shell == True
+	# 	if root_privileges:
+	# 		# -Skp makes it so sudo reads input from stdin, invalidates the privileges granted after the command is ran and removes the password prompt
+	# 		# Removing the password prompt and invalidating the sessions removes the complexity of having to check for the password prompt, we know it'll always be there
+	# 		command = "sudo -Skp '' " + command
+	# 	debug_command = command
+	# 	command = shlex.split(command) if shell == False else command
+	# 	proc = subprocess.Popen(command, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	# 	if root_privileges:
+	# 		try:
+	# 			proc.stdin.write(self._sudo_password.encode())
+	# 		except BrokenPipeError:
+	# 			logging.error(f"Pipe broke before we could provide sudo credentials. No sudo available? [{debug_command}]")
+	# 	return proc
 
-	def spawn_blocking_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> Tuple[subprocess.Popen, str, str]:
-		proc = self.spawn_parallel_subprocess(command, root_privileges, shell)
-		out, err = proc.communicate()
-		return proc, out.decode("utf-8").strip(), err.decode("utf-8").strip()
+	# def spawn_blocking_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> Tuple[subprocess.Popen, str, str]:
+	# 	proc = self.host_interface.spawn_parallel_subprocess(command, root_privileges, shell)
+	# 	out, err = proc.communicate()
+	# 	return proc, out.decode("utf-8").strip(), err.decode("utf-8").strip()
 
-	def _is_sudo_password_valid(self):
-		proc, _, _ = self.spawn_blocking_subprocess("which sudo", True, False)
-		return proc.returncode == 0
+	# def _is_sudo_password_valid(self):
+	# 	proc, _, _ = self.host_interface.spawn_blocking_subprocess("which sudo", True, False)
+	# 	return proc.returncode == 0
 
 	# def _scan_image_repos(self):
 	# 	self._image_sets = []
@@ -131,12 +133,12 @@ class Experiment:
 		"""
 		sudo modprobe ip6table_filter
 		"""
-		_, out, err = self.spawn_blocking_subprocess("modprobe ip6table_filter", True, False)
+		_, out, err = self.host_interface.spawn_blocking_subprocess("modprobe ip6table_filter", True, False)
 		if out != '' or err is not None:
 			logging.debug("Vegvisir: enabling ipv6 resulted in non empty output: %s\n%s", out, err)
 
 	def print_debug_information(self, command: str) -> None:
-		_, out, err = self.spawn_blocking_subprocess(command, True, False)
+		_, out, err = self.host_interface.spawn_blocking_subprocess(command, True, False)
 		logging.debug(f"Command [{command}]:\n{out}")
 		if err is not None and len(err) > 0:
 			logging.warning(f"Command [{command}] returned stderr output:\n{err}")
@@ -181,7 +183,7 @@ class Experiment:
 
 					# SETUP
 					if client.type == Endpoint.Type.HOST:
-						_, out, err = self.spawn_blocking_subprocess("hostman add 193.167.100.100 server4", True, False)
+						_, out, err = self.host_interface.spawn_blocking_subprocess("hostman add 193.167.100.100 server4", True, False)
 						logging.debug("Vegvisir: append entry to hosts: %s", out.strip())
 						if err is not None and len(err) > 0:
 							logging.debug("Vegvisir: appending entry to hosts file resulted in error: %s", err)
@@ -280,23 +282,23 @@ class Experiment:
 							+ " docker compose up -d "
 							+ containers
 						)
-						# self.spawn_parallel_subprocess(cmd, False, True)
-						self.spawn_blocking_subprocess(cmd, False, True) # TODO Test out if this truly fixes the RNETLINK error? This call might be too slow
+						# self.host_interface.spawn_parallel_subprocess(cmd, False, True)
+						self.host_interface.spawn_blocking_subprocess(cmd, False, True) # TODO Test out if this truly fixes the RNETLINK error? This call might be too slow
 						
 						# Host applications require some packet rerouting to be able to reach docker containers
 						if self.configuration.client_endpoints[client_config["name"]].type == Endpoint.Type.HOST:
 							logging.debug("Detected local client, rerouting localhost traffic to 193.167.100.0/24 via 193.167.0.2")
-							_, out, err = self.spawn_blocking_subprocess("ip route del 193.167.100.0/24", True, False)
+							_, out, err = self.host_interface.spawn_blocking_subprocess("ip route del 193.167.100.0/24", True, False)
 							if err is not None and len(err) > 0:
 								raise VegvisirRunFailedException(f"Failed to remove route to 193.167.100.0/24 | STDOUT [{out}] | STDERR [{err}]")
 							logging.debug("Removed docker compose route to 193.167.100.0/24")
 
-							_, out, err = self.spawn_blocking_subprocess("ip route add 193.167.100.0/24 via 193.167.0.2", True, False)
+							_, out, err = self.host_interface.spawn_blocking_subprocess("ip route add 193.167.100.0/24 via 193.167.0.2", True, False)
 							if err is not None and len(err) > 0:
 								raise VegvisirRunFailedException(f"Failed to reroute 193.167.100.0/24 via 193.167.0.2 | STDOUT [{out}] | STDERR [{err}]")
 							logging.debug("Rerouted 193.167.100.0/24 via 193.167.0.2")
 
-							_, out, err = self.spawn_blocking_subprocess("./veth-checksum.sh", True, False)
+							_, out, err = self.host_interface.spawn_blocking_subprocess("./veth-checksum.sh", True, False)
 							if err is not None and len(err) > 0:
 								raise VegvisirRunFailedException(f"Virtual ethernet device checksum failed | STDOUT [{out}] | STDERR [{err}]")								
 
@@ -323,19 +325,19 @@ class Experiment:
 								+ " docker compose up --abort-on-container-exit --timeout 1 "
 								+ "client"
 							)
-							client_proc = self.spawn_parallel_subprocess(client_cmd, False, True)
+							client_proc = self.host_interface.spawn_parallel_subprocess(client_cmd, False, True)
 
 						elif client.type == Endpoint.Type.HOST:
 							for constructor in client.construct:
 								constructor_command = constructor.serialize_command(client_params)
 								logging.debug(f"Issuing client construct command [{constructor_command}]")
-								_, out, err = self.spawn_blocking_subprocess(constructor_command, constructor.requires_root, True)
+								_, out, err = self.host_interface.spawn_blocking_subprocess(constructor_command, constructor.requires_root, True)
 								if out is not None and len(out) > 0:
 									logging.debug(f"Construct command STDOUT:\n{out}")
 								if err is not None and len(err) > 0:
 									logging.debug(f"Construct command STDERR:\n{err}")
 							client_cmd = client.command.serialize_command(client_params)
-							client_proc = self.spawn_parallel_subprocess(client_cmd)
+							client_proc = self.host_interface.spawn_parallel_subprocess(client_cmd)
 						logging.debug("Vegvisir: running client: %s", client_cmd)
 
 						try:
@@ -357,17 +359,17 @@ class Experiment:
 							logging.debug(out.decode("utf-8"))
 							logging.debug(err.decode("utf-8"))
 
-						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps server", False, True)
+						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps server", False, True)
 						logging.debug(out)
 						logging.debug(err)
-						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps sim", False, True)
+						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps sim", False, True)
 						logging.debug(out)
 						logging.debug(err)
-						_, out, err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps client", False, True)
+						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps client", False, True)
 						logging.debug(out)
 						logging.debug(err)
 
-						_, out ,err = self.spawn_blocking_subprocess(docker_compose_vars + " docker compose down", False, True) # TODO TEMP
+						_, out ,err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose down", False, True) # TODO TEMP
 						logging.debug(out)
 
 					# BREAKDOWN
@@ -375,13 +377,13 @@ class Experiment:
 						for destructor in client.destruct:
 								destructor_command = destructor.serialize_command(client_params)
 								logging.debug(f"Issuing client destruct command [{destructor_command}]")
-								_, out, err = self.spawn_blocking_subprocess(destructor_command, destructor.requires_root, True)
+								_, out, err = self.host_interface.spawn_blocking_subprocess(destructor_command, destructor.requires_root, True)
 								if out is not None and len(out) > 0:
 									logging.debug(f"Destruct command STDOUT:\n{out}")
 								if err is not None and len(err) > 0:
 									logging.debug(f"Destruct command STDERR:\n{err}")
 
-						_, out, err = self.spawn_blocking_subprocess("hostman remove --names=server4", True, False)
+						_, out, err = self.host_interface.spawn_blocking_subprocess("hostman remove --names=server4", True, False)
 						logging.debug("Vegvisir: remove entry from hosts: %s", out.strip())
 						if err is not None and len(err) > 0:
 							logging.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
@@ -391,7 +393,7 @@ class Experiment:
 						real_username = getpass.getuser()
 						real_primary_groupname = grp.getgrgid(os.getgid()).gr_name
 						chown_to = f"{real_username}:{real_primary_groupname}"
-						_, out, err = self.spawn_blocking_subprocess(f"chown -R {chown_to} {self.configuration.path_collection.log_path_permutation}", True, False)
+						_, out, err = self.host_interface.spawn_blocking_subprocess(f"chown -R {chown_to} {self.configuration.path_collection.log_path_permutation}", True, False)
 						if len(err) > 0:
 							raise VegvisirException(err)
 						logging.debug(f"Changed ownership of output logs to {chown_to} | {self.configuration.path_collection.log_path_permutation}")
