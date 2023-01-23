@@ -48,6 +48,7 @@ control_sequences = {
     "SHIFT_CURSOR_UP": "\x1B[{lines}A",
     "ERASE_TO_RIGHT": "\x1B[0K",
     "ERASE_ALL": "\x1B[2J",
+    "BOLD": "\x1B[1m",
     "COLOR": "\x1B[38;2;{r};{g};{b}m",
     "CLEAR_COLOR": "\x1B[0m",
 }
@@ -59,6 +60,36 @@ tui_progress_current = 0
 tui_progress_total = 0
 tui_threads_run = True
 tui_tick_delta_sec = 0.08
+
+class VegvisirLogHandler(logging.StreamHandler):
+    def __init__(self):
+        super(VegvisirLogHandler, self).__init__()
+
+    def emit(self, record):
+        if type(record.msg) is not str or "\n" not in record.msg:
+            super(VegvisirLogHandler, self).emit(record)
+        else:    
+            messages = record.msg.split("\n")
+            for msg in messages:
+                record.msg = msg
+                super(VegvisirLogHandler, self).emit(record)
+
+def configure_logging():
+    logging.addLevelName(logging.DEBUG, f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=211, g=215, b=207)}Debug >{control_sequences['CLEAR_COLOR']}")
+    # logging.addLevelName(logging.INFO, f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=6, g=152, b=154)}Info >{control_sequences['CLEAR_COLOR']}")
+    logging.addLevelName(logging.INFO, f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=78, g=154, b=6)}Info >{control_sequences['CLEAR_COLOR']}")
+    logging.addLevelName(logging.WARNING, f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=196, g=160, b=0)}Warning >{control_sequences['CLEAR_COLOR']}")
+    logging.addLevelName(logging.ERROR, f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=204, g=0, b=0)}Error >{control_sequences['CLEAR_COLOR']}")
+    logging.addLevelName(logging.CRITICAL, f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=204, g=0, b=0)}Critical >{control_sequences['CLEAR_COLOR']}")
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)  # Initialise to INFO, can later be set to DEBUG
+    console_handler = VegvisirLogHandler()
+    console_handler.setLevel(logging.DEBUG)
+    console_formatter = logging.Formatter("%(levelname)s %(message)s")
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+    return logger
+logger = configure_logging()
 
 def flush_print(s):
     sys.stdout.write(s)
@@ -237,7 +268,7 @@ def run(vegvisir_arguments):
     signal.signal(signal.SIGINT, sigint_handler)
     print(generate_banner())
     
-    sudo_pass = getpass("Enter password to run sudo commands: ")
+    sudo_pass = getpass(f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=211, g=215, b=207)}Vegvisir >{control_sequences['CLEAR_COLOR']} Enter password to run sudo commands: ")
     
     tui_start_timestamp = datetime.now()
     tui_thread = threading.Thread(target=tui_render_tick)
@@ -252,53 +283,53 @@ def run(vegvisir_arguments):
         for experiment in r.run():
             tui_client_name, tui_shaper_name, tui_server_name, tui_progress_current, tui_progress_total = experiment
     except exceptions.VegvisirConfigurationException as e:
-        logging.error("Vegvisir generic configuration error, halting execution")
-        logging.error(e)
+        logger.error("Vegvisir generic configuration error, halting execution")
+        logger.error(e)
         destruct_tui()
         sys.exit(1)
     except exceptions.VegvisirInvalidImplementationConfigurationException as e:
-        logging.error("Vegvisir implementations configuration contains incorrect data, halting execution")
-        logging.error(e)
+        logger.error("Vegvisir implementations configuration contains incorrect data, halting execution")
+        logger.error(e)
         destruct_tui()
         sys.exit(1)
     except exceptions.VegvisirInvalidExperimentConfigurationException as e:
-        logging.error("Vegvisir experiment configuration contains incorrect data, halting execution")
-        logging.error(e)
+        logger.error("Vegvisir experiment configuration contains incorrect data, halting execution")
+        logger.error(e)
         destruct_tui()
         sys.exit(1)
     except exceptions.VegvisirArgumentException as e:
-        logging.error("Vegvisir implementations or experiment configuration contains a wrongfully configured argument, halting execution")
-        logging.error(e)
+        logger.error("Vegvisir implementations or experiment configuration contains a wrongfully configured argument, halting execution")
+        logger.error(e)
         destruct_tui()
         sys.exit(1)
     except (exceptions.VegvisirException, Exception) as e:  # Exception allows for clean shutdowns of the GUI
-        logging.error("Generic Vegvisir error encountered, halting exception.")
-        logging.exception(e)
+        logger.error("Generic Vegvisir error encountered, halting exception.")
+        logger.error(e)
         destruct_tui()
         sys.exit(1)
 
     destruct_tui()
-    print(f"Vegvisir run finished. Total elapsed time {datetime.now()-tui_start_timestamp}")
+    logger.info(f"Vegvisir experiment finished. Total elapsed time {datetime.now()-tui_start_timestamp}")
 
 def freeze(vegvisir_arguments):
     print(generate_banner())
     implementations_file = vegvisir_arguments.implementations
     try:
         config = Configuration(implementations_path=implementations_file)
-        logging.info(f"Starting freeze of implementations file [{implementations_file}]")
+        logger.info(f"Starting freeze of implementations file [{implementations_file}]")
         freeze_implementations_configuration(config)
-        logging.info("Successfully archived the provided implementations configuration. You can now import it onto another system.")
+        logger.info("Successfully archived the provided implementations configuration. You can now import it onto another system.")
     except exceptions.VegvisirConfigurationException as e:
-        logging.error("Vegvisir generic configuration error, halting execution")
-        logging.error(e)
+        logger.error("Vegvisir generic configuration error, halting execution")
+        logger.error(e)
         sys.exit(1)
     except exceptions.VegvisirInvalidImplementationConfigurationException as e:
-        logging.error("Vegvisir implementations configuration contains incorrect data, halting execution")
-        logging.error(e)
+        logger.error("Vegvisir implementations configuration contains incorrect data, halting execution")
+        logger.error(e)
         sys.exit(1)
     except exceptions.VegvisirFreezeException as e:
-        logging.error("Freezing of implementations configuration failed, halting execution")
-        logging.error(e)
+        logger.error("Freezing of implementations configuration failed, halting execution")
+        logger.error(e)
         sys.exit(1)
 
 class SubcommandHelpFormatter(argparse.RawDescriptionHelpFormatter):
@@ -313,11 +344,11 @@ class SubcommandHelpFormatter(argparse.RawDescriptionHelpFormatter):
 def main():
     argument_parser = argparse.ArgumentParser(prog="vegvisir", description=generate_banner(), formatter_class=SubcommandHelpFormatter)
     argument_parser.add_argument("-V", "--version", action="version", version=f"Vegvisir V{vegvisir_version}")
+    argument_parser.add_argument("-v", "--verbose", action="store_true", help="Enable additional debug logs to be printed to the commandline")
     argument_subparsers = argument_parser.add_subparsers(title="Commands", metavar="[COMMAND]", dest="command")
 
     experiment_parser = argument_subparsers.add_parser("run", aliases=["r"], help="Run an experiment using Vegvisir", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
     experiment_parser.add_argument("-i", "--implementations",  dest="implementations", metavar="[IMPLEMENTATIONS FILE]", help="Defaults to ./implementations.json", default="./implementations.json")
-    experiment_parser.add_argument("-v", "--verbose", action="store_true", help="Enable additional debug logs to be printed to the commandline")
     experiment_parser.add_argument("-q", "--quiet", action="store_true", help="Only print critical warnings and errors. Logs will still be saved to the log directory.")
     experiment_parser.add_argument("experiment", metavar="[EXPERIMENT FILE]", default="./experiment.json")
 
@@ -330,7 +361,10 @@ def main():
     # share_parser.add_argument("experiment", metavar="[EXPERIMENT FILE]", default="./experiment.json")
 
     vegvisir_arguments = argument_parser.parse_args()
-
+    if vegvisir_arguments.verbose:
+        logger.setLevel(logging.DEBUG)
+        logger.debug("Verbose output requested. Console logger set to debug-level.")
+    
     command_to_callback_map = {
         "r": run,
         "f": freeze,

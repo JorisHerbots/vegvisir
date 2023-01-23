@@ -41,21 +41,18 @@ class Experiment:
 		self.host_interface = HostInterface(sudo_password)
 		# self._debug = debug
 
-		self._logger = logging.getLogger()
-		self._logger.setLevel(logging.DEBUG)
-		console = logging.StreamHandler(stream=sys.stderr)
+		self.logger = logging.getLogger("root.Experiment")
+		# self.logger.setLevel(logging.DEBUG)
+		# console = logging.StreamHandler(stream=sys.stderr)
 		# if self._debug:
-		console.setLevel(logging.DEBUG)
+		# console.setLevel(logging.DEBUG)
 		# else:
 			# console.setLevel(logging.INFO)
-		self._logger.addHandler(console)
+		# self.logger.addHandler(console)
 
 		# Explicit check so we don't keep trigger an auth lock
 		if not self.host_interface._is_sudo_password_valid():
 			raise VegvisirException("Authentication with sudo failed. Provided password is wrong?")
-
-	def logger(self):
-		return self._logger
 
 	# def set_sudo_password(self, sudo_password: str):
 	# 	self._sudo_password = sudo_password
@@ -124,7 +121,7 @@ class Experiment:
 				try:
 					task(experiment_paths)
 				except Exception as e:
-					logging.error(f"Post-hook encountered an exception | {e}")
+					self.logger.error(f"Post-hook encountered an exception | {e}")
 			except queue.Empty:
 				pass  # We can ignore this one
 
@@ -134,14 +131,14 @@ class Experiment:
 		sudo modprobe ip6table_filter
 		"""
 		_, out, err = self.host_interface.spawn_blocking_subprocess("modprobe ip6table_filter", True, False)
-		if out != '' or err is not None:
-			logging.debug("Vegvisir: enabling ipv6 resulted in non empty output: %s\n%s", out, err)
+		if out != "" or err != "":
+			self.logger.debug(f"Enabling ipv6 resulted in non empty output | STDOUT [{out}] | STDERR [{err}]")
 
 	def print_debug_information(self, command: str) -> None:
 		_, out, err = self.host_interface.spawn_blocking_subprocess(command, True, False)
-		logging.debug(f"Command [{command}]:\n{out}")
+		self.logger.debug(f"Command [{command}]:\n{out}")
 		if err is not None and len(err) > 0:
-			logging.warning(f"Command [{command}] returned stderr output:\n{err}")
+			self.logger.warning(f"Command [{command}] returned stderr output:\n{err}")
 
 	def run(self):
 		vegvisir_start_time = datetime.now()
@@ -157,11 +154,11 @@ class Experiment:
 		try:
 			shutil.copy2(self.configuration.path_collection.implementations_configuration_file_path, implementations_destination) 
 		except IOError as e:
-			logging.warning(f"Could not copy over implementations configuration to root of experiment logs: {implementations_destination} | {e}")
+			self.logger.warning(f"Could not copy over implementations configuration to root of experiment logs: {implementations_destination} | {e}")
 		try:
 			shutil.copy2(self.configuration.path_collection.experiment_configuration_file_path, experiment_destination) 
 		except IOError as e:
-			logging.warning(f"Could not copy over experiment configuration to root of experiment logs: {experiment_destination} | {e}")
+			self.logger.warning(f"Could not copy over experiment configuration to root of experiment logs: {experiment_destination} | {e}")
 
 		for _ in range(max(1, self.configuration.hook_processor_count)):
 			processor = threading.Thread(target=self._post_hook_processor)
@@ -176,7 +173,7 @@ class Experiment:
 			for server_config in self.configuration.server_configurations:
 				for client_config in self.configuration.client_configurations:
 					yield client_config["name"], shaper_config["name"], server_config["name"], experiment_permutation_counter, experiment_permutation_total
-					logging.info(f'Running {client_config["name"]} over {shaper_config["name"]} against {server_config["name"]}')
+					self.logger.info(f'Running {client_config["name"]} over {shaper_config["name"]} against {server_config["name"]}')
 					shaper = self.configuration.shapers[shaper_config["name"]]
 					server = self.configuration.server_endpoints[server_config["name"]]
 					client = self.configuration.client_endpoints[client_config["name"]]
@@ -184,13 +181,13 @@ class Experiment:
 					# SETUP
 					if client.type == Endpoint.Type.HOST:
 						_, out, err = self.host_interface.spawn_blocking_subprocess("hostman add 193.167.100.100 server4", True, False)
-						logging.debug("Vegvisir: append entry to hosts: %s", out.strip())
+						self.logger.debug("Vegvisir: append entry to hosts: %s", out.strip())
 						if err is not None and len(err) > 0:
-							logging.debug("Vegvisir: appending entry to hosts file resulted in error: %s", err)
+							self.logger.debug("Vegvisir: appending entry to hosts file resulted in error: %s", err)
 
 					for run_number in range(0,self.configuration.iterations):
 						# self._run_individual_test()
-						start_time = datetime.now()
+						iteration_start_time = datetime.now()
 						
 						# Paths, we create the folders so we can later bind them as docker volumes for direct logging output
 						# Avoids docker "no space left on device" errors
@@ -208,19 +205,19 @@ class Experiment:
 						log_file = os.path.join(self.configuration.path_collection.log_path_permutation, "output.txt")
 						log_handler = logging.FileHandler(log_file)
 						log_handler.setLevel(logging.DEBUG)
-						logging.getLogger().addHandler(log_handler)
+						self.logger.addHandler(log_handler)
 
 						path_collection_copy = dataclasses.replace(self.configuration.path_collection)
 
-						logging.debug("Calling environment pre_hook")
+						self.logger.debug("Calling environment pre_hook")
 						pre_hook_start = datetime.now()
 						try:
 							self.configuration.environment.pre_run_hook(path_collection_copy)
 							pre_hook_total = datetime.now() - pre_hook_start
 							if pre_hook_total.total_seconds() > 5:
-								logging.debug(f"Pre-hook took {datetime.now() - pre_hook_start} to complete.")
+								self.logger.debug(f"Pre-hook took {datetime.now() - pre_hook_start} to complete.")
 						except Exception as e:
-							logging.error(f"Pre-hook encountered an exception | {e}")
+							self.logger.error(f"Pre-hook encountered an exception | {e}")
 
 						vegvisirBaseArguments = VegvisirArguments()
 						vegvisirBaseArguments.LOG_PATH_CLIENT = self.configuration.path_collection.log_path_client
@@ -287,16 +284,16 @@ class Experiment:
 						
 						# Host applications require some packet rerouting to be able to reach docker containers
 						if self.configuration.client_endpoints[client_config["name"]].type == Endpoint.Type.HOST:
-							logging.debug("Detected local client, rerouting localhost traffic to 193.167.100.0/24 via 193.167.0.2")
+							self.logger.debug("Detected local client, rerouting localhost traffic to 193.167.100.0/24 via 193.167.0.2")
 							_, out, err = self.host_interface.spawn_blocking_subprocess("ip route del 193.167.100.0/24", True, False)
 							if err is not None and len(err) > 0:
 								raise VegvisirRunFailedException(f"Failed to remove route to 193.167.100.0/24 | STDOUT [{out}] | STDERR [{err}]")
-							logging.debug("Removed docker compose route to 193.167.100.0/24")
+							self.logger.debug("Removed docker compose route to 193.167.100.0/24")
 
 							_, out, err = self.host_interface.spawn_blocking_subprocess("ip route add 193.167.100.0/24 via 193.167.0.2", True, False)
 							if err is not None and len(err) > 0:
 								raise VegvisirRunFailedException(f"Failed to reroute 193.167.100.0/24 via 193.167.0.2 | STDOUT [{out}] | STDERR [{err}]")
-							logging.debug("Rerouted 193.167.100.0/24 via 193.167.0.2")
+							self.logger.debug("Rerouted 193.167.100.0/24 via 193.167.0.2")
 
 							_, out, err = self.host_interface.spawn_blocking_subprocess("./veth-checksum.sh", True, False)
 							if err is not None and len(err) > 0:
@@ -330,15 +327,15 @@ class Experiment:
 						elif client.type == Endpoint.Type.HOST:
 							for constructor in client.construct:
 								constructor_command = constructor.serialize_command(client_params)
-								logging.debug(f"Issuing client construct command [{constructor_command}]")
+								self.logger.debug(f"Issuing client construct command [{constructor_command}]")
 								_, out, err = self.host_interface.spawn_blocking_subprocess(constructor_command, constructor.requires_root, True)
 								if out is not None and len(out) > 0:
-									logging.debug(f"Construct command STDOUT:\n{out}")
+									self.logger.debug(f"Construct command STDOUT:\n{out}")
 								if err is not None and len(err) > 0:
-									logging.debug(f"Construct command STDERR:\n{err}")
+									self.logger.debug(f"Construct command STDERR:\n{err}")
 							client_cmd = client.command.serialize_command(client_params)
 							client_proc = self.host_interface.spawn_parallel_subprocess(client_cmd)
-						logging.debug("Vegvisir: running client: %s", client_cmd)
+						self.logger.debug("Vegvisir: running client: %s", client_cmd)
 
 						try:
 							self.configuration.environment.start_sensors(client_proc, self.configuration.path_collection)
@@ -349,44 +346,44 @@ class Experiment:
 							self.configuration.environment.clean_and_reset_sensors()
 							with open(os.path.join(self.configuration.path_collection.log_path_permutation, "crashreport.txt"), "w") as fp:
 								fp.write("Test aborted by user interaction.")
-							logging.info("CTRL-C test interrupted")
+							self.logger.info("CTRL-C test interrupted")
 
 						client_proc.terminate() # TODO redundant?
 						if client.type == Endpoint.Type.HOST:
 							# Doing this for docker will nullify the sensor system
 							# Docker client logs are retrieved with "docker compose logs"
 							out, err = client_proc.communicate()
-							logging.debug(out.decode("utf-8"))
-							logging.debug(err.decode("utf-8"))
+							self.logger.debug(out.decode("utf-8"))
+							self.logger.debug(err.decode("utf-8"))
 
 						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps server", False, True)
-						logging.debug(out)
-						logging.debug(err)
+						self.logger.debug(out)
+						self.logger.debug(err)
 						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps sim", False, True)
-						logging.debug(out)
-						logging.debug(err)
+						self.logger.debug(out)
+						self.logger.debug(err)
 						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps client", False, True)
-						logging.debug(out)
-						logging.debug(err)
+						self.logger.debug(out)
+						self.logger.debug(err)
 
 						_, out ,err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose down", False, True) # TODO TEMP
-						logging.debug(out)
+						self.logger.debug(out)
 
 					# BREAKDOWN
 					if client.type == Endpoint.Type.HOST:
 						for destructor in client.destruct:
 								destructor_command = destructor.serialize_command(client_params)
-								logging.debug(f"Issuing client destruct command [{destructor_command}]")
+								self.logger.debug(f"Issuing client destruct command [{destructor_command}]")
 								_, out, err = self.host_interface.spawn_blocking_subprocess(destructor_command, destructor.requires_root, True)
 								if out is not None and len(out) > 0:
-									logging.debug(f"Destruct command STDOUT:\n{out}")
+									self.logger.debug(f"Destruct command STDOUT:\n{out}")
 								if err is not None and len(err) > 0:
-									logging.debug(f"Destruct command STDERR:\n{err}")
+									self.logger.debug(f"Destruct command STDERR:\n{err}")
 
 						_, out, err = self.host_interface.spawn_blocking_subprocess("hostman remove --names=server4", True, False)
-						logging.debug("Vegvisir: remove entry from hosts: %s", out.strip())
+						self.logger.debug("Vegvisir: remove entry from hosts: %s", out.strip())
 						if err is not None and len(err) > 0:
-							logging.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
+							self.logger.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
 
 					# Change ownership of docker output to running user
 					try:
@@ -396,19 +393,23 @@ class Experiment:
 						_, out, err = self.host_interface.spawn_blocking_subprocess(f"chown -R {chown_to} {self.configuration.path_collection.log_path_permutation}", True, False)
 						if len(err) > 0:
 							raise VegvisirException(err)
-						logging.debug(f"Changed ownership of output logs to {chown_to} | {self.configuration.path_collection.log_path_permutation}")
+						self.logger.debug(f"Changed ownership of output logs to {chown_to} | {self.configuration.path_collection.log_path_permutation}")
 					except (KeyError, TypeError):
-						logging.warning(f"Could not change log output ownership @ {self.configuration.path_collection.log_path_permutation}, groupname might not be found?")
+						self.logger.warning(f"Could not change log output ownership @ {self.configuration.path_collection.log_path_permutation}, groupname might not be found?")
 					except VegvisirException as e:
-						logging.warning(f"Could not change log output ownership [{e}] @ {self.configuration.path_collection.log_path_permutation}")
+						self.logger.warning(f"Could not change log output ownership [{e}] @ {self.configuration.path_collection.log_path_permutation}")
 
 					self.post_hook_processor_queue.put((self.configuration.environment.post_run_hook, path_collection_copy))  # Queue is infinite, should not block
 
 					experiment_permutation_counter += 1
 
-					# TODO PLACE CORRECTLY
-					logging.getLogger().removeHandler(log_handler)
-					log_handler.close()  # TODO jherbots clean this and replace with nicer handler
+					if self.configuration.iterations > 1:
+						self.logger.info(f'Test run {run_number}/{self.configuration.iterations} duration: {datetime.now() - iteration_start_time}')
+					else:
+						self.logger.info(f'Test run duration: {datetime.now() - iteration_start_time}')
+					
+					self.logger.removeHandler(log_handler)
+					log_handler.close()
 		
 		yield None, None, None, None, None
 
@@ -426,9 +427,9 @@ class Experiment:
 			if wait_for_hook_processors_counter % 2 == 0:
 				hooks_todo = self.post_hook_processor_queue.qsize()
 				if hooks_todo > 0:
-					print(f"Vegvisir is waiting for all hooks to process, approximately {self.post_hook_processor_queue.qsize()} request(s) still in queue.")
+					self.logger.info(f"Vegvisir is waiting for all post-hooks to process, approximately {self.post_hook_processor_queue.qsize()} request(s) still in queue.")
 				else:
-					print(f"Vegvisir is waiting for {sum(states)} hook processor(s) to stop. If this message persists, perform CTRL + C")
+					self.logger.info(f"Vegvisir is waiting for {sum(states)} post-hook processor(s) to stop. If this message persists, perform CTRL + C")
 			wait_for_hook_processors_counter += 1
 
 

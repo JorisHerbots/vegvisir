@@ -31,6 +31,8 @@ class Configuration:
 
 		self._environment: BaseEnvironment = None
 
+		self.logger = logging.getLogger("root.Configuration")
+
 		# Provide developer with the freedom of already loading the provided configuration paths
 		if implementations_path is not None:
 			self.load_implementations_from_file(implementations_path)
@@ -137,7 +139,6 @@ class Configuration:
 		CLIENTS_KEY = "clients"
 		SERVERS_KEY = "servers"
 		SHAPERS_KEY = "shapers"
-		logging.debug("Vegvisir: Loading implementations:")
 		
 		if not all(key in implementations for key in [CLIENTS_KEY, SERVERS_KEY, SHAPERS_KEY]):
 			raise VegvisirInvalidImplementationConfigurationException("Loading implementations halted. One or multiple keys are missing in the provided implementations JSON ('clients', 'servers' and/or 'shapers').") 
