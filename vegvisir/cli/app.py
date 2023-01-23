@@ -13,6 +13,7 @@ import time
 import colour
 
 from vegvisir.configuration import Configuration
+from vegvisir.housekeeping import freeze_implementations_configuration
 
 from .. import runner, exceptions, __version__ as vegvisir_version
 
@@ -279,6 +280,26 @@ def run(vegvisir_arguments):
     destruct_tui()
     print(f"Vegvisir run finished. Total elapsed time {datetime.now()-tui_start_timestamp}")
 
+def freeze(vegvisir_arguments):
+    print(generate_banner())
+    implementations_file = vegvisir_arguments.implementations
+    try:
+        config = Configuration(implementations_path=implementations_file)
+        logging.info(f"Starting freeze of implementations file [{implementations_file}]")
+        freeze_implementations_configuration(config)
+        logging.info("Successfully archived the provided implementations configuration. You can now import it onto another system.")
+    except exceptions.VegvisirConfigurationException as e:
+        logging.error("Vegvisir generic configuration error, halting execution")
+        logging.error(e)
+        sys.exit(1)
+    except exceptions.VegvisirInvalidImplementationConfigurationException as e:
+        logging.error("Vegvisir implementations configuration contains incorrect data, halting execution")
+        logging.error(e)
+        sys.exit(1)
+    except exceptions.VegvisirFreezeException as e:
+        logging.error("Freezing of implementations configuration failed, halting execution")
+        logging.error(e)
+        sys.exit(1)
 
 class SubcommandHelpFormatter(argparse.RawDescriptionHelpFormatter):
     # https://stackoverflow.com/a/13429281
@@ -288,7 +309,6 @@ class SubcommandHelpFormatter(argparse.RawDescriptionHelpFormatter):
         if action.nargs == argparse.PARSER:
             parts = "\n".join(parts.split("\n")[1:])
         return parts
-
 
 def main():
     argument_parser = argparse.ArgumentParser(prog="vegvisir", description=generate_banner(), formatter_class=SubcommandHelpFormatter)
@@ -303,7 +323,7 @@ def main():
 
     freeze_parser = argument_subparsers.add_parser("freeze", aliases=["f"], help="Freeze a set of docker images defined in the provided implementations file using docker save", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
     freeze_parser.add_argument("-i", "--implementations",  dest="implementations", metavar="[IMPLEMENTATIONS FILE]", help="Defaults to ./implementations.json", default="./implementations.json")
-    freeze_parser.add_argument("out", metavar="OUT", help="Filename for the frozen archive")
+    # freeze_parser.add_argument("out", metavar="OUT", help="Filename for the frozen archive")
 
     # Future work
     # share_parser = argument_subparsers.add_parser("share", aliases=["s"], help="Generate a compressed file containing the results of an experiment", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
@@ -313,10 +333,10 @@ def main():
 
     command_to_callback_map = {
         "r": run,
-        "f": lambda _: None,
+        "f": freeze,
         # "s": lambda _: None,  # Future work
         "run": run,
-        "freeze": lambda _: None,
+        "freeze": freeze,
         # "share": lambda _: None,  # Future work
     }
 

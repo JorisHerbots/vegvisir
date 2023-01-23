@@ -4,17 +4,10 @@ import os
 import shutil
 from typing import List
 from vegvisir.configuration import Configuration
-from vegvisir.exceptions import VegvisirException
+from vegvisir.exceptions import VegvisirFreezeException
 
 from vegvisir.hostinterface import HostInterface
 from vegvisir.implementation import Endpoint
-
-
-class VegvisirHousekeepingException(Exception):
-    pass
-
-class VegvisirFreezeException(VegvisirException):
-    pass
 
 def freeze_implementations_configuration(configuration: Configuration):
     # docker images --format "{{.Repository}}:{{.Tag}}"
@@ -63,8 +56,6 @@ def freeze_implementations_configuration(configuration: Configuration):
                 break
         if not found:
             unknown_images["shapers"].append(config.image.full)
-
-    # print(found_images)
 
     if len(unknown_images["clients"]) > 0 or len(unknown_images["servers"]) > 0 or len(unknown_images["shapers"]) > 0:
         debug_str = "\n\tClients: " + ", ".join(unknown_images["clients"]) + "\n\n\tServers: " + ", ".join(unknown_images["servers"]) + "\n\n\tShapers: " + ", ".join(unknown_images["shapers"]) 
@@ -123,16 +114,6 @@ def freeze_implementations_configuration(configuration: Configuration):
 
     shutil.make_archive(freeze_path, "zip", os.getcwd(), freeze_name)
 
-    '''
-    First we pull all docker images names from the provided implementations configuration
-    Then we pull all available docker image names including their tag and container hash from the docker system
-    We then check if our provided list if completely available, if not, stop the freezing process
-
-    We now enter the freezing process.
-    We ask Docker to create one big tarfile by giving it all the hash IDs
-    Additionally, we create a metadata file where we store hashID:newTaggedImageName values for our loading process
-    We then zip those two in a .vegvisir file ??
-    '''
 
 def load_frozen_implementations(archive_path: str):
     archive_path = os.path.join(os.getcwd(), archive_path)
@@ -164,7 +145,6 @@ def load_frozen_implementations(archive_path: str):
             continue
         img, id = img.split(" ")
         installed_images[id] = img
-    # print(installed_images)
 
     metadata ={}
     with open(os.path.join(extract_path, expected_files[2]), "r") as fp:
@@ -176,91 +156,3 @@ def load_frozen_implementations(archive_path: str):
     host_interface.spawn_blocking_subprocess(f"docker load -i {os.path.join(extract_path, expected_files[0])}")
     for entry in metadata:
         host_interface.spawn_blocking_subprocess(f"docker tag {entry['id']} {entry['name']}")
-
-# def docker_update_images(self) -> int:
-#     r = subprocess.run(
-#         "docker images | grep -v ^REPO | sed 's/ \+/:/g' | cut -d: -f1,2 | xargs -L1 docker pull",
-#         shell=True,
-#         stdout=subprocess.PIPE,
-#         stderr=subprocess.STDOUT,
-#     )
-#     if r.returncode != 0:
-#         logging.info(
-#             "Updating docker images failed: %s", r.stdout.decode("utf-8")
-#         )
-#     return r.returncode
-
-# def docker_save_imageset(self, imageset) -> int:
-#     r = subprocess.run(
-#         "docker save -o {} {}".format(imageset.replace('/', '_') + ".tar", imageset),
-#         shell=True,
-#         stdout=subprocess.PIPE,
-#         stderr=subprocess.STDOUT,
-#     )
-#     if r.returncode != 0:
-#         logging.info(
-#             "Saving docker images failed: %s", r.stdout.decode("utf-8")
-#         )
-#     return r.returncode
-
-# def docker_load_imageset(self, imageset_tar) -> int:
-#     r = subprocess.run(
-#         "docker load -i {}".format(imageset_tar),
-#         shell=True,
-#         stdout=subprocess.PIPE,
-#         stderr=subprocess.STDOUT,
-#     )
-#     if r.returncode != 0:
-#         logging.info(
-#             "Loading docker images failed: %s", r.stdout.decode("utf-8")
-#         )
-#     return r.returncode
-
-# def docker_create_imageset(self, repo, setname) -> int:
-#     returncode = 0
-#     for x in self._clients + self._servers + self._shapers:
-#         if hasattr(x, "images"):
-#             img = x.images[0]
-#             r = subprocess.run(
-#                 "docker tag {} {}".format(img.url, repo + "/" + setname + ":" + img.name),
-#                 shell=True,
-#                 stdout=subprocess.PIPE,
-#                 stderr=subprocess.STDOUT,
-#             )
-#             if r.returncode != 0:
-#                 logging.info(
-#                     "Tagging docker image %s failed: %s", img.url, r.stdout.decode("utf-8")
-#                 )
-#             returncode += r.returncode
-#     return returncode
-
-# def docker_pull_source_images(self) -> int:
-#     returncode = 0
-#     for x in self._clients + self._servers + self._shapers:
-#         if hasattr(x, "images"):
-#             img = x.images[0]
-#             r = subprocess.run(
-#                 "docker pull {}".format(img.url),
-#                 shell=True,
-#                 stdout=subprocess.PIPE,
-#                 stderr=subprocess.STDOUT,
-#             )
-#             if r.returncode != 0:
-#                 logging.info(
-#                     "Pulling docker image %s failed: %s", img.url, r.stdout.decode("utf-8")
-#                 )
-#             returncode += r.returncode
-#     return returncode
-
-# def docker_remove_imageset(self, imageset) -> int:
-#     r = subprocess.run(
-#         "docker images | grep {} | grep -v ^REPO | sed 's/ \+/:/g' | cut -d: -f1,2 | xargs -L1 docker image rm".format(imageset),
-#         shell=True,
-#         stdout=subprocess.PIPE,
-#         stderr=subprocess.STDOUT,
-#     )
-#     if r.returncode != 0:
-#         logging.info(
-#             "Removing docker imageset {} failed: %s", imageset, r.stdout.decode("utf-8")
-#         )
-#     return r.returncode
