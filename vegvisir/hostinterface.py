@@ -41,6 +41,6 @@ class HostInterface:
 		return proc, out.decode("utf-8").strip(), err.decode("utf-8").strip()
 
 	def _is_sudo_password_valid(self):
-		proc, _, _ = self.host_interface.spawn_blocking_subprocess("which sudo", True, False)
+		proc, _, _ = self.spawn_blocking_subprocess("which sudo", True, False)
 		return proc.returncode == 0
 		
