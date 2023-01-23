@@ -84,9 +84,19 @@ class Configuration:
 
 	@property
 	def path_collection(self):
-		self._validate_and_raise_load(self._implementations_configuration_loaded, "path_collection", "implementations")
-		self._validate_and_raise_load(self._experiment_configuration_loaded, "path_collection", "experiment")
+		# Patch collection requires self-checks on values
 		return self._path_collection
+
+	@property
+	def docker_images(self):
+		self._validate_and_raise_load(self._implementations_configuration_loaded, "docker_images", "implementations")
+		images = []
+		for endpoint in list(self._client_endpoints.values()) + list(self._server_endpoints.values()):
+			if endpoint.type == Endpoint.Type.DOCKER:
+				images.append(endpoint.image.full)
+		for shaper in self._shapers.values():
+			images.append(shaper.image.full)
+		return images
 
 	def _validate_and_raise_load(self, config_bool: bool, getter: str, required_config_name: str):
 		if not config_bool:
