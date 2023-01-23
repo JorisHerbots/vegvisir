@@ -1,6 +1,9 @@
 <p align="center">
   <img src="imgs/vegvisir_banner_large_whitefont.png" height="250px"/>
 </p>
+<p align="center">
+  <img src="imgs/demo.gif" />
+</p>
 
 Welcome to Vegvisir, an open-source testing framework for QUIC developers and researchers.
 
