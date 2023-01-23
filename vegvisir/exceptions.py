@@ -26,3 +26,9 @@ class VegvisirArgumentException(VegvisirException):
 
 class VegvisirCommandException(VegvisirException):
 	pass
+
+
+###
+
+class VegvisirFreezeException(VegvisirException):
+    pass
