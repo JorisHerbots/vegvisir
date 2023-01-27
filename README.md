@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="imgs/vegvisir_banner_large_whitefont.png" height="250px"/>
+  <img src="imgs/vegvisir_banner_large_whitefont.png" height="250px"/>
 </p>
 
 
@@ -73,60 +73,60 @@ Contains a list of all implementations and their configurations.
 
 ```
 Implementations = {
-	clients: {
-		+ ImplementationName: ClientImplementation
-	},
-	servers: {
-		+ ImplementationName: ServerImplementation
-	},
-	shapers: {
-		+ ImplementationName: ShaperImplementation
-	},
+  clients: {
+    + ImplementationName: ClientImplementation
+  },
+  servers: {
+    + ImplementationName: ServerImplementation
+  },
+  shapers: {
+    + ImplementationName: ShaperImplementation
+  },
 }
 ImplementationName = text .regex "^[a-zA-Z0-9_-]+$"
 ```
 
 ```
 ClientImplementation = {
-	ClientType,
-	? parameters: Parameter,
-	? construct : [* CDCommand], ; Commands executed before "command" if the implementation represents a host command
-	? destruct : [* CDCommand], ; Commands executed before "command" if the implementation represents a host command
+  ClientType,
+  ? parameters: Parameter,
+  ? construct : [* CDCommand], ; Commands executed before "command" if the implementation represents a host command
+  ? destruct : [* CDCommand], ; Commands executed before "command" if the implementation represents a host command
 }
 ```
 
 ```
 ClientType = (
-	image: text, ; repo/name:tag
-	command: text, ; host command
+  image: text, ; repo/name:tag
+  command: text, ; host command
 )
 ```
 
 ```
 ServerImplementation = {
-	? image: text, ; repo/name:tag
-	? parameters: Parameter,
+  ? image: text, ; repo/name:tag
+  ? parameters: Parameter,
 }
 ```
 
 ```
 ShaperImplementation = {
-	? image: text, ; repo/name:tag
-	? parameters: Parameter,
+  ? image: text, ; repo/name:tag
+  ? parameters: Parameter,
 }
 ```
 
 ```
 Parameter = {
-	* ParameterKey => bool, ; True represents root privileges are required
+  * ParameterKey => bool, ; True represents root privileges are required
 }
 ParameterKey = text .regex "\!(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})"
 ```
 
 ```
 CDCommand = {
-	? root_required: bool .default false,
-	command: text,
+  ? root_required: bool .default false,
+  command: text,
 }
 ```
 
@@ -135,32 +135,32 @@ Contains a single (repeatable) experiment
 
 ```
 Experiment = {
-	clients: [ClientExperiment],
-	servers: [ServerExperiment],
-	shapers: [ShaperExperiment],
-	environment : Environment,
-	settings: Settings,
+  clients: [ClientExperiment],
+  servers: [ServerExperiment],
+  shapers: [ShaperExperiment],
+  environment : Environment,
+  settings: Settings,
 }
 ```
 
 ```
 ClientExperiment = {
-	name: text .regex "^[a-zA-Z0-9_-]+$", ; must match one of the names from implementations
-	? log_name : text .regex "^[a-zA-Z0-9_-]+$", ; Name used for logging, if the same client is used for multiple experiment permutation (e.g., other arguments), a unique log_name must be provided for all entries
-	? arguments : Arguments,
+  name: text .regex "^[a-zA-Z0-9_-]+$", ; must match one of the names from implementations
+  ? log_name : text .regex "^[a-zA-Z0-9_-]+$", ; Name used for logging, if the same client is used for multiple experiment permutation (e.g., other arguments), a unique log_name must be provided for all entries
+  ? arguments : Arguments,
 }
 ```
 
 ```
 Arguments = {
-	* (text .regex "\!(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})") => text, ; Matches a parameter of the respective implementation configuration
+  * (text .regex "\!(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})") => text, ; Matches a parameter of the respective implementation configuration
 }
 ```
 
 ```
 Environment = {
-	name: DefaultEnvironments,
-	? sensors : [SensorConfiguration],
+  name: DefaultEnvironments,
+  ? sensors : [SensorConfiguration],
 }
 ```
 
@@ -170,8 +170,8 @@ DefaultEnvironments = "webserver-basic", ; Currently only 1 available
 
 ```
 SensorConfiguration = {
-	name: AvailableSensors,
-	* SensorKey => any,
+  name: AvailableSensors,
+  * SensorKey => any,
 }
 SensorKey = text, ; Parameter as defined in the sensor python code
 ```
@@ -182,24 +182,24 @@ AvailableSensors = "timeout" / "browser-file-watchdog"
 
 ```
 Timeout = {
-	timeout: int,
+  timeout: int,
 }
 ```
 
 ```
 BrowserFileWatchdog = {
-	expected_filename: [+	Filename],
+  expected_filename: [+	Filename],
 }
 Filename = text ; Must be an exact match
 ```
 
 ```
 Settings = {
-	label: text .regex "^[a-zA-Z0-9_-]+$", ; label in the logging output folder
-	? description : text, ; Currently unused, but optional to describe the setup in the configuration file
-	? playground : bool .default false, ; Currently unused, coming soon
-	? www_dir : text .default "./www", ; Web root path
-	? iterations: int .default 1, ; The number of times the complete permutation needs to be repeated
+  label: text .regex "^[a-zA-Z0-9_-]+$", ; label in the logging output folder
+  ? description : text, ; Currently unused, but optional to describe the setup in the configuration file
+  ? playground : bool .default false, ; Currently unused, coming soon
+  ? www_dir : text .default "./www", ; Web root path
+  ? iterations: int .default 1, ; The number of times the complete permutation needs to be repeated
 }
 ```
 
@@ -208,139 +208,139 @@ Settings = {
 The `tc-netem` shaper in this example is available in the [docker-images/tc-netem](/docker-images/tc-netem) folder. You can build it by navigating to it and performing the following Docker command `docker build -t tc-netem .`
 ```
 {
-		"clients": {
-		"aioquic": {
-			"image": "aiortc/aioquic-qns",
-						"parameters": {"REQUESTS": true}
-		},
-		"quic-go": {
-			"image": "martenseemann/quic-go-interop:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"quicly": {
-			"image": "h2oserver/quicly-interop-runner:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"ngtcp2": {
-			"image": "ghcr.io/ngtcp2/ngtcp2-interop:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"quant": {
-			"image": "ntap/quant:interop",
-						"parameters": {"REQUESTS": true}
-		},
-		"mvfst": {
-			"image": "lnicco/mvfst-qns:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"quiche": {
-			"image": "cloudflare/quiche-qns:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"kwik": {
-			"image": "peterdoornbosch/kwik_n_flupke-interop",
-						"parameters": {"REQUESTS": true}
-		},
-		"picoquic": {
-			"image": "privateoctopus/picoquic:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"neqo": {
-			"image": "neqoquic/neqo-qns:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"nginx": {
-			"image": "nginx/nginx-quic-qns:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"msquic": {
-			"image": "mcr.microsoft.com/msquic/qns:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"xquic": {
-			"image": "kulsk/xquic:latest",
-						"parameters": {"REQUESTS": true}
-		},
-		"lsquic": {
-			"image": "litespeedtech/lsquic-qir:latest",
-						"parameters": {"REQUESTS": true}
-		}
-	},
+    "clients": {
+    "aioquic": {
+      "image": "aiortc/aioquic-qns",
+            "parameters": {"REQUESTS": true}
+    },
+    "quic-go": {
+      "image": "martenseemann/quic-go-interop:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "quicly": {
+      "image": "h2oserver/quicly-interop-runner:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "ngtcp2": {
+      "image": "ghcr.io/ngtcp2/ngtcp2-interop:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "quant": {
+      "image": "ntap/quant:interop",
+            "parameters": {"REQUESTS": true}
+    },
+    "mvfst": {
+      "image": "lnicco/mvfst-qns:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "quiche": {
+      "image": "cloudflare/quiche-qns:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "kwik": {
+      "image": "peterdoornbosch/kwik_n_flupke-interop",
+            "parameters": {"REQUESTS": true}
+    },
+    "picoquic": {
+      "image": "privateoctopus/picoquic:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "neqo": {
+      "image": "neqoquic/neqo-qns:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "nginx": {
+      "image": "nginx/nginx-quic-qns:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "msquic": {
+      "image": "mcr.microsoft.com/msquic/qns:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "xquic": {
+      "image": "kulsk/xquic:latest",
+            "parameters": {"REQUESTS": true}
+    },
+    "lsquic": {
+      "image": "litespeedtech/lsquic-qir:latest",
+            "parameters": {"REQUESTS": true}
+    }
+  },
 
-	"shapers": {
-		"ns3-quic": {
-			"image": "martenseemann/quic-network-simulator",
-			"scenarios": {
-				"simple-p2p": {
-										"command": "\"simple-p2p --delay=!{LATENCY}ms --bandwidth=!{THROUGHPUT}Mbps --queue=25\"",
-										"parameters": ["THROUGHPUT", "LATENCY"]
-				}
-			}
-		},
-		"tc-netem": {
-			"image": "tc-netem",
-			"scenarios": {
-				"simple": {
-					"command": "\"simple !{LATENCY} !{THROUGHPUT}\"",
-					"parameters": ["THROUGHPUT", "LATENCY"]
-				},
-				"cellular-loss-good": "\"akamai_cellular_emulation.sh loss_based good\"",
-				"cellular-loss-median": "\"akamai_cellular_emulation.sh loss_based median\"",
-				"cellular-loss-poor": "\"akamai_cellular_emulation.sh loss_based poor\"",
-				"cellular-experience-noloss": "\"akamai_cellular_emulation.sh experience_based noloss\"",
-				"cellular-experience-good": "\"akamai_cellular_emulation.sh experience_based good\"",
-				"cellular-experience-fair": "\"akamai_cellular_emulation.sh experience_based fair\"",
-				"cellular-experience-passable": "\"akamai_cellular_emulation.sh experience_based passable\"",
-				"cellular-experience-poor": "\"akamai_cellular_emulation.sh experience_based poor\"",
-				"cellular-experience-verypoor": "\"akamai_cellular_emulation.sh experience_based verypoor\""
-			}
-		}
-	},
+  "shapers": {
+    "ns3-quic": {
+      "image": "martenseemann/quic-network-simulator",
+      "scenarios": {
+        "simple-p2p": {
+                    "command": "\"simple-p2p --delay=!{LATENCY}ms --bandwidth=!{THROUGHPUT}Mbps --queue=25\"",
+                    "parameters": ["THROUGHPUT", "LATENCY"]
+        }
+      }
+    },
+    "tc-netem": {
+      "image": "tc-netem",
+      "scenarios": {
+        "simple": {
+          "command": "\"simple !{LATENCY} !{THROUGHPUT}\"",
+          "parameters": ["THROUGHPUT", "LATENCY"]
+        },
+        "cellular-loss-good": "\"akamai_cellular_emulation.sh loss_based good\"",
+        "cellular-loss-median": "\"akamai_cellular_emulation.sh loss_based median\"",
+        "cellular-loss-poor": "\"akamai_cellular_emulation.sh loss_based poor\"",
+        "cellular-experience-noloss": "\"akamai_cellular_emulation.sh experience_based noloss\"",
+        "cellular-experience-good": "\"akamai_cellular_emulation.sh experience_based good\"",
+        "cellular-experience-fair": "\"akamai_cellular_emulation.sh experience_based fair\"",
+        "cellular-experience-passable": "\"akamai_cellular_emulation.sh experience_based passable\"",
+        "cellular-experience-poor": "\"akamai_cellular_emulation.sh experience_based poor\"",
+        "cellular-experience-verypoor": "\"akamai_cellular_emulation.sh experience_based verypoor\""
+      }
+    }
+  },
 
-	"servers": {
-		"aioquic": {
-			"image": "aiortc/aioquic-qns"
-		},
-		"quic-go": {
-			"image": "martenseemann/quic-go-interop:latest"
-		},
-		"quicly": {
-			"image": "h2oserver/quicly-interop-runner:latest"
-		},
-		"ngtcp2": {
-			"image": "ghcr.io/ngtcp2/ngtcp2-interop:latest"
-		},
-		"quant": {
-			"image": "ntap/quant:interop"
-		},
-		"mvfst": {
-			"image": "lnicco/mvfst-qns:latest"
-		},
-		"quiche": {
-			"image": "cloudflare/quiche-qns:latest"
-		},
-		"kwik": {
-			"image": "peterdoornbosch/kwik_n_flupke-interop"
-		},
-		"picoquic": {
-			"image": "privateoctopus/picoquic:latest"
-		},
-		"neqo": {
-			"image": "neqoquic/neqo-qns:latest"
-		},
-		"nginx": {
-			"image": "nginx/nginx-quic-qns:latest"
-		},
-		"msquic": {
-			"image": "mcr.microsoft.com/msquic/qns:latest"
-		},
-		"xquic": {
-			"image": "kulsk/xquic:latest"
-		},
-		"lsquic": {
-			"image": "litespeedtech/lsquic-qir:latest"
-		}
-	}
+  "servers": {
+    "aioquic": {
+      "image": "aiortc/aioquic-qns"
+    },
+    "quic-go": {
+      "image": "martenseemann/quic-go-interop:latest"
+    },
+    "quicly": {
+      "image": "h2oserver/quicly-interop-runner:latest"
+    },
+    "ngtcp2": {
+      "image": "ghcr.io/ngtcp2/ngtcp2-interop:latest"
+    },
+    "quant": {
+      "image": "ntap/quant:interop"
+    },
+    "mvfst": {
+      "image": "lnicco/mvfst-qns:latest"
+    },
+    "quiche": {
+      "image": "cloudflare/quiche-qns:latest"
+    },
+    "kwik": {
+      "image": "peterdoornbosch/kwik_n_flupke-interop"
+    },
+    "picoquic": {
+      "image": "privateoctopus/picoquic:latest"
+    },
+    "neqo": {
+      "image": "neqoquic/neqo-qns:latest"
+    },
+    "nginx": {
+      "image": "nginx/nginx-quic-qns:latest"
+    },
+    "msquic": {
+      "image": "mcr.microsoft.com/msquic/qns:latest"
+    },
+    "xquic": {
+      "image": "kulsk/xquic:latest"
+    },
+    "lsquic": {
+      "image": "litespeedtech/lsquic-qir:latest"
+    }
+  }
 }
 ```
 
@@ -348,69 +348,69 @@ The `tc-netem` shaper in this example is available in the [docker-images/tc-nete
 This configuration defines 3 clients, 3 shapers and 3 servers based the implementation configuration above. The experiment execution engine will create 27 test combinations to be run. With the `iterations` value set to two, Vegvisir runs these combinations twice, resulting in a total of 54 test.
 ```
 {
-		"clients": [
-				{
-						"name": "aioquic",
-						"arguments": {
-								"REQUESTS": "https://!{ORIGIN}/1MB.bin"
-						}
-				},
-				{
-						"name": "quic-go",
-						"arguments": {
-								"REQUESTS": "https://!{ORIGIN}/1MB.bin"
-						}
-				},
-				{
-						"name": "ngtcp2",
-						"arguments": {
-								"REQUESTS": "https://!{ORIGIN}/1MB.bin"
-						}
-				}
-		],
+    "clients": [
+        {
+            "name": "aioquic",
+            "arguments": {
+                "REQUESTS": "https://!{ORIGIN}/1MB.bin"
+            }
+        },
+        {
+            "name": "quic-go",
+            "arguments": {
+                "REQUESTS": "https://!{ORIGIN}/1MB.bin"
+            }
+        },
+        {
+            "name": "ngtcp2",
+            "arguments": {
+                "REQUESTS": "https://!{ORIGIN}/1MB.bin"
+            }
+        }
+    ],
 
-		"shapers": [
-				{
-						"name": "tc-netem",
-						"log_name": "tc-netem-cellular-loss-median",
-						"scenario": "cellular-loss-median"
-				},
-				{
-						"name": "tc-netem",
-						"log_name": "tc-netem-cellular-experience-good",
-						"scenario": "cellular-experience-good"
-				},
-				{
-						"name": "ns3-quic",
-						"scenario": "simple-p2p",
-						"arguments": {
-								"THROUGHPUT": "30",
-								"LATENCY": "10"
-						}
-				}
-		],
-		
-		"servers": [
-				{"name": "aioquic"},
-				{"name": "quic-go"},
-				{"name": "ngtcp2"}
-		],
+    "shapers": [
+        {
+            "name": "tc-netem",
+            "log_name": "tc-netem-cellular-loss-median",
+            "scenario": "cellular-loss-median"
+        },
+        {
+            "name": "tc-netem",
+            "log_name": "tc-netem-cellular-experience-good",
+            "scenario": "cellular-experience-good"
+        },
+        {
+            "name": "ns3-quic",
+            "scenario": "simple-p2p",
+            "arguments": {
+                "THROUGHPUT": "30",
+                "LATENCY": "10"
+            }
+        }
+    ],
+    
+    "servers": [
+        {"name": "aioquic"},
+        {"name": "quic-go"},
+        {"name": "ngtcp2"}
+    ],
 
-		"environment": {
-				"name": "webserver-basic",
-				"sensors": [
-						{
-								"name": "timeout",
-								"timeout": 30
-						}
-				]
-		},
+    "environment": {
+        "name": "webserver-basic",
+        "sensors": [
+            {
+                "name": "timeout",
+                "timeout": 30
+            }
+        ]
+    },
 
-		"settings": {
-				"label": "implementation_combinations",
-				"www_dir": "./www",
-				"iterations": 2
-		}
+    "settings": {
+        "label": "implementation_combinations",
+        "www_dir": "./www",
+        "iterations": 2
+    }
 }
 ``` 
 
@@ -420,87 +420,87 @@ This example assumes [google chrome](https://www.google.com/chrome/) is installe
 `implementation` configuration
 ```
 {
-	"clients": {
-		"chrome": {
-			"parameters": {
-				"REQUEST_URL": true
-			},
-			"command": "google-chrome-stable --origin-to-force-quic-on=!{ORIGIN}:!{ORIGIN_PORT} --enable-experimental-web-platform-features --log-net-log=!{LOG_PATH_CLIENT}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list=!{CERT_FINGERPRINT} !{REQUEST_URL}",
-			"construct": [
-				{
-					"root_required": false,
-					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences \"!{DOWNLOAD_PATH_CLIENT}\""
-				}
-			]
-		}
-	},
+  "clients": {
+    "chrome": {
+      "parameters": {
+        "REQUEST_URL": true
+      },
+      "command": "google-chrome-stable --origin-to-force-quic-on=!{ORIGIN}:!{ORIGIN_PORT} --enable-experimental-web-platform-features --log-net-log=!{LOG_PATH_CLIENT}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list=!{CERT_FINGERPRINT} !{REQUEST_URL}",
+      "construct": [
+        {
+          "root_required": false,
+          "command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences \"!{DOWNLOAD_PATH_CLIENT}\""
+        }
+      ]
+    }
+  },
 
-	"shapers": {
-		"ns3-quic": {
-			"image": "martenseemann/quic-network-simulator",
-			"scenarios": {
-				"simple-p2p": {
-					"command": "\"simple-p2p --delay=!{LATENCY}ms --bandwidth=!{THROUGHPUT}Mbps --queue=25\"",
-					"parameters": ["THROUGHPUT", "LATENCY"]
-				}
-			}
-		}
-	},
+  "shapers": {
+    "ns3-quic": {
+      "image": "martenseemann/quic-network-simulator",
+      "scenarios": {
+        "simple-p2p": {
+          "command": "\"simple-p2p --delay=!{LATENCY}ms --bandwidth=!{THROUGHPUT}Mbps --queue=25\"",
+          "parameters": ["THROUGHPUT", "LATENCY"]
+        }
+      }
+    }
+  },
 
-	"servers": {
-		"aioquic": {
-			"image": "aiortc/aioquic-qns"
-		}
-	}
+  "servers": {
+    "aioquic": {
+      "image": "aiortc/aioquic-qns"
+    }
+  }
 }
 ```
 
 `experiment` configuration
 ```
 {
-	"clients": [
-		{
-			"name": "chrome",
-			"arguments": {
-				"REQUEST_URL": "https://!{ORIGIN}/1MB.bin"
-			}
-		}
-	],
+  "clients": [
+    {
+      "name": "chrome",
+      "arguments": {
+        "REQUEST_URL": "https://!{ORIGIN}/1MB.bin"
+      }
+    }
+  ],
 
-	"shapers": [
-		{
-			"name": "ns3-quic",
-			"scenario": "simple-p2p",
-			"arguments": {
-				"THROUGHPUT": "30",
-				"LATENCY": "10"
-			}
-		}
-	],
-	
-	"servers": [
-		{"name": "aioquic"}
-	],
+  "shapers": [
+    {
+      "name": "ns3-quic",
+      "scenario": "simple-p2p",
+      "arguments": {
+        "THROUGHPUT": "30",
+        "LATENCY": "10"
+      }
+    }
+  ],
+  
+  "servers": [
+    {"name": "aioquic"}
+  ],
 
-	"environment": {
-		"name": "webserver-basic",
-		"sensors": [
-			{
-				"name": "timeout",
-				"timeout": 30
-			},
-			{
-				"name": "browser-file-watchdog",
-				"expected_filename": ["1MB.bin"]
-			}
-		]
-	},
+  "environment": {
+    "name": "webserver-basic",
+    "sensors": [
+      {
+        "name": "timeout",
+        "timeout": 30
+      },
+      {
+        "name": "browser-file-watchdog",
+        "expected_filename": ["1MB.bin"]
+      }
+    ]
+  },
 
-	"settings": {
-		"label": "browser_download_test",
-		"www_dir": "./www",
-		"iterations": 1
-	}
+  "settings": {
+    "label": "browser_download_test",
+    "www_dir": "./www",
+    "iterations": 1
+  }
 }
 ```
 
@@ -574,15 +574,15 @@ The snippet below contains a google chrome client `implementation` configuration
 
 ```
 "chrome": {
-	"parameters": {
-		"DASH_MANIFEST": true
-	},
-	"command": "google-chrome-stable --origin-to-force-quic-on=!{ORIGIN}:!{ORIGIN_PORT} --enable-experimental-web-platform-features --log-net-log=!{LOG_PATH_CLIENT}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list=!{CERT_FINGERPRINT} https://!{ORIGIN}/dashjs-qlog-has/demo/demo.html?autosave=true&video=!{DASH_MANIFEST}",
-	"construct": [
-		{
-			"root_required": false,
-			"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences \"!{DOWNLOAD_PATH_CLIENT}\""
-		}
-	],
+  "parameters": {
+    "DASH_MANIFEST": true
+  },
+  "command": "google-chrome-stable --origin-to-force-quic-on=!{ORIGIN}:!{ORIGIN_PORT} --enable-experimental-web-platform-features --log-net-log=!{LOG_PATH_CLIENT}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list=!{CERT_FINGERPRINT} https://!{ORIGIN}/dashjs-qlog-has/demo/demo.html?autosave=true&video=!{DASH_MANIFEST}",
+  "construct": [
+    {
+      "root_required": false,
+      "command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences \"!{DOWNLOAD_PATH_CLIENT}\""
+    }
+  ],
 }
 ```
