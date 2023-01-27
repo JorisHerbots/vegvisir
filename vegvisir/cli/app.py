@@ -82,14 +82,14 @@ def configure_logging():
     logging.addLevelName(logging.ERROR, f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=204, g=0, b=0)}Error >{control_sequences['CLEAR_COLOR']}")
     logging.addLevelName(logging.CRITICAL, f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=204, g=0, b=0)}Critical >{control_sequences['CLEAR_COLOR']}")
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)  # Initialise to INFO, can later be set to DEBUG
+    logger.setLevel(logging.DEBUG)
     console_handler = VegvisirLogHandler()
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.INFO)
     console_formatter = logging.Formatter("%(levelname)s %(message)s")
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)
-    return logger
-logger = configure_logging()
+    return logger, console_handler
+logger, console_handler = configure_logging()
 
 def flush_print(s):
     sys.stdout.write(s)
@@ -362,7 +362,7 @@ def main():
 
     vegvisir_arguments = argument_parser.parse_args()
     if vegvisir_arguments.verbose:
-        logger.setLevel(logging.DEBUG)
+        console_handler.setLevel(logging.DEBUG)
         logger.debug("Verbose output requested. Console logger set to debug-level.")
     
     command_to_callback_map = {
