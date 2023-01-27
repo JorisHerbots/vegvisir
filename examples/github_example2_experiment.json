@@ -1,0 +1,45 @@
+{
+	"clients": [
+		{
+			"name": "chrome",
+			"arguments": {
+				"REQUEST_URL": "https://!{ORIGIN}/1MB.bin"
+			}
+		}
+	],
+
+	"shapers": [
+		{
+			"name": "ns3-quic",
+			"scenario": "simple-p2p",
+			"arguments": {
+				"THROUGHPUT": "30",
+				"LATENCY": "10"
+			}
+		}
+	],
+	
+	"servers": [
+		{"name": "aioquic"}
+	],
+
+	"environment": {
+		"name": "webserver-basic",
+		"sensors": [
+			{
+				"name": "timeout",
+				"timeout": 30
+			},
+			{
+				"name": "browser-file-watchdog",
+				"expected_filename": ["1MB.bin"]
+			}
+		]
+	},
+
+	"settings": {
+		"label": "browser_download_test",
+		"www_dir": "./www",
+		"iterations": 1
+	}
+}

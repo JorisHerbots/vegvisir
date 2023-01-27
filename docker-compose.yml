@@ -7,9 +7,8 @@ services:
     hostname: sim
     stdin_open: true
     tty: true
-    environment:
-      - WAITFORSERVER=$WAITFORSERVER
-      - SCENARIO=$SCENARIO
+    volumes:
+      - $LOG_PATH_SHAPER:/logs/
     env_file: 
       - shaper.env
     cap_add: 
@@ -35,14 +34,7 @@ services:
     volumes:
       - $WWW:/www:ro
       - $CERTS:/certs:ro
-    environment:
-      - CRON=$CRON
-      - ROLE=server
-      - SERVER_PARAMS=$SERVER_PARAMS
-      - SSLKEYLOGFILE=/logs/keys.log
-      - QLOGDIR=/logs/qlog/
-      - TESTCASE=$TESTCASE_SERVER
-      - VERSION=$VERSION
+      - $LOG_PATH_SERVER:/logs/
     env_file: 
       - server.env
     depends_on:
@@ -63,17 +55,9 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - $DOWNLOADS:/downloads:delegated
+      - $DOWNLOAD_PATH_CLIENT:/downloads:delegated
       - $CERTS:/certs:ro
-    environment:
-      - CRON=$CRON
-      - ROLE=client
-      - CLIENT_PARAMS=$CLIENT_PARAMS
-      - SSLKEYLOGFILE=/logs/keys.log
-      - QLOGDIR=/logs/qlog/
-      - TESTCASE=$TESTCASE_CLIENT
-      - REQUESTS=$REQUESTS
-      - VERSION=$VERSION
+      - $LOG_PATH_CLIENT:/logs/
     env_file: 
       client.env
     depends_on:
