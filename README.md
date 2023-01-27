@@ -570,7 +570,7 @@ Source: [Wikipedia](https://en.wikipedia.org/wiki/Vegv%C3%ADsir)
 ## I read somewhere you also have a HTTP Adaptive Streaming event definitions for qlog?
 Correct! Our prelimary work on that can be found on [this repository](https://github.com/JorisHerbots/qlog-has). We also have a wrapper [for dash.js](https://github.com/JorisHerbots/dashjs-qlog-has) that you can put in the `www` directory to be used in your experiments.
 
-The snippet below contains a google chrome client `implementation` configuration that make use of the wrapper above. You can find some [MPEG-DASH datasets here](https://dash.itec.aau.at/dash-dataset/), simply download them to the `www` folder and provide the correct relative URL to the manifest you want to use as argument for `DASH_MANIFEST`. This demo automatically downloads a `dashjs.qlog` when video playback stops, you can use this in combination with the `browser-file-watchdog` sensor.
+The snippet below contains a google chrome client `implementation` configuration that makes use of the wrapper above. You can find some [MPEG-DASH datasets here](https://dash.itec.aau.at/dash-dataset/), simply download them to the `www` folder and provide the correct relative URL to the manifest you want to use as argument for `DASH_MANIFEST`. This demo automatically downloads a `dashjs.qlog` file when video playback stops, you can use this in combination with the `browser-file-watchdog` sensor.
 
 ```
 "chrome": {
