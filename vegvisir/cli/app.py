@@ -13,7 +13,7 @@ import time
 import colour
 
 from vegvisir.configuration import Configuration
-from vegvisir.housekeeping import freeze_implementations_configuration
+from vegvisir.housekeeping import freeze_implementations_configuration, load_frozen_implementations
 
 from .. import runner, exceptions, __version__ as vegvisir_version
 
@@ -332,6 +332,15 @@ def freeze(vegvisir_arguments):
         logger.error(e)
         sys.exit(1)
 
+def load(vegvisir_arguments):
+    print(generate_banner())
+    try:
+        logger.info(f"Starting load of archive [{vegvisir_arguments.archive}]")
+        load_frozen_implementations(vegvisir_arguments.archive)
+        logger.info(f"Successfully loaded the provided archive. You can now utilize the implementation contained in it.")
+    except exceptions.VegvisirFreezeException as e:
+        logging.error(e)
+
 class SubcommandHelpFormatter(argparse.RawDescriptionHelpFormatter):
     # https://stackoverflow.com/a/13429281
     # Removes the metavar help line for an overall cleaner experience
@@ -356,6 +365,9 @@ def main():
     freeze_parser.add_argument("-i", "--implementations",  dest="implementations", metavar="[IMPLEMENTATIONS FILE]", help="Defaults to ./implementations.json", default="./implementations.json")
     # freeze_parser.add_argument("out", metavar="OUT", help="Filename for the frozen archive")
 
+    load_parser = argument_subparsers.add_parser("load", aliases=["l"], help="Load a frozen archive", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
+    load_parser.add_argument("archive", metavar="[ARCHIVE FILE]")
+
     # Future work
     # share_parser = argument_subparsers.add_parser("share", aliases=["s"], help="Generate a compressed file containing the results of an experiment", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
     # share_parser.add_argument("experiment", metavar="[EXPERIMENT FILE]", default="./experiment.json")
@@ -368,9 +380,11 @@ def main():
     command_to_callback_map = {
         "r": run,
         "f": freeze,
+        "l": load,
         # "s": lambda _: None,  # Future work
         "run": run,
         "freeze": freeze,
+        "load": load,
         # "share": lambda _: None,  # Future work
     }
 
