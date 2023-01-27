@@ -238,6 +238,7 @@ class Experiment:
 						vegvisirBaseArguments.WAITFORSERVER = "server4:443"
 						vegvisirBaseArguments.SSLKEYLOGFILE = "/logs/keys.log"
 						vegvisirBaseArguments.QLOGDIR = "/logs/qlog/"
+						vegvisirBaseArguments.ENVIRONMENT = self.configuration.environment.environment_name if self.configuration.environment.environment_name != "" else None
 						# vegvisirBaseArguments.SCENARIO = shaper.scenarios[shaper_config["scenario"]].command  # TODO jherbots Check if client and server need this?
 
 						vegvisirServerArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="server", TESTCASE=self.configuration.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER))

@@ -28,7 +28,7 @@ class BaseEnvironment:
 	def __init__(self) -> None:
 		self._QIR_compatibility_testcase_client:str = ""  # Undefined QIR behavior
 		self._QIR_compatibility_testcase_server:str = ""  # Undefined QIR behavior
-		self.scenario:str = ""
+		self.environment_name:str = ""
 		self.sensors:List[sensors.ABCSensor] = []
 		self.sync_semaphore = None
 

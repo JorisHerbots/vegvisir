@@ -57,6 +57,7 @@ class VegvisirArguments:
     WAITFORSERVER: str | None = None
 
     SCENARIO: str | None = None
+    ENVIRONMENT : str | None = None
     TESTCASE : str | None = None
 
     def dict(self) -> Dict[str, str]:
