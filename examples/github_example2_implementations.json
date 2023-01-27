@@ -1,0 +1,34 @@
+{
+	"clients": {
+		"chrome": {
+			"parameters": {
+				"REQUEST_URL": true
+			},
+			"command": "google-chrome-stable --origin-to-force-quic-on=!{ORIGIN}:!{ORIGIN_PORT} --enable-experimental-web-platform-features --log-net-log=!{LOG_PATH_CLIENT}/net-log.json --autoplay-policy=no-user-gesture-required --auto-open-devtools-for-tabs --ignore-certificate-errors-spki-list=!{CERT_FINGERPRINT} !{REQUEST_URL}",
+			"construct": [
+				{
+					"root_required": false,
+					"command": "python ./util/chrome-set-downloads-folder.py ~/.config/google-chrome/Default/Preferences \"!{DOWNLOAD_PATH_CLIENT}\""
+				}
+			]
+		}
+	},
+
+	"shapers": {
+		"ns3-quic": {
+			"image": "martenseemann/quic-network-simulator",
+			"scenarios": {
+				"simple-p2p": {
+					"command": "\"simple-p2p --delay=!{LATENCY}ms --bandwidth=!{THROUGHPUT}Mbps --queue=25\"",
+					"parameters": ["THROUGHPUT", "LATENCY"]
+				}
+			}
+		}
+	},
+
+	"servers": {
+		"aioquic": {
+			"image": "aiortc/aioquic-qns"
+		}
+	}
+}

@@ -1,0 +1,65 @@
+{
+    "clients": [
+        {
+            "name": "aioquic",
+            "arguments": {
+                "REQUESTS": "https://!{ORIGIN}/1MB.bin"
+            }
+        },
+        {
+            "name": "quic-go",
+            "arguments": {
+                "REQUESTS": "https://!{ORIGIN}/1MB.bin"
+            }
+        },
+        {
+            "name": "ngtcp2",
+            "arguments": {
+                "REQUESTS": "https://!{ORIGIN}/1MB.bin"
+            }
+        }
+    ],
+
+    "shapers": [
+        {
+            "name": "tc-netem",
+            "log_name": "tc-netem-cellular-loss-median",
+            "scenario": "cellular-loss-median"
+        },
+        {
+            "name": "tc-netem",
+            "log_name": "tc-netem-cellular-experience-good",
+            "scenario": "cellular-experience-good"
+        },
+        {
+            "name": "ns3-quic",
+            "scenario": "simple-p2p",
+            "arguments": {
+                "THROUGHPUT": "30",
+                "LATENCY": "10"
+            }
+        }
+    ],
+    
+    "servers": [
+        {"name": "aioquic"},
+        {"name": "quic-go"},
+        {"name": "ngtcp2"}
+    ],
+
+    "environment": {
+        "name": "webserver-basic",
+        "sensors": [
+            {
+                "name": "timeout",
+                "timeout": 30
+            }
+        ]
+    },
+
+    "settings": {
+        "label": "implementation_combinations",
+        "www_dir": "./www",
+        "iterations": 1
+    }
+}
