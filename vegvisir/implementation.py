@@ -170,6 +170,17 @@ class HostCommand:
 		# Assume the hydrated_parameters have already been substituted, this implies that escaped parts have already been replaced
 		# Doing the substitution with infinite depth again will detect false cycles, we must limit it the substitution process to one cycle 
 		return ArgumentTemplate.substitute(self.command, hydrated_parameters, max_depth=1)
+	
+class Tracer:
+	def __init__(self, command: str, root_required: bool = False, termination_timeout: int = None) -> None:
+		self.command = command
+		self.requires_root = root_required
+		self.termination_timeout = termination_timeout
+
+	def serialize_command(self, hydrated_parameters: Dict[str, str]):  # TODO reevaluate
+		# Assume the hydrated_parameters have already been substituted, this implies that escaped parts have already been replaced
+		# Doing the substitution with infinite depth again will detect false cycles, we must limit it the substitution process to one cycle 
+		return ArgumentTemplate.substitute(self.command, hydrated_parameters, max_depth=1)
 
 class ArgumentTemplate:
 	# pattern = re.compile(r"\$(?:(?:{(?P<parameter>(?:[A-Z]+[A-Z0-9]*))})|(?P<escaped>\${(?:[A-Z]+[A-Z0-9]*)}))")

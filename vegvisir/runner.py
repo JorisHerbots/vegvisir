@@ -7,11 +7,12 @@ import os
 import pathlib
 import queue
 import shlex
+from signal import SIGINT
 import sys
 import subprocess
 import threading
 import time
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import tempfile
 import re
 import shutil
@@ -307,6 +308,16 @@ class Experiment:
 						self.print_debug_information("docker version")
 						self.print_debug_information("docker compose version")
 
+						# Start tracers
+						tracers_procs: Dict[str, subprocess.Popen] = {}
+
+						for tracer in self.configuration._tracers:
+							cmd = self.configuration._tracers[tracer]
+							command = cmd.serialize_command(Parameters().hydrate_with_arguments({}, vegvisirBaseArguments.dict()))
+							proc = self.host_interface.spawn_parallel_subprocess(command, cmd.requires_root)
+							tracers_procs[tracer] = proc
+							self.logger.info('Tracer "{}" started'.format(tracer))
+
 						# Setup client
 						vegvisirClientArguments = dataclasses.replace(vegvisirBaseArguments, ROLE = "client", TESTCASE = self.configuration.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.CLIENT))
 						client_params = client.parameters.hydrate_with_arguments(client_config.get("arguments", {}), vegvisirClientArguments.dict())
@@ -385,6 +396,20 @@ class Experiment:
 						self.logger.debug("Vegvisir: remove entry from hosts: %s", out.strip())
 						if err is not None and len(err) > 0:
 							self.logger.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
+
+					for tracer in tracers_procs:
+						proc = tracers_procs[tracer]
+						trac = self.configuration._tracers[tracer]
+						proc.send_signal(SIGINT)
+						try:
+							proc.wait(timeout=trac.termination_timeout)
+						except subprocess.TimeoutExpired as e:
+							self.logger.debug('Tracer "{}" terminated after timeout of {}s'.format(tracer, trac.termination_timeout))
+							proc.terminate()
+						out, err = proc.communicate()
+						self.logger.debug(out.decode("utf-8"))
+						self.logger.debug(err.decode("utf-8"))
+						self.logger.info('Tracer "{}" stopped'.format(tracer))
 
 					# Change ownership of docker output to running user
 					try:

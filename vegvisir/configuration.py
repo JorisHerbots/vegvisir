@@ -6,7 +6,7 @@ from vegvisir import environments
 from vegvisir.data import ExperimentPaths, VegvisirArguments
 from vegvisir.environments.base_environment import BaseEnvironment
 from vegvisir.exceptions import VegvisirException, VegvisirArgumentException, VegvisirCommandException, VegvisirInvalidExperimentConfigurationException, VegvisirInvalidImplementationConfigurationException, VegvisirConfigurationException
-from vegvisir.implementation import DockerImage, Endpoint, HostCommand, Parameters, Scenario, Shaper
+from vegvisir.implementation import DockerImage, Endpoint, HostCommand, Parameters, Scenario, Shaper, Tracer
 
 
 class Configuration:
@@ -32,6 +32,8 @@ class Configuration:
 		self._environment: BaseEnvironment = None
 
 		self.logger = logging.getLogger("root.Configuration")
+
+		self._tracers: Dict[str, Tracer] = {}
 
 		# Provide developer with the freedom of already loading the provided configuration paths
 		if implementations_path is not None:
@@ -99,6 +101,11 @@ class Configuration:
 		for shaper in self._shapers.values():
 			images.append(shaper.image.full)
 		return images
+	
+	@property
+	def tracers(self):
+		self._validate_and_raise_load(self._implementations_configuration_loaded, "tracers", "implementations")
+		return self._tracers
 
 	def _validate_and_raise_load(self, config_bool: bool, getter: str, required_config_name: str):
 		if not config_bool:
@@ -139,6 +146,7 @@ class Configuration:
 		CLIENTS_KEY = "clients"
 		SERVERS_KEY = "servers"
 		SHAPERS_KEY = "shapers"
+		TRACERS_KEY = "tracers"
 		
 		if not all(key in implementations for key in [CLIENTS_KEY, SERVERS_KEY, SHAPERS_KEY]):
 			raise VegvisirInvalidImplementationConfigurationException("Loading implementations halted. One or multiple keys are missing in the provided implementations JSON ('clients', 'servers' and/or 'shapers').") 
@@ -204,6 +212,14 @@ class Configuration:
 				else:
 					raise VegvisirInvalidImplementationConfigurationException(f"Shaper [{shaper}] scenario [{scenario}] is not a string or does not contain a 'command' and 'parameters' key. Ignoring scenario entry.")
 			self._shapers[shaper] = impl
+
+		# Tracers
+		if TRACERS_KEY in implementations:
+			for tracer, configuration in implementations[TRACERS_KEY].items():
+				root_req = configuration.get("root_required", False)
+				term_timeout = configuration.get("termination_timeout", None)
+				host_command = Tracer(configuration.get("command"), root_req, term_timeout)
+				self._tracers[tracer] = host_command
 
 	def load_experiment_from_file(self, experiment_path: str) -> None:
 		try:
