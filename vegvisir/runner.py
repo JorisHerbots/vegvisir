@@ -309,6 +309,7 @@ class Experiment:
 						self.print_debug_information("docker compose version")
 
 						# Start tracers
+						self.logger.info('Starting tracers')
 						tracers_procs: Dict[str, subprocess.Popen] = {}
 
 						for tracer in self.configuration._tracers:
@@ -316,7 +317,7 @@ class Experiment:
 							command = cmd.serialize_command(Parameters().hydrate_with_arguments({}, vegvisirBaseArguments.dict()))
 							proc = self.host_interface.spawn_parallel_subprocess(command, cmd.requires_root)
 							tracers_procs[tracer] = proc
-							self.logger.info('Tracer "{}" started'.format(tracer))
+							self.logger.debug('Tracer "{}" started'.format(tracer))
 
 						# Setup client
 						vegvisirClientArguments = dataclasses.replace(vegvisirBaseArguments, ROLE = "client", TESTCASE = self.configuration.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.CLIENT))
@@ -397,6 +398,7 @@ class Experiment:
 						if err is not None and len(err) > 0:
 							self.logger.debug("Vegvisir: removing entry from hosts file resulted in error: %s", err)
 
+					self.logger.info('Stopping tracers')
 					for tracer in tracers_procs:
 						proc = tracers_procs[tracer]
 						trac = self.configuration._tracers[tracer]
@@ -409,7 +411,7 @@ class Experiment:
 						out, err = proc.communicate()
 						self.logger.debug(out.decode("utf-8"))
 						self.logger.debug(err.decode("utf-8"))
-						self.logger.info('Tracer "{}" stopped'.format(tracer))
+						self.logger.debug('Tracer "{}" stopped'.format(tracer))
 
 					# Change ownership of docker output to running user
 					try:
