@@ -330,9 +330,11 @@ class Experiment:
 								Parameters.serialize_to_env_file(client_params, fp)
 							
 							# params += " ".join(client.additional_envs())
+							# Docker compose 2.17 introduced a breaking change: --timeout was renamed --waitTimeout
+							# Both, however, support the -t shorthand which we will use to be backwards compatible with previous docker compose versions
 							client_cmd = (
 								docker_compose_vars
-								+ " docker compose up --abort-on-container-exit --timeout 1 "
+								+ " docker compose up --abort-on-container-exit -t 1 "
 								+ "client"
 							)
 							client_proc = self.host_interface.spawn_parallel_subprocess(client_cmd, False, True)
