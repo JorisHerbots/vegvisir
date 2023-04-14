@@ -5,7 +5,7 @@
 
 [![Vegvisir](https://img.shields.io/badge/Vegvisir-V2.0.0-orange
 )](#)
-[![Python](https://img.shields.io/badge/Python-%E2%89%A53.7-blue)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-%E2%89%A53.10-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-success)](/LICENSE.md)
 <img src="https://img.shields.io/badge/Linux-X86--64-lightgrey" alt="Linux X86-64">
 
@@ -38,7 +38,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Vegvisir requires you to have at least Python version `>3.7` installed and only works on Linux `x86_64`.
+Vegvisir requires you to have at least Python version `>3.10` installed and only works on Linux `x86_64`.
 
 The following dependencies need to be installed system-wide for Vegvisir to work correctly.
 ```
