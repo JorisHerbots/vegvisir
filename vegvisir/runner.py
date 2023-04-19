@@ -311,13 +311,17 @@ class Experiment:
 						# Start tracers
 						self.logger.info('Starting tracers')
 						tracers_procs: Dict[str, subprocess.Popen] = {}
+						tracers_post_start = []
 
 						for tracer in self.configuration._tracers:
 							cmd = self.configuration._tracers[tracer]
-							command = cmd.serialize_command(Parameters().hydrate_with_arguments({}, vegvisirBaseArguments.dict()))
-							proc = self.host_interface.spawn_parallel_subprocess(command, cmd.requires_root)
-							tracers_procs[tracer] = proc
-							self.logger.debug('Tracer "{}" started'.format(tracer))
+							if not cmd.post_start:
+								command = cmd.serialize_command(Parameters().hydrate_with_arguments({}, vegvisirBaseArguments.dict()))
+								proc = self.host_interface.spawn_parallel_subprocess(command, cmd.requires_root, False)
+								tracers_procs[tracer] = proc
+								self.logger.debug('Tracer "{}" started'.format(tracer))
+							else:
+								tracers_post_start.append([tracer, cmd])
 
 						# Setup client
 						vegvisirClientArguments = dataclasses.replace(vegvisirBaseArguments, ROLE = "client", TESTCASE = self.configuration.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.CLIENT))
@@ -351,6 +355,15 @@ class Experiment:
 							client_cmd = client.command.serialize_command(client_params)
 							client_proc = self.host_interface.spawn_parallel_subprocess(client_cmd)
 						self.logger.debug("Vegvisir: running client: %s", client_cmd)
+
+						for t in tracers_post_start:
+							tracer = t[0]
+							cmd = t[1]
+							client_args = {"CLIENT_PID": str(client_proc.pid)}
+							command = cmd.serialize_command(Parameters({"CLIENT_PID": False}).hydrate_with_arguments(client_args, vegvisirBaseArguments.dict())) # TODO add CLIENT_PID to system arguments
+							proc = self.host_interface.spawn_parallel_subprocess(command, cmd.requires_root)
+							tracers_procs[tracer] = proc
+							self.logger.debug('Tracer "{}" started (post client start)'.format(tracer))
 
 						try:
 							self.configuration.environment.start_sensors(client_proc, self.configuration.path_collection)

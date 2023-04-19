@@ -30,7 +30,8 @@ class HostInterface:
 		proc = subprocess.Popen(command, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		if root_privileges:
 			try:
-				proc.stdin.write(self._sudo_password.encode())
+				proc.stdin.write(self._sudo_password.encode() + b'\n')
+				proc.stdin.flush()
 			except BrokenPipeError:
 				logging.error(f"Pipe broke before we could provide sudo credentials. No sudo available? [{debug_command}]")
 		return proc

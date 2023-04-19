@@ -217,8 +217,9 @@ class Configuration:
 		if TRACERS_KEY in implementations:
 			for tracer, configuration in implementations[TRACERS_KEY].items():
 				root_req = configuration.get("root_required", False)
+				post_start = configuration.get("post_start", False)
 				term_timeout = configuration.get("termination_timeout", None)
-				host_command = Tracer(configuration.get("command"), root_req, term_timeout)
+				host_command = Tracer(configuration.get("command"), root_req, post_start, term_timeout)
 				self._tracers[tracer] = host_command
 
 	def load_experiment_from_file(self, experiment_path: str) -> None:
