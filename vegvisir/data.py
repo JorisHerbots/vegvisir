@@ -60,6 +60,8 @@ class VegvisirArguments:
     ENVIRONMENT : str | None = None
     TESTCASE : str | None = None
 
+    CLIENT_PID: str | None = None
+
     def dict(self) -> Dict[str, str]:
         return {key: value for key, value in dataclasses.asdict(self).items() if value is not None}
     

@@ -358,8 +358,8 @@ class Experiment:
 						for t in tracers_post_start:
 							tracer = t[0]
 							cmd = t[1]
-							client_args = {"CLIENT_PID": str(client_proc.pid)}
-							command = cmd.serialize_command(Parameters({"CLIENT_PID": False}).hydrate_with_arguments(client_args, vegvisirBaseArguments.dict())) # TODO add CLIENT_PID to system arguments
+							vegvisirBaseArguments.CLIENT_PID = str(client_proc.pid)
+							command = cmd.serialize_command(Parameters().hydrate_with_arguments({}, vegvisirBaseArguments.dict()))
 							proc = self.host_interface.spawn_parallel_subprocess(command, cmd.requires_root)
 							tracers_procs[tracer] = proc
 							self.logger.debug('Tracer "{}" started (post client start)'.format(tracer))
