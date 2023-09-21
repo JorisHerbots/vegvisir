@@ -14,14 +14,10 @@ ifconfig eth1 promisc
 
 SCENARIONAME=$(echo $SCENARIO | cut -d " " -f1)
 
-if [ "$SCENARIONAME" == "joris" ]; then
-	# nc -vz ${ORIGIN} ${ORIGIN_PORT}
-	echo "No wait action needed?"
-else 
-	if [[ -n "$WAITFORSERVER" ]]; then
-	wait-for-it-quic -t 10s $WAITFORSERVER
-	fi
+if [[ -n "$WAITFORSERVER" ]]; then
+wait-for-it-quic -t 10s $WAITFORSERVER
 fi
+
 
 echo "Activating sync mechanism with netcat"
 netcat -l 57832
