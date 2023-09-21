@@ -3,21 +3,10 @@ import shlex
 import subprocess
 from typing import Tuple
 
+
 class HostInterface:
 	def __init__(self, sudo_password: str) -> None:
 		self._sudo_password = sudo_password
-
-	# def spawn_subprocess(self, command: str, shell: bool = False) -> Tuple[str, str]:
-	#     if shell:
-	#         proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	#     else:
-	#         shlex_command = shlex.split(command)
-	#         proc = subprocess.Popen(shlex_command, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		
-	#     proc_input = self._sudo_password.encode() if "sudo" in command else None
-	#     if proc_input is not None:
-	#         out, err = proc.communicate(input=proc_input)
-	#     return out, err, proc
 
 	def spawn_parallel_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> subprocess.Popen:
 		shell = shell == True
@@ -44,4 +33,3 @@ class HostInterface:
 	def _is_sudo_password_valid(self):
 		proc, _, _ = self.spawn_blocking_subprocess("which sudo", True, False)
 		return proc.returncode == 0
-		

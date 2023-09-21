@@ -1,12 +1,13 @@
-from dataclasses import dataclass
 import dataclasses
+from dataclasses import dataclass
 from typing import Dict
 
 
 @dataclass
 class ExperimentPaths:
     """
-    
+    Collection of experiment output paths
+
     """
     log_path_root: str | None = None
     log_path_date: str | None = None

@@ -1,158 +1,13 @@
-from dataclasses import fields
-from enum import Enum
 import re
 import sys
+from dataclasses import fields
+from enum import Enum
 from typing import Dict, List, TextIO, Tuple
 
 from vegvisir.data import VegvisirArguments
-from vegvisir.exceptions import VegvisirArgumentException, VegvisirParameterException
-# class Role(Enum):
-# 	CLIENT = 1
-# 	SERVER = 2
-# 	SHAPER = 3
+from vegvisir.exceptions import (VegvisirArgumentException,
+                                 VegvisirParameterException)
 
-# class Type(Enum):
-# 	DOCKER = "docker"
-# 	APPLICATION = "application"
-
-# class RunStatus(Enum):
-# 	WAITING = "waiting"
-# 	RUNNING = "running"
-# 	DONE = "done"
-
-# class Implementation:
-# 	name: str = ""
-# 	url: str = ""
-# 	type: Type = ""
-# 	role: Role = None
-# 	active: bool = False
-# 	status: RunStatus = RunStatus.WAITING
-# 	env_vars: List[str]
-# 	env: List[str]
-# 	arguments: Dict[str, bool] = {}
-# 	_required_arguments: List[str] = []
-
-# 	def __init__(self, name: str, url: str):
-# 		self.name = name
-# 		self.url = url  # TODO jherbots REMOVE
-
-# 	def __repr__(self) -> str:
-# 		return f"Implementation{{ name: {self.name}, type: {self.type}, role {self.role} }}"
-
-# 	def __str__(self) -> str:
-# 		return f"Implementation [{self.name}] type [{self.type}] role [{self.role}]"
-
-# 	def add_argument(self, arg: str, required: bool = False):
-# 		self.arguments[arg] = required
-# 		if required:
-# 			self._required_arguments.append(arg)
-
-# class Image():
-# 	url: str = ""
-# 	active: bool = False
-# 	repo: str = ""
-# 	name: str = ""
-# 	tag: str = ""
-
-# 	def __init__(self, url: str):
-# 		self.url = url
-# 		self.repo = get_repo_from_image(url)
-# 		self.name = get_name_from_image(url)
-# 		self.tag = get_tag_from_image(url)
-
-# class Docker(Implementation):
-# 	images: List[Image] = []
-# 	original_image: str = ""
-# 	image_name: str = ""
-	
-# 	curr_image: Image = None
-
-# 	# TODO JHERBOTS Remove URL
-# 	def __init__(self, name: str, image: str, url: str = ""):
-# 		super().__init__(name, url)
-# 		self.type = Type.DOCKER
-# 		self.original_image = image
-# 		self.images = [Image(image)]
-
-# 		self.image_name = get_name_from_image(image)
-
-	
-# 	def urlnal_envs(self) -> List[str]:
-# 		env_file_path = ''
-# 		if self.role == Role.CLIENT:
-# 			env_file_path = 'client'
-# 		elif self.role == Role.SERVER:
-# 			env_file_path = 'server'
-# 		elif self.role == Role.SHAPER:
-# 			env_file_path = 'shaper'
-# 		env_file_path += '.env'
-
-# 		with open(env_file_path, 'w') as env_file:
-# 			for e in self.env:
-# 				env_file.write(e+'\n')
-
-# 		return self.env
-
-# def get_name_from_image(image):
-# 	return image.split('/')[-1].split(':')[0]
-
-# def get_repo_from_image(image):
-# 	repo = None
-# 	try:
-# 		repo = image.split('/')[-2]
-# 	except:
-# 		repo = None
-# 	return repo
-
-# def get_tag_from_image(image):
-# 	split = image.split(':')
-# 	if len(split) == 1:
-# 		return ""
-# 	return split[-1]
-
-# class Command():
-# 	sudo: bool = False
-# 	replace_tilde: bool = True # TODO Jherbots remove
-# 	command: str = ""
-
-# 	def __init__(self, command: str, sudo: bool) -> None:
-# 		self.command = command
-# 		self.sudo = sudo
-
-# 	def get_command(arguments: list[str]):
-# 		pass
-
-# class Application(Implementation):
-# 	command: str = ""
-# 	setup: List[Command] = []
-
-# 	def __init__(self, name: str, command: str, url: str = ""): # TODO jherbots remove url
-# 		super().__init__(name, url)
-# 		self.type = Type.APPLICATION
-# 		self.command = command
-
-# class Scenario():
-# 	name: str = ""
-# 	arguments: str = ""
-# 	active: bool = False
-# 	status: RunStatus = RunStatus.WAITING
-
-# 	def __init__(self, name: str, arguments: str = ""):  # TODO jherbots remove url
-# 		self.name = name
-# 		self.arguments = arguments
-
-# 	def __repr__(self) -> str:
-# 		return f"Scenario{{ {self.arguments} active [{self.active}]}}"  # TODO jherbots clean
-
-# class Shaper(Docker):
-# 	scenarios: List[Scenario] = []
-
-# 	def __init__(self, name: str, image: str, url: str = "" ):  # TODO jherbots remove url
-# 		super().__init__(name, image, url)
-# 		self.scenarios = []
-
-
-################## NEW #################
 
 class HostCommand:
 	def __init__(self, command: str, root_required: bool = False) -> None:
@@ -160,19 +15,11 @@ class HostCommand:
 		self.requires_root = root_required
 
 	def serialize_command(self, hydrated_parameters: Dict[str, str]):  # TODO reevaluate
-		# try:
-		# 	return self.command.format(**hydrated_parameters)  # TODO catch key errors
-		# except KeyError as e:
-		# 	raise VegvisirCommandException(f"Command [{self.command}] contains an unknown parameter [{e.args[0]}]")
-		# except TypeError:
-		# 	raise VegvisirCommandException(f"Command [{self.command}] serialized with non-dict type input.") 
-		
 		# Assume the hydrated_parameters have already been substituted, this implies that escaped parts have already been replaced
 		# Doing the substitution with infinite depth again will detect false cycles, we must limit it the substitution process to one cycle 
 		return ArgumentTemplate.substitute(self.command, hydrated_parameters, max_depth=1)
 
 class ArgumentTemplate:
-	# pattern = re.compile(r"\$(?:(?:{(?P<parameter>(?:[A-Z]+[A-Z0-9]*))})|(?P<escaped>\${(?:[A-Z]+[A-Z0-9]*)}))")
 	pattern = re.compile(r"\!(?:(?:\{(?P<parameter>(?:[A-Z0-9_-]+))\})|(?P<escaped>\!)|(?:(?P<invalid>)))")
 
 	def _sub(template: str, hydrated_parameters: Dict[str, str], visited_nodes=[], max_depth=0):
@@ -218,7 +65,6 @@ class ArgumentTemplate:
 
 
 class Parameters:
-	# _vegvisir_provided_params: List[str] = ["ORIGIN", "LOG_PATH_CLIENT", "LOG_PATH_SERVER", "LOG_PATH_SHAPER", "CERT_FINGERPRINT", "WAITFORSERVER", "SCENARIO", "ROLE", "TESTCASE", "QLOGDIR", "SSLKEYLOGFILE"]
 	_vegvisir_provided_params: List[str] = [field.name for field in fields(VegvisirArguments)]
 
 	def __init__(self, parameters: Dict[str, bool] | None = None) -> None:

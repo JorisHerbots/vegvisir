@@ -1,13 +1,14 @@
-from datetime import datetime
 import json
 import os
 import shutil
+from datetime import datetime
 from typing import List
+
 from vegvisir.configuration import Configuration
 from vegvisir.exceptions import VegvisirFreezeException
-
 from vegvisir.hostinterface import HostInterface
 from vegvisir.implementation import Endpoint
+
 
 def freeze_implementations_configuration(configuration: Configuration):
     # docker images --format "{{.Repository}}:{{.Tag}}"

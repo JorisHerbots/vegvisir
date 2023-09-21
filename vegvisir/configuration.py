@@ -2,11 +2,17 @@ import json
 import logging
 import os
 from typing import Dict, List, Set
+
 from vegvisir import environments
 from vegvisir.data import ExperimentPaths, VegvisirArguments
 from vegvisir.environments.base_environment import BaseEnvironment
-from vegvisir.exceptions import VegvisirException, VegvisirArgumentException, VegvisirCommandException, VegvisirInvalidExperimentConfigurationException, VegvisirInvalidImplementationConfigurationException, VegvisirConfigurationException
-from vegvisir.implementation import DockerImage, Endpoint, HostCommand, Parameters, Scenario, Shaper
+from vegvisir.exceptions import (
+    VegvisirArgumentException, VegvisirCommandException,
+    VegvisirConfigurationException,
+    VegvisirInvalidExperimentConfigurationException,
+    VegvisirInvalidImplementationConfigurationException)
+from vegvisir.implementation import (DockerImage, Endpoint, HostCommand,
+                                     Parameters, Scenario, Shaper)
 
 
 class Configuration:
