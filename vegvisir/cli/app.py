@@ -1,6 +1,4 @@
 import argparse
-from datetime import datetime
-from getpass import getpass
 import logging
 import math
 import random
@@ -9,13 +7,16 @@ import signal
 import sys
 import threading
 import time
+from datetime import datetime
+from getpass import getpass
 
 import colour
 
 from vegvisir.configuration import Configuration
-from vegvisir.housekeeping import freeze_implementations_configuration, load_frozen_implementations
+from vegvisir.housekeeping import (freeze_implementations_configuration, load_frozen_implementations)
 
-from .. import runner, exceptions, __version__ as vegvisir_version
+from .. import __version__ as vegvisir_version
+from .. import exceptions, runner
 
 # Globals
 '''
@@ -277,9 +278,6 @@ def run(vegvisir_arguments):
     try:
         configuration = Configuration(implementations_path, experiment_path)
         r = runner.Experiment(sudo_password=sudo_pass, configuration_object=configuration)
-        # r.load_experiment_from_file(experiment_path)
-        # r.load_experiment_from_file("test_run2.json")
-        # r.load_experiment_from_file("test_run.json")
         for experiment in r.run():
             tui_client_name, tui_shaper_name, tui_server_name, tui_progress_current, tui_progress_total = experiment
     except exceptions.VegvisirConfigurationException as e:
@@ -368,10 +366,6 @@ def main():
     load_parser = argument_subparsers.add_parser("load", aliases=["l"], help="Load a frozen archive", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
     load_parser.add_argument("archive", metavar="[ARCHIVE FILE]")
 
-    # Future work
-    # share_parser = argument_subparsers.add_parser("share", aliases=["s"], help="Generate a compressed file containing the results of an experiment", description=generate_banner(), formatter_class=argparse.RawTextHelpFormatter)
-    # share_parser.add_argument("experiment", metavar="[EXPERIMENT FILE]", default="./experiment.json")
-
     vegvisir_arguments = argument_parser.parse_args()
     if vegvisir_arguments.verbose:
         console_handler.setLevel(logging.DEBUG)
@@ -381,11 +375,9 @@ def main():
         "r": run,
         "f": freeze,
         "l": load,
-        # "s": lambda _: None,  # Future work
         "run": run,
         "freeze": freeze,
         "load": load,
-        # "share": lambda _: None,  # Future work
     }
 
     command_callback = command_to_callback_map.get(vegvisir_arguments.command, None)

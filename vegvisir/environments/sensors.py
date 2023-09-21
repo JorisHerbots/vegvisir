@@ -1,13 +1,14 @@
-from datetime import datetime
 import logging
 import subprocess
 import threading
 import time
+from datetime import datetime
 from typing import List
 
 import pyinotify
 
 from vegvisir.data import ExperimentPaths
+
 
 class ABCSensor:
 	def __init__(self) -> None:

@@ -1,27 +1,26 @@
 import dataclasses
-from datetime import datetime
 import getpass
 import grp
 import logging
 import os
 import pathlib
 import queue
-import shlex
-import sys
-import subprocess
-import threading
-import time
-from typing import List, Tuple
-import tempfile
 import re
 import shutil
-from vegvisir.hostinterface import HostInterface
+import tempfile
+import threading
+import time
+from datetime import datetime
+from typing import List
+
 from vegvisir.configuration import Configuration
 from vegvisir.data import VegvisirArguments
 from vegvisir.environments.base_environment import BaseEnvironment
 from vegvisir.exceptions import VegvisirException, VegvisirRunFailedException
+from vegvisir.hostinterface import HostInterface
 
-from .implementation import Parameters, Endpoint
+from .implementation import Endpoint, Parameters
+
 
 class LogFileFormatter(logging.Formatter):
 	def format(self, record):
@@ -37,82 +36,13 @@ class Experiment:
 		self.post_hook_processor_request_stop: bool = False
 		self.post_hook_processor_queue: queue.Queue = queue.Queue()  # contains tuples (method pointer, path dataclass)
 
-		# self._sudo_password = sudo_password
 		self.host_interface = HostInterface(sudo_password)
-		# self._debug = debug
 
 		self.logger = logging.getLogger("root.Experiment")
-		# self.logger.setLevel(logging.DEBUG)
-		# console = logging.StreamHandler(stream=sys.stderr)
-		# if self._debug:
-		# console.setLevel(logging.DEBUG)
-		# else:
-			# console.setLevel(logging.INFO)
-		# self.logger.addHandler(console)
 
 		# Explicit check so we don't keep trigger an auth lock
 		if not self.host_interface._is_sudo_password_valid():
 			raise VegvisirException("Authentication with sudo failed. Provided password is wrong?")
-
-	# def set_sudo_password(self, sudo_password: str):
-	# 	self._sudo_password = sudo_password
-
-	# def spawn_subprocess(self, command: str, shell: bool = False) -> Tuple[str, str]:
-	# 	if shell:
-	# 		proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	# 	else:
-	# 		shlex_command = shlex.split(command)
-	# 		proc = subprocess.Popen(shlex_command, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		
-	# 	proc_input = self._sudo_password.encode() if "sudo" in command else None
-	# 	if proc_input is not None:
-	# 		out, err = proc.communicate(input=proc_input)
-	# 	return out, err, proc
-
-	# def spawn_parallel_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> subprocess.Popen:
-	# 	shell = shell == True
-	# 	if root_privileges:
-	# 		# -Skp makes it so sudo reads input from stdin, invalidates the privileges granted after the command is ran and removes the password prompt
-	# 		# Removing the password prompt and invalidating the sessions removes the complexity of having to check for the password prompt, we know it'll always be there
-	# 		command = "sudo -Skp '' " + command
-	# 	debug_command = command
-	# 	command = shlex.split(command) if shell == False else command
-	# 	proc = subprocess.Popen(command, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	# 	if root_privileges:
-	# 		try:
-	# 			proc.stdin.write(self._sudo_password.encode())
-	# 		except BrokenPipeError:
-	# 			logging.error(f"Pipe broke before we could provide sudo credentials. No sudo available? [{debug_command}]")
-	# 	return proc
-
-	# def spawn_blocking_subprocess(self, command: str, root_privileges: bool = False, shell: bool = False) -> Tuple[subprocess.Popen, str, str]:
-	# 	proc = self.host_interface.spawn_parallel_subprocess(command, root_privileges, shell)
-	# 	out, err = proc.communicate()
-	# 	return proc, out.decode("utf-8").strip(), err.decode("utf-8").strip()
-
-	# def _is_sudo_password_valid(self):
-	# 	proc, _, _ = self.host_interface.spawn_blocking_subprocess("which sudo", True, False)
-	# 	return proc.returncode == 0
-
-	# def _scan_image_repos(self):
-	# 	self._image_sets = []
-	# 	proc = subprocess.run(
-	# 		"docker images | awk '(NR>1) {print $1, $2}'",
-	# 		shell=True,
-	# 		stdout=subprocess.PIPE,
-	# 		stderr=subprocess.STDOUT
-	# 	)
-	# 	local_images = proc.stdout.decode('utf-8').strip().replace(' ', ':').split('\n')
-	# 	for img in local_images:
-	# 		repo = get_repo_from_image(img)
-	# 		if repo in self._image_repos:
-	# 			tag = get_tag_from_image(img)
-	# 			set_name = get_name_from_image(img)
-	# 			if not repo + '/' + set_name in self._image_sets:
-	# 				self._image_sets.append(repo + '/' + set_name)
-	# 			for x in self._clients + self._servers + self.configuration.shapers:
-	# 				if hasattr(x, 'image_name') and x.image_name == tag:
-	# 					x.images.append(Image(img))
 
 	def _post_hook_processor(self):
 		while not self.post_hook_processor_request_stop:
@@ -186,7 +116,6 @@ class Experiment:
 							self.logger.debug("Vegvisir: appending entry to hosts file resulted in error: %s", err)
 
 					for run_number in range(0,self.configuration.iterations):
-						# self._run_individual_test()
 						iteration_start_time = datetime.now()
 						
 						# Paths, we create the folders so we can later bind them as docker volumes for direct logging output
@@ -239,7 +168,6 @@ class Experiment:
 						vegvisirBaseArguments.SSLKEYLOGFILE = "/logs/keys.log"
 						vegvisirBaseArguments.QLOGDIR = "/logs/qlog/"
 						vegvisirBaseArguments.ENVIRONMENT = self.configuration.environment.environment_name if self.configuration.environment.environment_name != "" else None
-						# vegvisirBaseArguments.SCENARIO = shaper.scenarios[shaper_config["scenario"]].command  # TODO jherbots Check if client and server need this?
 
 						vegvisirServerArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="server", TESTCASE=self.configuration.environment.get_QIR_compatibility_testcase(BaseEnvironment.Perspective.SERVER))
 						vegvisirShaperArguments = dataclasses.replace(vegvisirBaseArguments, ROLE="shaper", SCENARIO = shaper.scenarios[shaper_config["scenario"]].command, WAITFORSERVER="server:443")  # Important edgecase! Shaper uses server instead of server4
@@ -434,21 +362,3 @@ class Experiment:
 				else:
 					self.logger.info(f"Vegvisir is waiting for {sum(states)} post-hook processor(s) to stop. If this message persists, perform CTRL + C")
 			wait_for_hook_processors_counter += 1
-
-
-	def _copy_logs(self, container: str, dir: tempfile.TemporaryDirectory, params: str):
-		r = subprocess.run(
-			'docker cp "$('
-			+ params + " "
-			+ 'docker-compose --log-level ERROR ps -q '
-			+ container
-			+ ')":/logs/. '
-			+ dir.name,
-			shell=True,
-			stdout=subprocess.PIPE,
-			stderr=subprocess.STDOUT,
-		)
-		if r.returncode != 0:
-			logging.info(
-				"Copying logs from %s failed: %s", container, r.stdout.decode("utf-8")
-			)

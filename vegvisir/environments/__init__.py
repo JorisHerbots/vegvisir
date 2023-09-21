@@ -1,4 +1,4 @@
-from vegvisir.environments import webserver, sensors
+from vegvisir.environments import sensors, webserver
 
 default_environment = "webserver-basic"
 available_environments = {
