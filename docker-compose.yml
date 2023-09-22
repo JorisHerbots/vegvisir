@@ -25,6 +25,34 @@ services:
     extra_hosts:
       - "server:193.167.100.100"
 
+  tcpdump_leftnet:
+    image: kaazing/tcpdump
+    container_name: vegvisir_tcpdump_leftnet
+    stdin_open: true
+    tty: true
+    depends_on:
+      - sim
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - $LOG_PATH_SHAPER:/logs/
+    network_mode: "container:sim"
+    command: ["-v", "--interface", "eth0", "--packet-buffered", "-w", "/logs/tcpdump_leftnet.pcap" ]
+
+  tcpdump_rightnet:
+    image: kaazing/tcpdump
+    container_name: vegvisir_tcpdump_rightnet
+    stdin_open: true
+    tty: true
+    depends_on:
+      - sim
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - $LOG_PATH_SHAPER:/logs/
+    network_mode: "container:sim"
+    command: ["-v", "--interface", "eth1", "--packet-buffered", "-w", "/logs/tcpdump_rightnet.pcap" ]
+
   server:
     image: $SERVER
     container_name: server
