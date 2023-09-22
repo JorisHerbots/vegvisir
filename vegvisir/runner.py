@@ -201,7 +201,7 @@ class Experiment:
 						# params += " ".join(shaper.additional_envs())
 						# params += " ".join(server.additional_envs())
 						# containers = "sim server " + " ".join(testcase.additional_containers())
-						containers = "sim server"
+						containers = "sim server tcpdump_leftnet tcpdump_rightnet"
 
 						cmd = (
 							docker_compose_vars
@@ -296,9 +296,16 @@ class Experiment:
 						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps client", False, True)
 						self.logger.debug(out)
 						self.logger.debug(err)
+						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps tcpdump_leftnet", False, True)
+						self.logger.debug(out)
+						self.logger.debug(err)
+						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps tcpdump_rightnet", False, True)
+						self.logger.debug(out)
+						self.logger.debug(err)
 
 						_, out ,err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose down", False, True) # TODO TEMP
 						self.logger.debug(out)
+						self.logger.debug(err)
 
 					# BREAKDOWN
 					if client.type == Endpoint.Type.HOST:
