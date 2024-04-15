@@ -209,7 +209,9 @@ class Experiment:
 							+ containers
 						)
 						# self.host_interface.spawn_parallel_subprocess(cmd, False, True)
-						self.host_interface.spawn_blocking_subprocess(cmd, False, True) # TODO Test out if this truly fixes the RNETLINK error? This call might be too slow
+						_, out, err = self.host_interface.spawn_blocking_subprocess(cmd, False, True) # TODO Test out if this truly fixes the RNETLINK error? This call might be too slow
+
+						self.logger.debug(f"Started sim and server | STDOUT [{out}] | STDERR [{chr(10) if err.find(chr(10)) >= 0 else ''}{err}{chr(10) if err.find(chr(10)) >= 0 else ''}]") # chr(10) => '\n'
 						
 						# Host applications require some packet rerouting to be able to reach docker containers
 						if self.configuration.client_endpoints[client_config["name"]].type == Endpoint.Type.HOST:

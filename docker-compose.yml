@@ -10,7 +10,8 @@ services:
     volumes:
       - $LOG_PATH_SHAPER:/logs/
     env_file: 
-      - shaper.env
+      - path: shaper.env
+        required: false
     cap_add: 
       - NET_ADMIN
     expose:
@@ -64,7 +65,8 @@ services:
       - $CERTS:/certs:ro
       - $LOG_PATH_SERVER:/logs/
     env_file: 
-      - server.env
+      - path: server.env
+        required: false
     depends_on:
       - sim
     cap_add: 
@@ -86,8 +88,9 @@ services:
       - $DOWNLOAD_PATH_CLIENT:/downloads:delegated
       - $CERTS:/certs:ro
       - $LOG_PATH_CLIENT:/logs/
-    env_file: 
-      client.env
+    env_file:
+      - path: client.env
+        required: false
     depends_on:
       - sim
     cap_add: 
