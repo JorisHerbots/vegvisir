@@ -209,7 +209,25 @@ class Experiment:
 							+ containers
 						)
 						# self.host_interface.spawn_parallel_subprocess(cmd, False, True)
-						_, out, err = self.host_interface.spawn_blocking_subprocess(cmd, False, True) # TODO Test out if this truly fixes the RNETLINK error? This call might be too slow
+						# Back-to-back runs can start this before the previous run's
+						# "docker compose down" has fully settled on the daemon side: the CLI
+						# call returns fine, but container-name release can lag by a second or
+						# two, so a fresh "docker compose up -d" transiently fails with
+						# "Conflict... container name is already in use".
+						# The return code was previously never checked, so such a failure was
+						# silently ignored and the client was then started against a sim/server
+						# stack that was never brought up — producing a run with zero downloaded
+						# segments that looks like a client bug. Retry, then fail loudly.
+						up_attempts, up_max_attempts, up_retry_delay_s = 0, 5, 2
+						while True:
+							up_attempts += 1
+							proc, out, err = self.host_interface.spawn_blocking_subprocess(cmd, False, True) # TODO Test out if this truly fixes the RNETLINK error? This call might be too slow
+							if proc.returncode == 0:
+								break
+							if up_attempts >= up_max_attempts:
+								raise VegvisirRunFailedException(f"docker compose up -d (sim/server) failed after {up_attempts} attempts | STDOUT [{out}] | STDERR [{err}]")
+							self.logger.warning(f"docker compose up -d (sim/server) failed (attempt {up_attempts}/{up_max_attempts}), retrying in {up_retry_delay_s}s | STDERR [{err}]")
+							time.sleep(up_retry_delay_s)
 
 						self.logger.debug(f"Started sim and server | STDOUT [{out}] | STDERR [{chr(10) if err.find(chr(10)) >= 0 else ''}{err}{chr(10) if err.find(chr(10)) >= 0 else ''}]") # chr(10) => '\n'
 						
