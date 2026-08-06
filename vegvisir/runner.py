@@ -313,6 +313,14 @@ class Experiment:
 						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps sim", False, True)
 						self.logger.debug(out)
 						self.logger.debug(err)
+						# The sim container's output is where tc/netem reports what it actually
+						# applied. Persisting it beside the run's own logs makes "was the shaping
+						# I configured really in effect?" answerable after the fact, instead of
+						# only from a debug-level log that may not have been enabled.
+						with open(os.path.join(self.configuration.path_collection.log_path_shaper, "tc.log"), "w") as fp:
+							fp.write(out)
+							if err:
+								fp.write("\n" + err)
 						_, out, err = self.host_interface.spawn_blocking_subprocess(docker_compose_vars + " docker compose logs --timestamps client", False, True)
 						self.logger.debug(out)
 						self.logger.debug(err)
