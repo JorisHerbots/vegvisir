@@ -271,7 +271,12 @@ def run(vegvisir_arguments):
     signal.signal(signal.SIGINT, sigint_handler)
     print(generate_banner())
     
-    sudo_pass = getpass(f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=211, g=215, b=207)}Vegvisir >{control_sequences['CLEAR_COLOR']} Enter password to run sudo commands: ")
+    # Vegvisir needs sudo for network namespaces and tc-netem qdiscs. Long
+    # unattended sweeps can't answer an interactive prompt, so allow the password
+    # to come from the environment instead; prompting stays the default.
+    sudo_pass = os.environ.get("VEGVISIR_SUDO_PASSWORD")
+    if not sudo_pass:
+        sudo_pass = getpass(f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=211, g=215, b=207)}Vegvisir >{control_sequences['CLEAR_COLOR']} Enter password to run sudo commands: ")
     
     tui_start_timestamp = datetime.now()
     tui_thread = threading.Thread(target=tui_render_tick)
