@@ -1,12 +1,14 @@
 import argparse
 import logging
 import math
+import os
 import random
 import shutil
 import signal
 import sys
 import threading
 import time
+import traceback
 from datetime import datetime
 from getpass import getpass
 
@@ -269,7 +271,12 @@ def run(vegvisir_arguments):
     signal.signal(signal.SIGINT, sigint_handler)
     print(generate_banner())
     
-    sudo_pass = getpass(f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=211, g=215, b=207)}Vegvisir >{control_sequences['CLEAR_COLOR']} Enter password to run sudo commands: ")
+    # Vegvisir needs sudo for network namespaces and tc-netem qdiscs. Long
+    # unattended sweeps can't answer an interactive prompt, so allow the password
+    # to come from the environment instead; prompting stays the default.
+    sudo_pass = os.environ.get("VEGVISIR_SUDO_PASSWORD")
+    if not sudo_pass:
+        sudo_pass = getpass(f"{control_sequences['BOLD']}{control_sequences['COLOR'].format(r=211, g=215, b=207)}Vegvisir >{control_sequences['CLEAR_COLOR']} Enter password to run sudo commands: ")
     
     tui_start_timestamp = datetime.now()
     tui_thread = threading.Thread(target=tui_render_tick)
@@ -301,8 +308,25 @@ def run(vegvisir_arguments):
         destruct_tui()
         sys.exit(1)
     except (exceptions.VegvisirException, Exception) as e:  # Exception allows for clean shutdowns of the GUI
+        tb_text = traceback.format_exc()
         logger.error("Generic Vegvisir error encountered, halting exception.")
-        logger.error(e)
+        # Log the traceback, not just str(e): for many exceptions str(e) is empty
+        # or a bare filename, which says nothing about where the failure was.
+        logger.error(tb_text)
+        # The TUI is torn down immediately below and this output is not persisted
+        # anywhere, so a crash in an unattended run previously left no diagnostic
+        # trace at all. Write it beside the run's own logs when the run got far
+        # enough to create its log folder.
+        try:
+            log_path_date = configuration.path_collection.log_path_date
+        except (NameError, AttributeError):
+            log_path_date = None
+        if log_path_date:
+            try:
+                with open(os.path.join(log_path_date, "crash.txt"), "w") as fp:
+                    fp.write(tb_text)
+            except OSError:
+                pass
         destruct_tui()
         sys.exit(1)
 
